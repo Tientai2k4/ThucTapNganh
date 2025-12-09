@@ -1,5 +1,3 @@
-</div> </div> <footer class="bg-light text-center py-3 mt-auto border-top">
-        <p class="mb-0">© 2025 Swimming Store Admin System.</p>
-    </footer>
+</div> </div> <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

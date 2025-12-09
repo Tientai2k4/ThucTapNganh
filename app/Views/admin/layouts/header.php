@@ -2,34 +2,25 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Quản Trị - Swimming Store</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { display: flex; min-height: 100vh; flex-direction: column; }
+        body { min-height: 100vh; display: flex; flex-direction: column; }
         .wrapper { display: flex; flex: 1; }
-        .sidebar { min-width: 250px; background: #343a40; color: #fff; min-height: 100vh; }
-        .sidebar a { color: #fff; text-decoration: none; display: block; padding: 10px 20px; }
-        .sidebar a:hover { background: #495057; }
-        .content { flex: 1; padding: 20px; }
+        #sidebar { min-width: 250px; max-width: 250px; background: #343a40; color: #fff; transition: all 0.3s; }
+        #sidebar .nav-link { color: rgba(255,255,255,0.8); padding: 15px 20px; }
+        #sidebar .nav-link:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        #content { width: 100%; padding: 20px; background: #f8f9fa; }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-dark px-3">
-        <a class="navbar-brand" href="#">Quản Trị Bể Bơi</a>
-        <div class="d-flex">
-            <span class="text-white me-3">Chào, <?php echo $_SESSION['user_name'] ?? 'Admin'; ?></span>
-            <a href="<?= BASE_URL ?>admin/auth/logout" class="btn btn-sm btn-danger">Đăng xuất</a>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary px-4">
+        <a class="navbar-brand" href="<?= BASE_URL ?>admin">ADMIN DASHBOARD</a>
+        <div class="collapse navbar-collapse justify-content-end">
+            <span class="navbar-text text-white me-3">Xin chào, Admin</span>
+            <a href="<?= BASE_URL ?>admin/auth/logout" class="btn btn-sm btn-outline-danger">Đăng xuất</a>
         </div>
     </nav>
-
     <div class="wrapper">
-        <div class="sidebar">
-            <h4 class="text-center py-3">Menu</h4>
-            <a href="<?= BASE_URL ?>admin/dashboard">🏠 Tổng quan</a>
-            <a href="<?= BASE_URL ?>admin/category">📂 Quản lý Danh mục</a>
-            <a href="<?= BASE_URL ?>admin/product">🩳 Quản lý Sản phẩm</a>
-            <a href="<?= BASE_URL ?>admin/order">📦 Quản lý Đơn hàng</a>
-            <a href="<?= BASE_URL ?>admin/user">👤 Quản lý Người dùng</a>
-        </div>
-        
-        <div class="content">

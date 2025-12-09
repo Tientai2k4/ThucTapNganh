@@ -4,13 +4,8 @@ use App\Core\Controller;
 
 class DashboardController extends Controller {
     public function index() {
-        // Kiểm tra đăng nhập (Middleware đơn giản)
-        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] != 'admin') {
-            header('Location: ' . BASE_URL . 'admin/auth/login');
-            exit;
-        }
-
-        $data = ['title' => 'Trang chủ Admin'];
+        // Tạm thời chưa check login để test layout trước
+        $data = ['title' => 'Tổng quan hệ thống'];
         $this->view('admin/dashboard/index', $data);
     }
 }

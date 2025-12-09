@@ -1,43 +1,42 @@
 <?php
+// app/Core/App.php
 namespace App\Core;
 
 class App {
-    protected $controller = 'HomeController'; // Mặc định Client
+    protected $controller = 'HomeController'; // Mặc định là Client Home
     protected $action = 'index';
     protected $params = [];
 
     public function __construct() {
         $url = $this->getUrl();
 
-        // LOGIC PHÂN LUỒNG: ADMIN hay CLIENT
-        $folder = 'Client'; // Mặc định là Client
-        
-        // Nếu URL bắt đầu bằng 'admin' (ví dụ: /admin/dashboard)
+        // Mặc định folder là Client
+        $folder = 'Client';
+
+        // Kiểm tra xem có phải truy cập vào Admin không
         if (isset($url[0]) && strtolower($url[0]) == 'admin') {
             $folder = 'Admin';
             array_shift($url); // Xóa chữ 'admin' khỏi mảng URL
-            
-            // Controller mặc định của Admin là Dashboard
-            $this->controller = 'DashboardController'; 
+            $this->controller = 'DashboardController'; // Mặc định của Admin
         }
 
-        // 1. Kiểm tra File Controller có tồn tại không
+        // 1. Kiểm tra file Controller có tồn tại không
         if (isset($url[0])) {
             $controllerName = ucfirst($url[0]) . 'Controller';
-            // Kiểm tra đường dẫn file
             if (file_exists(ROOT_PATH . "/app/Controllers/$folder/" . $controllerName . ".php")) {
                 $this->controller = $controllerName;
                 array_shift($url);
             }
         }
 
-        // 2. Require Controller và Khởi tạo
+        // 2. Require file Controller
         require_once ROOT_PATH . "/app/Controllers/$folder/" . $this->controller . ".php";
         
+        // 3. Khởi tạo Class Controller
         $controllerClass = "App\\Controllers\\$folder\\" . $this->controller;
         $this->controller = new $controllerClass;
 
-        // 3. Kiểm tra Method (Action)
+        // 4. Kiểm tra Action (Method)
         if (isset($url[0])) {
             if (method_exists($this->controller, $url[0])) {
                 $this->action = $url[0];
@@ -45,10 +44,10 @@ class App {
             }
         }
 
-        // 4. Lấy tham số còn lại
+        // 5. Lấy tham số
         $this->params = $url ? array_values($url) : [];
 
-        // 5. Chạy hàm
+        // 6. Gọi hàm
         call_user_func_array([$this->controller, $this->action], $this->params);
     }
 
