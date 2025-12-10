@@ -39,5 +39,12 @@ class ProductModel extends Model {
         $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
+    // Thêm biến thể vào bảng product_variants
+    public function addVariant($productId, $size, $color, $stock) {
+        $sql = "INSERT INTO product_variants (product_id, size, color, stock_quantity) VALUES (?, ?, ?, ?)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("issi", $productId, $size, $color, $stock);
+        return $stmt->execute();
+    }
 }
 ?>
