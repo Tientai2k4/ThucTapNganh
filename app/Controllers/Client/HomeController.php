@@ -8,9 +8,14 @@ class HomeController extends Controller {
         $catModel = $this->model('CategoryModel');
         $categories = $catModel->getAll();
 
+        // Lấy sản phẩm thật từ DB
+        $prodModel = $this->model('ProductModel');
+        $products = $prodModel->getHomeProducts(8); // Lấy 8 sản phẩm mới nhất
+
         $data = [
             'title' => 'Trang chủ - Swimming Store',
-            'categories' => $categories // Truyền biến này ra View
+            'categories' => $categories, // Truyền biến này ra View
+            'products' => $products // Truyền sang View
         ];
         
         $this->view('client/home/index', $data);

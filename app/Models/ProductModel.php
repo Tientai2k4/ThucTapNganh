@@ -32,5 +32,12 @@ class ProductModel extends Model {
         $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
+    // Lấy sản phẩm để hiển thị trang chủ
+    public function getHomeProducts($limit = 8) {
+        // Lấy sản phẩm đang bán (is_active = 1)
+        $sql = "SELECT * FROM {$this->table} WHERE is_active = 1 ORDER BY created_at DESC LIMIT $limit";
+        $result = $this->conn->query($sql);
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
 }
 ?>
