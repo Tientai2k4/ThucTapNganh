@@ -52,13 +52,6 @@ class UserModel extends Model {
 
     // 3. HÀM LẤY DANH SÁCH (Dùng cho Admin quản lý sau này)
     public function getAllUsers() {
-        $sql = "SELECT * FROM users ORDER BY id DESC";
-        $result = $this->conn->query($sql);
-        return $result->fetch_all(MYSQLI_ASSOC);
-    }
-
-    // Lấy danh sách user (Cho trang Admin quản lý)
-    public function getAllUsers() {
         $sql = "SELECT * FROM {$this->table} ORDER BY id DESC";
         $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
