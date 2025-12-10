@@ -21,7 +21,7 @@
                 <div class="collapse navbar-collapse" id="mainNav">
                     <ul class="navbar-nav mx-auto">
                         <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>">Trang chủ</a></li>
-                         <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>">Giới thi</a></li>
+                         <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>about">Giới thiệu</a></li>
                         <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>product">Sản phẩm</a></li>
                         <li class="nav-item"><a class="nav-link" href="#">Tin tức</a></li>
                         <li class="nav-item"><a class="nav-link" href="#">Liên hệ</a></li>

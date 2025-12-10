@@ -4,19 +4,39 @@
 
 <h3 class="text-center mb-4 text-uppercase fw-bold text-primary">Sản phẩm nổi bật</h3>
 <div class="row">
-    <?php for($i=1; $i<=4; $i++): ?>
-    <div class="col-6 col-md-3">
-        <div class="card card-product">
-            <img src="https://via.placeholder.com/300x300.png?text=Product+<?= $i ?>" class="card-img-top" alt="SP">
-            <div class="card-body text-center">
-                <a href="#" class="product-title">Kính bơi Phoenix 20<?= $i ?></a>
-                <div class="mb-2">
-                    <span class="product-price">150,000đ</span>
-                    <small class="text-decoration-line-through text-muted ms-2">180,000đ</small>
+    <div class="col-md-3">
+        <div class="list-group mb-4 shadow-sm">
+            <a href="#" class="list-group-item list-group-item-action active bg-primary border-primary">
+                <i class="fas fa-bars me-2"></i> DANH MỤC SẢN PHẨM
+            </a>
+            
+            <?php if (!empty($data['categories'])): ?>
+                <?php foreach($data['categories'] as $cat): ?>
+                <a href="<?= BASE_URL ?>product/category/<?= $cat['id'] ?>" class="list-group-item list-group-item-action">
+                    <?= htmlspecialchars($cat['name']) ?>
+                </a>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="p-3 text-muted">Chưa có danh mục</div>
+            <?php endif; ?>
+        </div>
+        
+        <img src="https://yeuboiloi.com/wp-content/uploads/2021/06/mu-boi.jpg" class="img-fluid rounded mb-3" alt="Banner Left">
+    </div>
+
+    <div class="col-md-9">
+        <div class="mb-4 rounded overflow-hidden shadow-sm">
+             <img src="https://yeuboiloi.com/wp-content/uploads/2021/06/banner-kinh-boi-can.jpg" class="w-100" style="height: 350px; object-fit: cover;" alt="Banner">
+        </div>
+        
+        <h4 class="text-uppercase fw-bold text-primary mb-3">Sản phẩm mới</h4>
+        <div class="row">
+             <?php for($i=1; $i<=6; $i++): ?>
+                <div class="col-6 col-md-4">
+                    <div class="card card-product">
+                         </div>
                 </div>
-                <button class="btn-buy"><i class="fas fa-cart-plus me-1"></i> Thêm vào giỏ</button>
-            </div>
+             <?php endfor; ?>
         </div>
     </div>
-    <?php endfor; ?>
 </div>
