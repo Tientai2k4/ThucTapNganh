@@ -14,7 +14,7 @@ class AuthController extends Controller {
             $password = $_POST['password'];
 
             $userModel = $this->model('UserModel');
-            $user = $userModel->checkLogin($email, $password);
+            $user = $userModel->login($email, $password);
 
             if ($user) {
                 if ($user['role'] == 'admin' || $user['role'] == 'staff') {
