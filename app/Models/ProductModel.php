@@ -46,5 +46,43 @@ class ProductModel extends Model {
         $stmt->bind_param("issi", $productId, $size, $color, $stock);
         return $stmt->execute();
     }
+    // Lọc sản phẩm theo danh mục, thương hiệu, giá
+    public function filterProducts($filters) {
+        $sql = "SELECT * FROM products WHERE is_active = 1";
+        $params = [];
+        $types = "";
+
+        // Lọc theo danh mục
+        if (!empty($filters['category'])) {
+            $sql .= " AND category_id = ?";
+            $params[] = $filters['category'];
+            $types .= "i";
+        }
+        // Lọc theo thương hiệu
+        if (!empty($filters['brand'])) {
+            $sql .= " AND brand_id = ?";
+            $params[] = $filters['brand'];
+            $types .= "i";
+        }
+        // Lọc theo giá
+        if (!empty($filters['price_range'])) {
+            if ($filters['price_range'] == 'duoi_500') {
+                $sql .= " AND price < 500000";
+            } elseif ($filters['price_range'] == '500_1tr') {
+                $sql .= " AND price BETWEEN 500000 AND 1000000";
+            } elseif ($filters['price_range'] == 'tren_1tr') {
+                $sql .= " AND price > 1000000";
+            }
+        }
+
+        $sql .= " ORDER BY created_at DESC";
+        
+        $stmt = $this->conn->prepare($sql);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
 }
 ?>
