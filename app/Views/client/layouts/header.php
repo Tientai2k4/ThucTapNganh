@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>css/client.css">
 </head>
 <body>
+
+
     <header class="main-header sticky-top">
         <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
             <div class="container">
@@ -26,13 +28,35 @@
                         <li class="nav-item"><a class="nav-link" href="#">Tin tức</a></li>
                         <li class="nav-item"><a class="nav-link" href="#">Liên hệ</a></li>
                     </ul>
-                    <div class="d-flex align-items-center">
-                        <a href="#" class="btn btn-outline-primary position-relative me-2 border-0">
-                            <i class="fas fa-shopping-cart fa-lg"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
-                        </a>
-                        <a href="<?= BASE_URL ?>client/auth/login" class="btn btn-primary px-4">Đăng nhập</a>
-                    </div>
+                    
+                        <div class="d-flex align-items-center">
+                             <a href="<?= BASE_URL ?>cart" class="btn btn-outline-primary position-relative me-3 border-0">
+                             <i class="fas fa-shopping-cart fa-lg"></i>
+                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+                             </a>
+                             <?php if (isset($_SESSION['user_id'])): ?>
+                               <div class="dropdown">
+                              <button class="btn btn-outline-primary dropdown-toggle fw-bold" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                                 <i class="fas fa-user-circle me-1"></i> Xin chào, <?= htmlspecialchars($_SESSION['user_name']) ?>
+                               </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                                 <?php if(isset($_SESSION['user_role']) && $_SESSION['user_role'] == 'admin'): ?>
+                                   <li><a class="dropdown-item" href="<?= BASE_URL ?>admin/dashboard"><i class="fas fa-cog me-2"></i>Trang quản trị</a></li>
+                                <?php endif; ?>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Hồ sơ cá nhân</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-box me-2"></i>Đơn hàng của tôi</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="<?= BASE_URL ?>auth/logout"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
+                                </ul>
+                                 </div>
+                                  <?php else: ?>
+                                    <a href="<?= BASE_URL ?>auth/login" class="btn btn-primary px-4 fw-bold">Đăng nhập</a>
+                                     <a href="<?= BASE_URL ?>auth/register" class="btn btn-outline-primary me-2 fw-bold">Đăng ký</a>
+                                 <?php endif; ?>
+                         </div>
+
+
+
                 </div>
             </div>
         </nav>

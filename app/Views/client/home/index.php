@@ -1,6 +1,10 @@
-<div class="mb-5 rounded overflow-hidden shadow-sm">
-    <img src="https://yeuboiloi.com/wp-content/uploads/2021/06/banner-kinh-boi-can.jpg" class="w-100" style="height: 400px; object-fit: cover;" alt="Banner">
-</div>
+<?php if (isset($_SESSION['flash_message'])): ?>
+    <div class="alert alert-success alert-dismissible fade show container mt-3" role="alert">
+        <i class="fas fa-check-circle me-2"></i> <?= $_SESSION['flash_message'] ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <?php unset($_SESSION['flash_message']); // Xóa thông báo sau khi hiện xong ?>
+<?php endif; ?>
 
 <h3 class="text-center mb-4 text-uppercase fw-bold text-primary">Sản phẩm nổi bật</h3>
 <div class="row">
