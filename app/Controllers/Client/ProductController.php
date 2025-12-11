@@ -23,7 +23,34 @@ class ProductController extends Controller {
         
         $this->view('client/products/index', $data);
     }
+     public function detail($id) {
+        $model = $this->model('ProductModel');
+        $product = $model->getById($id);
+        $variants = $model->getVariants($id);
+
+        $data = [
+            'title' => $product['name'],
+            'product' => $product,
+            'variants' => $variants
+        ];
+        $this->view('client/products/detail', $data);
+    }
+
+    // API trả về JSON số lượng tồn kho
+    public function checkStock() {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $variantId = $input['variant_id'];
+
+            // Query DB lấy số lượng
+            $conn = (new \App\Core\Database())->conn; // Kết nối nhanh hoặc gọi qua Model
+            $sql = "SELECT stock_quantity FROM product_variants WHERE id = " . intval($variantId);
+            $res = $conn->query($sql)->fetch_assoc();
+            
+            echo json_encode(['stock' => $res ? $res['stock_quantity'] : 0]);
+            exit;
+        }
+    }
     
-    // Hàm detail sẽ làm ở Ngày 6
+    
 }
-?>
