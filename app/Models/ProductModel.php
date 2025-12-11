@@ -120,5 +120,15 @@ class ProductModel extends Model {
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
+    public function getVariantStock($variantId) {
+        $sql = "SELECT stock_quantity FROM product_variants WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $variantId);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        // Trả về số lượng (nếu tìm thấy) hoặc 0 (nếu lỗi)
+        return $result ? (int)$result['stock_quantity'] : 0;
+    }
 }
 ?>
