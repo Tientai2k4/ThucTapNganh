@@ -20,6 +20,11 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <?php 
+                        // FIX LỖI: Nếu biến $sliders không được extract, nó sẽ nằm trong $data['sliders']
+                        $sliders = isset($data['sliders']) ? $data['sliders'] : (isset($sliders) ? $sliders : []);
+                        ?>
+                        
                         <?php if (!empty($sliders)): ?>
                             <?php foreach ($sliders as $slider): ?>
                                 <tr>

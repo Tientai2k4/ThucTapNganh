@@ -9,6 +9,11 @@ class SliderModel extends Model {
     public function getAll() {
         $sql = "SELECT * FROM {$this->table} ORDER BY sort_order ASC, created_at DESC";
         $result = $this->conn->query($sql);
+        // Kiểm tra lỗi truy vấn
+        if (!$result) {
+            error_log("Database Error in SliderModel::getAll: " . $this->conn->error);
+            return [];
+        }
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
@@ -24,8 +29,15 @@ class SliderModel extends Model {
     public function add($data) {
         $sql = "INSERT INTO {$this->table} (image, link_url, sort_order, status) VALUES (?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
+        // LƯU Ý: Phải đảm bảo kiểu dữ liệu: string, string, integer, integer
         $stmt->bind_param("ssii", $data['image'], $data['link_url'], $data['sort_order'], $data['status']);
-        return $stmt->execute();
+        
+        if ($stmt->execute()) {
+            return true;
+        } else {
+            error_log("Database Error in SliderModel::add: " . $stmt->error);
+            return false;
+        }
     }
 
     // Cập nhật slider
@@ -33,7 +45,13 @@ class SliderModel extends Model {
         $sql = "UPDATE {$this->table} SET image = ?, link_url = ?, sort_order = ?, status = ? WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("ssiii", $data['image'], $data['link_url'], $data['sort_order'], $data['status'], $id);
-        return $stmt->execute();
+        
+        if ($stmt->execute()) {
+             return true;
+        } else {
+            error_log("Database Error in SliderModel::update: " . $stmt->error);
+            return false;
+        }
     }
 
     // Xóa slider
