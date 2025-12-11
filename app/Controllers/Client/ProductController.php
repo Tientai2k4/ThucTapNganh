@@ -4,8 +4,28 @@ use App\Core\Controller;
 
 class ProductController extends Controller {
     
-    public function index() { /* code cũ */ }
-    
+    public function index() {
+        $prodModel = $this->model('ProductModel');
+        $catModel = $this->model('CategoryModel');
+        $brandModel = $this->model('BrandModel'); 
+
+        // Nhận tham số từ URL
+        $filters = [
+            'category' => $_GET['category'] ?? null,
+            'brand' => $_GET['brand'] ?? null,
+            'price_range' => $_GET['price'] ?? null
+        ];
+
+        $data = [
+            // Lọc sản phẩm theo các tham số
+            'products' => $prodModel->filterProducts($filters),
+            'categories' => $catModel->getAll(),
+            'brands' => $brandModel->getAll(),
+            'current_filters' => $filters // Gửi lại bộ lọc hiện tại cho View
+        ];
+        
+        $this->view('client/products/index', $data);
+    }
     public function detail($id) {
         $model = $this->model('ProductModel');
         $product = $model->getById($id);
