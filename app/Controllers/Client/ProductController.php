@@ -26,27 +26,67 @@ class ProductController extends Controller {
         
         $this->view('client/products/index', $data);
     }
-    public function detail($id) {
+
+   public function detail($id) {
+        // 1. Lấy sản phẩm
         $model = $this->model('ProductModel');
         $product = $model->getById($id);
         $variants = $model->getVariants($id);
 
         // Kiểm tra nếu sản phẩm không tồn tại
         if (!$product) {
-            // Chuyển hướng hoặc báo lỗi
             header('Location: ' . BASE_URL); 
             exit;
         }
 
+        // 2. [QUAN TRỌNG] Gọi ReviewModel nằm TRONG hàm này
+        $reviewModel = $this->model('ReviewModel');
+        $reviews = $reviewModel->getApprovedByProductId($id);
+
         $data = [
             'title' => $product['name'],
             'product' => $product,
-            'variants' => $variants
+            'variants' => $variants,
+            'reviews' => $reviews // Truyền biến reviews sang View
         ];
+        
         $this->view('client/products/detail', $data);
     }
+    //  HÀM XỬ LÝ GỬI ĐÁNH GIÁ TỪ FORM 
+    public function postReview() {
+        // Đảm bảo session đã bật
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
 
-    // --- HÀM ĐÃ SỬA ---
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $productId = $_POST['product_id'];
+            
+            // --- [SỬA ĐOẠN NÀY] ---
+            // Dựa vào ảnh bạn gửi: $_SESSION['user_id']
+            $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : NULL;
+
+            // Nếu code trên vẫn không nhận, thử các trường hợp dự phòng:
+            if (!$userId && isset($_SESSION['user']['id'])) {
+                $userId = $_SESSION['user']['id'];
+            }
+
+            $data = [
+                'product_id' => $productId,
+                'user_id'    => $userId, 
+                'rating'     => $_POST['rating'],
+                'comment'    => htmlspecialchars($_POST['comment']) 
+            ];
+
+            $reviewModel = $this->model('ReviewModel');
+            $reviewModel->create($data);
+
+            header('Location: ' . BASE_URL . 'product/detail/' . $productId);
+            exit;
+        }
+    }
+
+    // 
     public function checkStock() {
         // 1. Chỉ nhận method POST
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {

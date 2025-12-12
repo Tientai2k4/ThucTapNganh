@@ -11,7 +11,10 @@ class ReviewController extends Controller {
     public function index() {
         $model = $this->model('ReviewModel');
         $reviews = $model->getAllReviews();
-        $this->view('admin/reviews/index', ['reviews' => $reviews]);
+        $data = [
+            'reviews' => $reviews // Gói biến vào mảng data
+        ];
+        $this->view('admin/reviews/index', $data);
     }
 
     // Duyệt (Hiện) hoặc Ẩn đánh giá

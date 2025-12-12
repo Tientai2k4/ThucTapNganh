@@ -63,6 +63,110 @@
             </form>
         </div>
     </div>
+
+    <div class="row mt-5">
+        <div class="col-12">
+            <h4 class="text-uppercase border-bottom mb-4 pb-2">
+                <i class="fas fa-comments text-primary"></i> Đánh giá khách hàng
+            </h4>
+        </div>
+
+        <div class="col-md-7">
+            <?php if (!empty($data['reviews'])): ?>
+                <?php foreach ($data['reviews'] as $review): ?>
+                    <div class="card mb-3 border-0 shadow-sm bg-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center me-2" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">
+                                            <?= !empty($review['full_name']) ? htmlspecialchars($review['full_name']) : 'Khách vãng lai' ?>
+                                        </h6>
+                                        <div class="small text-warning">
+                                            <?php for($i=1; $i<=5; $i++): ?>
+                                                <i class="<?= $i <= $review['rating'] ? 'fas' : 'far' ?> fa-star"></i>
+                                            <?php endfor; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="far fa-clock"></i> <?= date('d/m/Y', strtotime($review['created_at'])) ?>
+                                </small>
+                            </div>
+
+                            <p class="card-text mt-2"><?= nl2br(htmlspecialchars($review['comment'])) ?></p>
+
+                            <?php if (!empty($review['reply_content'])): ?>
+                                <div class="alert alert-white border ms-4 mt-2 mb-0" style="border-left: 4px solid #0d6efd !important;">
+                                    <strong class="text-primary"><i class="fas fa-store-alt"></i> Phản hồi từ Shop:</strong>
+                                    <p class="mb-0 mt-1 small text-secondary">
+                                        <?= nl2br(htmlspecialchars($review['reply_content'])) ?>
+                                    </p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle fa-lg mb-2"></i><br>
+                    Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên!
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-pen-nib"></i> Viết đánh giá của bạn</h5>
+                </div>
+                <div class="card-body">
+                    <form action="<?= BASE_URL ?>product/postReview" method="POST">
+                        <input type="hidden" name="product_id" value="<?= $data['product']['id'] ?>">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Bạn cảm thấy thế nào?</label>
+                            <select name="rating" class="form-select text-warning fw-bold" required>
+                                <option value="5" class="text-dark" selected>⭐⭐⭐⭐⭐ - Rất tuyệt vời</option>
+                                <option value="4" class="text-dark">⭐⭐⭐⭐ - Hài lòng</option>
+                                <option value="3" class="text-dark">⭐⭐⭐ - Bình thường</option>
+                                <option value="2" class="text-dark">⭐⭐ - Không thích</option>
+                                <option value="1" class="text-dark">⭐ - Rất tệ</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nội dung đánh giá:</label>
+                            <textarea name="comment" class="form-control" rows="4" 
+                                      placeholder="Hãy chia sẻ cảm nhận..." required></textarea>
+                        </div>
+
+                        <div class="d-grid">
+                            <?php if (isset($_SESSION['user_id'])): ?>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-paper-plane me-2"></i> Gửi đánh giá
+                                </button>
+                            <?php else: ?>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-paper-plane me-2"></i> Gửi đánh giá
+                                </button>
+                                <small class="text-muted text-center mt-2">
+                                    (Bạn đang đánh giá ẩn danh. <a href="<?= BASE_URL ?>auth/login">Đăng nhập</a> để lưu tên)
+                                </small>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="mt-3 text-center text-muted fst-italic small">
+                            * Đánh giá sẽ được kiểm duyệt trước khi hiển thị.
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -121,3 +225,4 @@ function checkStock() {
     });
 }
 </script>
+

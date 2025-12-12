@@ -20,14 +20,24 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <?php 
+                    // Đảm bảo $reviews được lấy ra nếu nó được truyền qua $data
+                        $reviews = $data['reviews'] ?? []; 
+                        ?>
                         <?php if (!empty($reviews)): ?>
                             <?php foreach ($reviews as $review): ?>
                                 <tr>
                                     <td><?= $review['id'] ?></td>
+                                    
                                     <td>
-                                        <strong><?= htmlspecialchars($review['user_name']) ?></strong><br>
-                                        <small>ID: <?= $review['user_id'] ?></small>
+                                        <strong><?= htmlspecialchars($review['user_name'] ?? 'Khách vãng lai') ?></strong><br>
+                                        <?php if (!empty($review['user_id'])): ?>
+                                            <small class="text-primary">Thành viên (ID: <?= $review['user_id'] ?>)</small>
+                                        <?php else: ?>
+                                            <small class="text-muted">Ẩn danh</small>
+                                        <?php endif; ?>
                                     </td>
+
                                     <td>
                                         <?= htmlspecialchars($review['product_name']) ?><br>
                                         <?php if($review['product_image']): ?>
@@ -84,30 +94,7 @@
                                                <i class="fas fa-trash"></i>
                                             </a>
                                         </div>
-
-                                        <div class="modal fade" id="replyModal<?= $review['id'] ?>" tabindex="-1">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <form action="<?= BASE_URL ?>admin/review/reply/<?= $review['id'] ?>" method="POST">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">Trả lời khách: <?= htmlspecialchars($review['user_name']) ?></h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <div class="form-group">
-                                                                <label>Nội dung trả lời:</label>
-                                                                <textarea name="reply_content" class="form-control" rows="3" required><?= $review['reply_content'] ?></textarea>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                                                            <button type="submit" class="btn btn-primary">Gửi trả lời</button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        </td>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -119,3 +106,30 @@
         </div>
     </div>
 </div>
+
+<?php if (!empty($reviews)): ?>
+    <?php foreach ($reviews as $review): ?>
+        <div class="modal fade" id="replyModal<?= $review['id'] ?>" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form action="<?= BASE_URL ?>admin/review/reply/<?= $review['id'] ?>" method="POST">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Trả lời khách: <?= htmlspecialchars($review['user_name'] ?? 'Khách vãng lai') ?></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group mb-3">
+                                <label>Nội dung trả lời:</label>
+                                <textarea name="reply_content" class="form-control" rows="3" required><?= $review['reply_content'] ?></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                            <button type="submit" class="btn btn-primary">Gửi trả lời</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
+<?php endif; ?>
