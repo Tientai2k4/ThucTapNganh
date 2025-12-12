@@ -130,5 +130,30 @@ class ProductModel extends Model {
         // Trả về số lượng (nếu tìm thấy) hoặc 0 (nếu lỗi)
         return $result ? (int)$result['stock_quantity'] : 0;
     }
+
+    // Hàm hỗ trợ Giỏ hàng: Lấy thông tin sản phẩm từ danh sách variant_id
+    public function getVariantsDetail($variantIds) {
+        if (empty($variantIds)) return [];
+        
+        $ids = implode(',', array_map('intval', $variantIds));
+        
+        $sql = "SELECT pv.id as variant_id, pv.size, pv.color, pv.product_id, 
+                       p.name, p.price, p.sale_price, p.image 
+                FROM product_variants pv
+                JOIN products p ON pv.product_id = p.id
+                WHERE pv.id IN ($ids)";
+                
+        $result = $this->conn->query($sql);
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+    // Lấy số lượng tồn kho của một variant cụ thể
+    public function getStockByVariantId($variantId) {
+        $sql = "SELECT quantity FROM product_variants WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $variantId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_assoc();
+    }
 }
 ?>

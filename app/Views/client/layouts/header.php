@@ -30,9 +30,11 @@
                     </ul>
                     
                         <div class="d-flex align-items-center">
-                             <a href="<?= BASE_URL ?>cart" class="btn btn-outline-primary position-relative me-3 border-0">
+                            <a href="<?= BASE_URL ?>cart" class="btn btn-outline-primary position-relative me-3 border-0">
                              <i class="fas fa-shopping-cart fa-lg"></i>
-                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                 <?= getCartQuantity() ?>
+                             </span>
                              </a>
                              <?php if (isset($_SESSION['user_id'])): ?>
                                <div class="dropdown">
