@@ -1,11 +1,12 @@
 <?php
 namespace App\Models;
+
 use App\Core\Model;
 
 class ProductModel extends Model {
     protected $table = 'products';
 
-    // Thêm sản phẩm mới
+    // 1. Thêm sản phẩm mới (Thông tin chung)
     public function add($data) {
         $sql = "INSERT INTO {$this->table} (category_id, brand_id, name, sku_code, price, sale_price, image, description, is_active) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)";
@@ -23,7 +24,32 @@ class ProductModel extends Model {
         return false;
     }
 
-    // --- CÁC HÀM MỚI THÊM VÀO ---
+    // 2. Thêm biến thể (Size/Màu) vào bảng product_variants
+    public function addVariant($productId, $size, $color, $stock) {
+        $sql = "INSERT INTO product_variants (product_id, size, color, stock_quantity) VALUES (?, ?, ?, ?)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("issi", $productId, $size, $color, $stock);
+        return $stmt->execute();
+    }
+
+    // 3. Cập nhật thông tin sản phẩm
+    public function update($id, $data) {
+        $sql = "UPDATE {$this->table} SET 
+                category_id = ?, brand_id = ?, name = ?, sku_code = ?, 
+                price = ?, sale_price = ?, description = ?, image = ? 
+                WHERE id = ?";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("iisssissi", 
+            $data['category_id'], $data['brand_id'], $data['name'], 
+            $data['sku_code'], $data['price'], $data['sale_price'], 
+            $data['description'], $data['image'], $id
+        );
+        
+        return $stmt->execute();
+    }
+
+    // --- CÁC HÀM LẤY DỮ LIỆU (READ) ---
 
     // Lấy sản phẩm theo ID
     public function getById($id) {
@@ -41,26 +67,7 @@ class ProductModel extends Model {
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-    // Cập nhật thông tin sản phẩm
-    public function update($id, $data) {
-        // Logic tương tự add nhưng dùng UPDATE
-        $sql = "UPDATE {$this->table} SET 
-                category_id = ?, brand_id = ?, name = ?, sku_code = ?, 
-                price = ?, sale_price = ?, description = ?, image = ? 
-                WHERE id = ?";
-        
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("iisssissi", 
-            $data['category_id'], $data['brand_id'], $data['name'], 
-            $data['sku_code'], $data['price'], $data['sale_price'], 
-            $data['description'], $data['image'], $id
-        );
-        
-        return $stmt->execute();
-    }
-    // ----------------------------
-
-    // Lấy tất cả sản phẩm (kèm tên danh mục)
+    // Lấy tất cả sản phẩm (kèm tên danh mục) - Dùng cho trang Admin
     public function getAll() {
         $sql = "SELECT p.*, c.name as cat_name 
                 FROM products p 
@@ -70,22 +77,14 @@ class ProductModel extends Model {
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-    // Lấy sản phẩm để hiển thị trang chủ
+    // Lấy sản phẩm để hiển thị trang chủ (Client)
     public function getHomeProducts($limit = 8) {
         $sql = "SELECT * FROM {$this->table} WHERE is_active = 1 ORDER BY created_at DESC LIMIT $limit";
         $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-    // Thêm biến thể vào bảng product_variants
-    public function addVariant($productId, $size, $color, $stock) {
-        $sql = "INSERT INTO product_variants (product_id, size, color, stock_quantity) VALUES (?, ?, ?, ?)";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("issi", $productId, $size, $color, $stock);
-        return $stmt->execute();
-    }
-
-    // Lọc sản phẩm
+    // Lọc sản phẩm (Filter)
     public function filterProducts($filters) {
         $sql = "SELECT * FROM products WHERE is_active = 1";
         $params = [];
@@ -120,18 +119,8 @@ class ProductModel extends Model {
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
-    public function getVariantStock($variantId) {
-        $sql = "SELECT stock_quantity FROM product_variants WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("i", $variantId);
-        $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
-        
-        // Trả về số lượng (nếu tìm thấy) hoặc 0 (nếu lỗi)
-        return $result ? (int)$result['stock_quantity'] : 0;
-    }
 
-    // Hàm hỗ trợ Giỏ hàng: Lấy thông tin sản phẩm từ danh sách variant_id
+    // Hàm hỗ trợ Giỏ hàng: Lấy chi tiết biến thể từ mảng ID
     public function getVariantsDetail($variantIds) {
         if (empty($variantIds)) return [];
         
@@ -146,9 +135,57 @@ class ProductModel extends Model {
         $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
-    // Lấy số lượng tồn kho của một variant cụ thể
+
+    // --- CÁC HÀM XỬ LÝ KHO (STOCK MANAGEMENT) - NGÀY 10 & 12 ---
+
+    // [MỚI] Hàm kiểm tra xem kho có đủ hàng cho số lượng khách muốn mua không
+    public function checkStockAvailability($variantId, $qty) {
+        $sql = "SELECT stock_quantity FROM product_variants WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $variantId);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        // Kiểm tra nếu tồn tại biến thể và số lượng tồn >= số lượng mua
+        if ($result && $result['stock_quantity'] >= $qty) {
+            return true;
+        }
+        return false;
+    }
+
+    // Sử dụng điều kiện stock_quantity >= qty ngay trong câu SQL để tránh Race Condition
+    public function decreaseStock($variantId, $qty) {
+        $sql = "UPDATE product_variants SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("iii", $qty, $variantId, $qty);
+        $stmt->execute();
+        
+        // Trả về true nếu trừ thành công (có dòng bị ảnh hưởng)
+        return $stmt->affected_rows > 0;
+    }
+
+    public function increaseStock($variantId, $qty) {
+        $sql = "UPDATE product_variants SET stock_quantity = stock_quantity + ? WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("ii", $qty, $variantId);
+        return $stmt->execute();
+    }
+
+    // Lấy số lượng tồn kho (Trả về số nguyên)
+    public function getVariantStock($variantId) {
+        $sql = "SELECT stock_quantity FROM product_variants WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $variantId);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        return $result ? (int)$result['stock_quantity'] : 0;
+    }
+
+    // Lấy thông tin tồn kho (Trả về mảng)
+    // Lưu ý: Đã sửa 'quantity' thành 'stock_quantity' để khớp với CSDL chuẩn
     public function getStockByVariantId($variantId) {
-        $sql = "SELECT quantity FROM product_variants WHERE id = ?";
+        $sql = "SELECT stock_quantity FROM product_variants WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("i", $variantId);
         $stmt->execute();
