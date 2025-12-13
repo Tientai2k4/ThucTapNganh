@@ -32,8 +32,21 @@
         <div class="col-md-5">
             <div class="card p-4 bg-light">
                 <h5 class="mb-3">Đơn hàng của bạn</h5>
-                <div class="alert alert-info">
-                    Phương thức thanh toán: <strong>Thanh toán khi nhận hàng (COD)</strong>
+                
+                <div class="mb-3">
+                    <label class="fw-bold mb-2">Phương thức thanh toán:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="payment_method" value="COD" id="cod" checked>
+                        <label class="form-check-label" for="cod">
+                            Thanh toán khi nhận hàng (COD)
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="payment_method" value="ZALOPAY" id="zalopay">
+                        <label class="form-check-label" for="zalopay">
+                            Thanh toán qua ví ZaloPay <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-ZaloPay-Square.png" height="20">
+                        </label>
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-success w-100 btn-lg">XÁC NHẬN ĐẶT HÀNG</button>
             </div>
