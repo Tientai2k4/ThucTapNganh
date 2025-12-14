@@ -40,7 +40,19 @@ class OrderController extends Controller {
             $code = $_POST['order_code'];
 
             $model = $this->model('OrderModel');
-            $model->updateStatus($id, $status);
+
+            // [LOGIC MỚI] Nếu Admin chọn "Hủy đơn", gọi hàm cancelOrderById để Rollback kho
+            if ($status == 'cancelled') {
+                $result = $model->cancelOrderById($id);
+                if ($result !== true) {
+                    // Nếu lỗi, có thể lưu vào session flash message (ở đây echo tạm)
+                    echo "Lỗi hủy đơn: " . $result;
+                    return;
+                }
+            } else {
+                // Các trạng thái khác (Duyệt, Giao hàng) chỉ cần update status
+                $model->updateStatus($id, $status);
+            }
 
             header('Location: ' . BASE_URL . 'admin/order/detail/' . $code);
         }

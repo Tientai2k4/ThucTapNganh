@@ -5,17 +5,14 @@ use App\Core\Model;
 
 class OrderModel extends Model {
 
-    // --- PHẦN 1: QUẢN LÝ ĐƠN HÀNG ADMIN (Ngày 11) ---
+    // --- CÁC HÀM CŨ (GIỮ NGUYÊN) ---
 
-    // Lấy tất cả đơn hàng (Admin)
     public function getAllOrders() {
-        // Sắp xếp đơn mới nhất lên đầu
         $sql = "SELECT * FROM orders ORDER BY created_at DESC";
         $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-    // Lấy thông tin đơn hàng theo Mã Code (Dùng cho cả Admin xem chi tiết và tra cứu)
     public function getOrderByCode($code) {
         $stmt = $this->conn->prepare("SELECT * FROM orders WHERE order_code = ?");
         $stmt->bind_param("s", $code);
@@ -23,7 +20,6 @@ class OrderModel extends Model {
         return $stmt->get_result()->fetch_assoc();
     }
 
-    // Lấy danh sách sản phẩm trong đơn hàng (Chi tiết đơn)
     public function getOrderDetails($orderId) {
         $sql = "SELECT * FROM order_details WHERE order_id = ?";
         $stmt = $this->conn->prepare($sql);
@@ -32,40 +28,29 @@ class OrderModel extends Model {
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-    // Cập nhật trạng thái xử lý đơn hàng (Admin: Duyệt, Giao, Hoàn thành, Hủy)
     public function updateStatus($id, $status) {
-        // Nếu chuyển sang trạng thái 'cancelled', cần gọi hàm cancelOrder để hoàn kho
-        // Tuy nhiên hàm updateStatus này chỉ cập nhật trạng thái đơn thuần
         $stmt = $this->conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
         $stmt->bind_param("si", $status, $id);
         return $stmt->execute();
     }
 
-    // Cập nhật trạng thái thanh toán (Dùng cho VNPAY/ZaloPay IPN)
     public function updatePaymentStatusByCode($code, $status) {
-        // 1: Đã thanh toán, 0: Chưa thanh toán
         $stmt = $this->conn->prepare("UPDATE orders SET payment_status = ? WHERE order_code = ?");
         $stmt->bind_param("is", $status, $code);
         return $stmt->execute();
     }
-
-    //  LOGIC TẠO ĐƠN VÀ XỬ LÝ KHO (Checkout & Transaction)
     
-    // Hàm tạo đơn hàng (Transaction + Inventory Reservation)
-    public function createOrder($userId, $customerData, $cartItems, $finalTotal, $paymentMethod,$discountAmount = 0, $couponCode = null) {
-        // Bắt đầu transaction để đảm bảo toàn vẹn dữ liệu
+    // --- PHẦN 1: TẠO ĐƠN & KHO ---
+    
+    public function createOrder($userId, $customerData, $cartItems, $finalTotal, $paymentMethod, $discountAmount = 0, $couponCode = null) {
         $this->conn->begin_transaction();
         try {
-            // 1. Xác định trạng thái ban đầu
-            // Nếu COD: 'pending' (Chờ xử lý)
-            // Nếu Online (VNPAY/Zalo): 'pending_payment' (Chờ thanh toán)
             $status = ($paymentMethod == 'COD') ? 'pending' : 'pending_payment';
-            $paymentStatus = 0; // Mặc định chưa thanh toán
+            $paymentStatus = 0; 
 
-            // 2. Insert vào bảng orders
-            $orderCode = 'DH' . time() . rand(100, 999); // Mã đơn hàng duy nhất
-           $sqlOrder = "INSERT INTO orders (user_id, order_code, customer_name, customer_phone, customer_email, shipping_address, total_money, discount_amount, coupon_code, payment_method, payment_status, status) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $orderCode = 'DH' . time() . rand(100, 999); 
+            $sqlOrder = "INSERT INTO orders (user_id, order_code, customer_name, customer_phone, customer_email, shipping_address, total_money, discount_amount, coupon_code, payment_method, payment_status, status) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $this->conn->prepare($sqlOrder);
             $stmt->bind_param("isssssddssis", 
@@ -73,55 +58,87 @@ class OrderModel extends Model {
             $customerData['email'], $customerData['address'], 
             $finalTotal, $discountAmount, $couponCode,
             $paymentMethod, $paymentStatus, $status
-);
+            );
             $stmt->execute();
             $orderId = $this->conn->insert_id;
 
-            // 3. Insert chi tiết đơn hàng & TRỪ KHO NGAY LẬP TỨC
             $sqlDetail = "INSERT INTO order_details (order_id, product_variant_id, product_name, size, color, quantity, price, total_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             $stmtDetail = $this->conn->prepare($sqlDetail);
 
-            // Câu lệnh trừ kho an toàn (Tránh Race Condition)
             $sqlUpdateStock = "UPDATE product_variants SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?";
             $stmtStock = $this->conn->prepare($sqlUpdateStock);
 
             foreach ($cartItems as $item) {
-                // Tính thành tiền từng món
                 $itemTotal = $item['price'] * $item['qty'];
-
-                // Lưu vào bảng order_details
                 $stmtDetail->bind_param("iisssidd", $orderId, $item['variant_id'], $item['name'], $item['size'], $item['color'], $item['qty'], $item['price'], $itemTotal);
                 $stmtDetail->execute();
 
-                // Thực hiện trừ kho (Giữ hàng)
                 $stmtStock->bind_param("iii", $item['qty'], $item['variant_id'], $item['qty']);
                 $stmtStock->execute();
 
-                // Kiểm tra nếu không trừ được dòng nào (nghĩa là hết hàng hoặc stock < qty)
                 if ($stmtStock->affected_rows === 0) {
                     throw new \Exception("Sản phẩm {$item['name']} ({$item['size']}/{$item['color']}) không đủ số lượng tồn kho!");
                 }
             }
-
-            // Nếu mọi thứ ok, commit transaction
             $this->conn->commit();
             return $orderCode;
 
         } catch (\Exception $e) {
-            // Nếu có lỗi, rollback toàn bộ (Không tạo đơn, không trừ kho)
             $this->conn->rollback();
             return $e->getMessage();
         }
     }
 
-    //  XỬ LÝ HỦY ĐƠN & HOÀN KHO (Rollback)
+    // --- PHẦN 2: HỦY ĐƠN (QUAN TRỌNG CHO NGÀY 12) ---
 
-    // Hủy đơn hàng và tự động cộng lại kho
+    // [MỚI] Hàm Hủy đơn theo ID (Dùng cho Admin)
+    public function cancelOrderById($orderId) {
+        $this->conn->begin_transaction();
+        try {
+            // 1. Lấy trạng thái hiện tại
+            $stmt = $this->conn->prepare("SELECT status FROM orders WHERE id = ? FOR UPDATE");
+            $stmt->bind_param("i", $orderId);
+            $stmt->execute();
+            $order = $stmt->get_result()->fetch_assoc();
+
+            if (!$order) throw new \Exception("Đơn hàng không tồn tại");
+            if ($order['status'] == 'cancelled') throw new \Exception("Đơn hàng đã hủy trước đó");
+            if ($order['status'] == 'completed') throw new \Exception("Không thể hủy đơn đã hoàn thành");
+
+            // 2. Lấy chi tiết đơn hàng để biết cần cộng lại bao nhiêu hàng
+            $stmtDetail = $this->conn->prepare("SELECT product_variant_id, quantity FROM order_details WHERE order_id = ?");
+            $stmtDetail->bind_param("i", $orderId);
+            $stmtDetail->execute();
+            $details = $stmtDetail->get_result()->fetch_all(MYSQLI_ASSOC);
+
+            // 3. Cộng lại kho (Rollback Inventory)
+            $sqlRestock = "UPDATE product_variants SET stock_quantity = stock_quantity + ? WHERE id = ?";
+            $stmtRestock = $this->conn->prepare($sqlRestock);
+
+            foreach ($details as $item) {
+                $stmtRestock->bind_param("ii", $item['quantity'], $item['product_variant_id']);
+                $stmtRestock->execute();
+            }
+
+            // 4. Cập nhật trạng thái đơn thành 'cancelled'
+            $sqlUpdate = "UPDATE orders SET status = 'cancelled' WHERE id = ?";
+            $stmtUpdate = $this->conn->prepare($sqlUpdate);
+            $stmtUpdate->bind_param("i", $orderId);
+            $stmtUpdate->execute();
+
+            $this->conn->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->conn->rollback();
+            return $e->getMessage(); // Trả về lỗi để controller hiển thị
+        }
+    }
+
+    // Hàm Hủy đơn theo Mã (Dùng cho Khách) - Giữ nguyên logic cũ
     public function cancelOrder($orderCode) {
         $this->conn->begin_transaction();
         try {
-            // 1. Lấy ID đơn hàng
-            $sql = "SELECT id, status FROM orders WHERE order_code = ? FOR UPDATE"; // Khóa dòng dữ liệu để xử lý
+            $sql = "SELECT id, status FROM orders WHERE order_code = ? FOR UPDATE";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("s", $orderCode);
             $stmt->execute();
@@ -132,22 +149,18 @@ class OrderModel extends Model {
 
             $orderId = $order['id'];
 
-            // 2. Lấy danh sách sản phẩm trong đơn để hoàn kho
             $sqlDetails = "SELECT product_variant_id, quantity FROM order_details WHERE order_id = ?";
             $stmtDetails = $this->conn->prepare($sqlDetails);
             $stmtDetails->bind_param("i", $orderId);
             $stmtDetails->execute();
             $details = $stmtDetails->get_result()->fetch_all(MYSQLI_ASSOC);
 
-            // 3. Cộng lại số lượng tồn kho (Rollback Stock)
             $updateStock = $this->conn->prepare("UPDATE product_variants SET stock_quantity = stock_quantity + ? WHERE id = ?");
-            
             foreach ($details as $item) {
                 $updateStock->bind_param("ii", $item['quantity'], $item['product_variant_id']);
                 $updateStock->execute();
             }
 
-            // 4. Cập nhật trạng thái đơn hàng thành 'cancelled'
             $updateOrder = $this->conn->prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?");
             $updateOrder->bind_param("i", $orderId);
             $updateOrder->execute();
@@ -160,10 +173,8 @@ class OrderModel extends Model {
         }
     }
 
-    // Cập nhật thông tin giao dịch thanh toán Online (Khi thanh toán thành công)
+    // Các hàm phụ trợ khác (Giữ nguyên)
     public function updateOnlinePaymentSuccess($orderCode, $transId, $gateway = 'VNPAY') {
-        // Cập nhật payment_status = 1 (Đã thanh toán)
-        // Cập nhật status = 'processing' (Đã thanh toán, chờ giao hàng)
         $sql = "UPDATE orders SET 
                 payment_status = 1, 
                 status = 'processing', 
@@ -174,7 +185,7 @@ class OrderModel extends Model {
         $stmt->bind_param("ss", $transId, $orderCode);
         return $stmt->execute();
     }
-    // hàm lấy đơn hàng theo user id
+    
     public function getOrdersByUserId($userId) {
         $sql = "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC";
         $stmt = $this->conn->prepare($sql);
@@ -182,7 +193,7 @@ class OrderModel extends Model {
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
-    //hàm chuyển trạng thái đơn hàng sang tiếng việt
+    
     public static function getStatusName($status) {
         $statusMap = [
             'pending_payment' => 'Chờ thanh toán',
@@ -192,7 +203,6 @@ class OrderModel extends Model {
             'completed' => 'Đã hoàn thành',
             'cancelled' => 'Đã hủy'
         ];
-        // Trả về tên trạng thái tiếng Việt, nếu không tìm thấy thì trả về trạng thái gốc
         return $statusMap[$status] ?? $status;
     }
 }
