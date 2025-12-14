@@ -49,10 +49,10 @@ class OrderModel extends Model {
         return $stmt->execute();
     }
 
-    // --- PHẦN 2: LOGIC TẠO ĐƠN VÀ XỬ LÝ KHO (Checkout & Transaction) ---
+    //  LOGIC TẠO ĐƠN VÀ XỬ LÝ KHO (Checkout & Transaction)
     
     // Hàm tạo đơn hàng (Transaction + Inventory Reservation)
-    public function createOrder($userId, $customerData, $cartItems, $totalMoney, $paymentMethod) {
+    public function createOrder($userId, $customerData, $cartItems, $finalTotal, $paymentMethod,$discountAmount = 0, $couponCode = null) {
         // Bắt đầu transaction để đảm bảo toàn vẹn dữ liệu
         $this->conn->begin_transaction();
         try {
@@ -64,15 +64,16 @@ class OrderModel extends Model {
 
             // 2. Insert vào bảng orders
             $orderCode = 'DH' . time() . rand(100, 999); // Mã đơn hàng duy nhất
-            $sqlOrder = "INSERT INTO orders (user_id, order_code, customer_name, customer_phone, customer_email, shipping_address, total_money, payment_method, payment_status, status) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+           $sqlOrder = "INSERT INTO orders (user_id, order_code, customer_name, customer_phone, customer_email, shipping_address, total_money, discount_amount, coupon_code, payment_method, payment_status, status) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $this->conn->prepare($sqlOrder);
-            $stmt->bind_param("isssssdsis", 
-                $userId, $orderCode, $customerData['name'], $customerData['phone'], 
-                $customerData['email'], $customerData['address'], $totalMoney, 
-                $paymentMethod, $paymentStatus, $status
-            );
+            $stmt->bind_param("isssssddssis", 
+            $userId, $orderCode, $customerData['name'], $customerData['phone'], 
+            $customerData['email'], $customerData['address'], 
+            $finalTotal, $discountAmount, $couponCode,
+            $paymentMethod, $paymentStatus, $status
+);
             $stmt->execute();
             $orderId = $this->conn->insert_id;
 
@@ -109,11 +110,11 @@ class OrderModel extends Model {
         } catch (\Exception $e) {
             // Nếu có lỗi, rollback toàn bộ (Không tạo đơn, không trừ kho)
             $this->conn->rollback();
-            return false; // Hoặc ném ngoại lệ để Controller xử lý thông báo lỗi
+            return $e->getMessage();
         }
     }
 
-    // --- PHẦN 3: XỬ LÝ HỦY ĐƠN & HOÀN KHO (Rollback) ---
+    //  XỬ LÝ HỦY ĐƠN & HOÀN KHO (Rollback)
 
     // Hủy đơn hàng và tự động cộng lại kho
     public function cancelOrder($orderCode) {
@@ -172,6 +173,27 @@ class OrderModel extends Model {
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("ss", $transId, $orderCode);
         return $stmt->execute();
+    }
+    // hàm lấy đơn hàng theo user id
+    public function getOrdersByUserId($userId) {
+        $sql = "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+    //hàm chuyển trạng thái đơn hàng sang tiếng việt
+    public static function getStatusName($status) {
+        $statusMap = [
+            'pending_payment' => 'Chờ thanh toán',
+            'pending' => 'Chờ xử lý',
+            'processing' => 'Đang xử lý',
+            'shipped' => 'Đang giao hàng',
+            'completed' => 'Đã hoàn thành',
+            'cancelled' => 'Đã hủy'
+        ];
+        // Trả về tên trạng thái tiếng Việt, nếu không tìm thấy thì trả về trạng thái gốc
+        return $statusMap[$status] ?? $status;
     }
 }
 ?>

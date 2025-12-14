@@ -17,19 +17,31 @@ class CheckoutController extends Controller {
             header('Location: ' . BASE_URL . 'cart');
             exit;
         }
-        $this->view('client/checkout/index');
+        // 1. TÍNH TỔNG TIỀN TẠM TÍNH ĐỂ TRUYỀN RA VIEW
+        $prodModel = $this->model('ProductModel');
+        $variantIds = array_keys($_SESSION['cart']);
+        $products = $prodModel->getVariantsDetail($variantIds);
+        
+        $totalMoney = 0;
+        foreach ($products as $p) {
+            $qty = $_SESSION['cart'][$p['variant_id']];
+            $price = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price'];
+            $totalMoney += $price * $qty;
+        }
+
+        $this->view('client/checkout/index', ['totalMoney' => $totalMoney]);
     }
 
     // XỬ LÝ NÚT ĐẶT HÀNG
     public function submit() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            
+                        
             // --- FIX LỖI 1: KIỂM TRA GIỎ HÀNG RỖNG ---
             if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
                 header('Location: ' . BASE_URL . 'cart'); 
                 exit;
             }
-            // ------------------------------------------
+            
 
             // 1. CHUẨN BỊ DỮ LIỆU
             $prodModel = $this->model('ProductModel');
@@ -37,18 +49,25 @@ class CheckoutController extends Controller {
             $products = $prodModel->getVariantsDetail($variantIds);
             
             $cartItems = [];
-            $totalMoney = 0;
+            $tempTotal = 0;
             foreach ($products as $p) {
                 $qty = $_SESSION['cart'][$p['variant_id']];
                 $price = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price'];
                 $subtotal = $price * $qty;
-                $totalMoney += $subtotal;
+                $tempTotal += $subtotal;
                 $cartItems[] = [
                     'variant_id' => $p['variant_id'], 'name' => $p['name'],
                     'size' => $p['size'], 'color' => $p['color'],
                     'qty' => $qty, 'price' => $price, 'subtotal' => $subtotal
                 ];
             }
+            // 2. XỬ LÝ COUPON (Đoạn mã mới thêm vào)
+            $discountAmount = $_POST['discount_amount'] ?? 0;
+            $couponCode = $_POST['coupon_code'] ?? null;
+            
+            // Nên validate lại coupon ở server để bảo mật (tạm thời tin tưởng client)
+            $finalTotal = $tempTotal - $discountAmount;
+            if ($finalTotal < 0) $finalTotal = 0; // Không được âm tiền
 
             $customerData = [
                 'name' => $_POST['full_name'], 'phone' => $_POST['phone'],
@@ -59,19 +78,22 @@ class CheckoutController extends Controller {
 
             // 2. TẠO ĐƠN VÀ TRỪ KHO
             $orderModel = $this->model('OrderModel');
-            $orderCode = $orderModel->createOrder($userId, $customerData, $cartItems, $totalMoney, $paymentMethod);
+            $orderCode = $orderModel->createOrder($userId, $customerData, $cartItems, $finalTotal, $paymentMethod, $discountAmount, $couponCode);
 
-            if ($orderCode) {
+            if (is_string($orderCode) && strpos($orderCode, 'DH') === 0) { 
+                // Thành công
                 unset($_SESSION['cart']); // Xóa giỏ hàng
 
                 // 3. PHÂN NHÁNH THANH TOÁN
                 if ($paymentMethod == 'COD') {
                     header('Location: ' . BASE_URL . 'checkout/success?code=' . $orderCode);
                 } else {
-                    $this->processZaloPay($orderCode, $totalMoney);
+                    $this->processZaloPay($orderCode, $finalTotal);
                 }
             } else {
-                $this->view('client/checkout/index', ['error' => 'Hết hàng hoặc lỗi hệ thống.']);
+                // Nếu không phải mã đơn hàng (Tức là thông báo lỗi)
+                $error_message = is_string($orderCode) ? $orderCode : 'Lỗi hệ thống không xác định.';
+               $this->view('client/checkout/index', ['error' => $error_message, 'totalMoney' => $tempTotal]);
             }
         }
     }

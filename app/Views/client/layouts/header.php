@@ -46,7 +46,7 @@
                                    <li><a class="dropdown-item" href="<?= BASE_URL ?>admin/dashboard"><i class="fas fa-cog me-2"></i>Trang quản trị</a></li>
                                 <?php endif; ?>
                                 <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Hồ sơ cá nhân</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-box me-2"></i>Đơn hàng của tôi</a></li>
+                                <li><a class="dropdown-item" href="<?= BASE_URL ?>user/history"><i class="fas fa-box me-2"></i>Đơn hàng của tôi</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="<?= BASE_URL ?>auth/logout"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
                                 </ul>
