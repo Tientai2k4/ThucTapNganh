@@ -15,14 +15,19 @@
             <div class="alert alert-success"><?= $data['success'] ?></div>
         <?php endif; ?>
 
-        <form action="<?= BASE_URL ?>auth/processLogin" method="POST">
+        <form action="<?= BASE_URL ?>client/auth/processLogin" method="POST">
             <div class="mb-3">
                 <label>Email</label>
                 <input type="email" name="email" class="form-control" required>
             </div>
+            
             <div class="mb-3">
                 <label>Mật khẩu</label>
                 <input type="password" name="password" class="form-control" required>
+            </div>
+            
+            <div class="d-flex justify-content-end mb-3">
+                <a href="<?= BASE_URL ?>client/auth/forgotPassword" class="text-decoration-none small">Quên mật khẩu?</a>
             </div>
             <button class="btn btn-primary w-100 mb-2">Đăng nhập</button>
             <a href="<?= BASE_URL ?>client/auth/register" class="d-block text-center">Chưa có tài khoản? Đăng ký</a>

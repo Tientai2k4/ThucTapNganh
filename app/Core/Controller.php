@@ -1,5 +1,6 @@
 <?php
 // app/Core/Controller.php
+
 namespace App\Core;
 
 class Controller {

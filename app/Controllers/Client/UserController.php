@@ -39,5 +39,28 @@ class UserController extends Controller {
             'details' => $details
         ]);
     }
+
+    // Hủy đơn hàng 
+    public function cancelOrder() {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            if (!isset($_SESSION['user_id'])) return;
+
+            $orderCode = $_POST['order_code'];
+            $model = $this->model('OrderModel');
+            
+            // Kiểm tra đơn hàng có phải của user này không
+            $order = $model->getOrderByCode($orderCode);
+            if ($order && $order['user_id'] == $_SESSION['user_id']) {
+                
+                // Chỉ cho hủy khi đơn mới đặt (Pending)
+                if ($order['status'] == 'pending') {
+                    $model->cancelOrder($order['id'], 'Khách hàng hủy');
+                    header('Location: ' . BASE_URL . 'user/history?msg=cancelled');
+                } else {
+                    echo "Đơn hàng đang giao hoặc đã xử lý, không thể hủy.";
+                }
+            }
+        }
+    }
 }
 ?>

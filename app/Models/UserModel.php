@@ -56,5 +56,19 @@ class UserModel extends Model {
         $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
+    // Hàm tìm người dùng theo Email
+    public function findByEmail($email) {
+        $sql = "SELECT * FROM users WHERE email = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        // Trả về dữ liệu user nếu tìm thấy, ngược lại trả về false
+        if ($result->num_rows > 0) {
+            return $result->fetch_assoc();
+        }
+        return false;
+    }
 }
 ?>

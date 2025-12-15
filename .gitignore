@@ -1,4 +1,5 @@
 # Cấu hình chứa thông tin nhạy cảm
+config/config.php
 config/db.php
 .env
 
