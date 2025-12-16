@@ -36,7 +36,7 @@
                 </form>
                 
                 <div class="text-center mt-3 d-flex justify-content-between">
-                    <a href="<?= BASE_URL ?>client/auth/forgot" class="text-decoration-none small">Quên mật khẩu?</a>
+                    <a href="<?= BASE_URL ?>client/auth/forgotPassword" class="text-decoration-none small">Quên mật khẩu?</a>
                     <a href="<?= BASE_URL ?>client/auth/register" class="text-decoration-none fw-bold small">Đăng ký tài khoản</a>
                 </div>
     </div>

@@ -4,6 +4,9 @@ use App\Core\Controller;
 
 class AuthController extends Controller {
 
+    public function index() {
+    $this->login();
+}
     // === LOGIN ===
     public function login() {
         $this->view('client/auth/login');
