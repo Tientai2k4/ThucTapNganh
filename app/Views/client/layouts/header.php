@@ -33,6 +33,7 @@ $categories = $data['categories'] ?? [
             <div class="container">
                 <a class="navbar-brand fw-bold text-primary fs-3" href="<?= BASE_URL ?>">
                     <i class="fas fa-swimmer"></i> SWIM STORE
+                    
                 </a>
                 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
@@ -93,7 +94,9 @@ $categories = $data['categories'] ?? [
                     <div class="d-flex align-items-center">
                         <a href="<?= BASE_URL ?>cart" class="btn position-relative text-primary me-3 border-0">
                             <i class="fas fa-shopping-bag fa-lg"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                <?= getCartQuantity() ?>
+                            </span>
                         </a>
 
                         <?php if (isset($_SESSION['user_id'])): ?>

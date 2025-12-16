@@ -46,12 +46,16 @@ class CartController extends Controller {
         ]);
     }
 
-    // Thêm vào giỏ [cite: 28, 106-107]
-    public function add() {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $variantId = $_POST['variant_id'];
-            $qty = (int)$_POST['quantity'];
+    // Thêm vào giỏ hàng (Sử dụng AJAX)
+public function add() {
+    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        // Lấy dữ liệu từ POST
+        // Dùng null-coalescing operator (??) và ép kiểu an toàn
+        $variantId = $_POST['variant_id'] ?? null;
+        $qty = (int)($_POST['quantity'] ?? 1);
 
+        if ($variantId && $qty > 0) {
+            // 1. Cập nhật Session giỏ hàng
             if (!isset($_SESSION['cart'])) {
                 $_SESSION['cart'] = [];
             }
@@ -62,11 +66,25 @@ class CartController extends Controller {
                 $_SESSION['cart'][$variantId] = $qty;
             }
 
-            // Chuyển hướng về giỏ hàng
-            header('Location: ' . BASE_URL . 'cart');
+            // 2. Lấy số lượng mới
+            $newCount = \getCartQuantity(); 
+
+            // 3. Trả về phản hồi JSON
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => true, 
+                'message' => 'Đã thêm sản phẩm vào giỏ hàng.', 
+                'cart_count' => $newCount // Trả về số lượng mới để cập nhật trên header
+            ]);
+            exit; // Kết thúc request sau khi trả về JSON
         }
     }
-
+    
+    // Nếu không phải POST hoặc thiếu dữ liệu
+    header('Content-Type: application/json');
+    echo json_encode(['status' => false, 'message' => 'Lỗi dữ liệu đầu vào.']);
+    exit;
+}
     // Cập nhật số lượng
     public function update() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -88,6 +106,16 @@ class CartController extends Controller {
             unset($_SESSION['cart'][$id]);
         }
         header('Location: ' . BASE_URL . 'cart');
+    }
+    // Hàm mới: Trả về số lượng giỏ hàng dưới dạng JSON
+    public function getCartCount() {
+        // Hàm getCartQuantity() đã có trong Helpers.php của bạn
+        $count = getCartQuantity(); 
+        
+        // Trả về JSON
+        header('Content-Type: application/json');
+        echo json_encode(['count' => $count]);
+        exit;
     }
 }
 ?>

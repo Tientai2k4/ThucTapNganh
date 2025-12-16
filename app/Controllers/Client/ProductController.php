@@ -11,17 +11,24 @@ class ProductController extends Controller {
 
         // Nhận tham số từ URL
         $filters = [
-            'category' => $_GET['category'] ?? null,
-            'brand' => $_GET['brand'] ?? null,
-            'price_range' => $_GET['price'] ?? null
-        ];
+            'category_id' => $_GET['cat'] ?? null,       // Danh mục (radio)
+            'brands'      => $_GET['brand'] ?? [],       // Thương hiệu (checkbox array)
+            'sizes'       => $_GET['size'] ?? [],        // Kích thước (checkbox array)
+            'price_min'   => $_GET['min'] ?? 0,
+            'price_max'   => $_GET['max'] ?? 5000000,
+            'keyword'     => $_GET['keyword'] ?? ''
+            
 
+        ];
+        // Đảm bảo brand/size là mảng khi không chọn gì (để tránh lỗi)
+        if (!is_array($filters['brands'])) $filters['brands'] = [];
+        if (!is_array($filters['sizes'])) $filters['sizes'] = [];
         $data = [
             // Lọc sản phẩm theo các tham số
             'products' => $prodModel->filterProducts($filters),
             'categories' => $catModel->getAll(),
             'brands' => $brandModel->getAll(),
-            'current_filters' => $filters // Gửi lại bộ lọc hiện tại cho View
+            'filters' => $filters // Gửi lại bộ lọc hiện tại cho View
         ];
         
         $this->view('client/products/index', $data);

@@ -129,56 +129,66 @@ class ProductModel extends Model {
         
         $params = [];
         $types = "";
+        $values = [];
 
-        // Lọc theo Category
+        // 1. Lọc theo Danh mục (category_id)
         if (!empty($filters['category_id'])) {
             $sql .= " AND p.category_id = ?";
-            $params[] = $filters['category_id'];
             $types .= "i";
+            $values[] = $filters['category_id'];
         }
 
-        // Lọc theo Brand (Mảng)
+        // 2. Lọc theo Thương hiệu (brands - MẢNG)
         if (!empty($filters['brands']) && is_array($filters['brands'])) {
             $placeholders = implode(',', array_fill(0, count($filters['brands']), '?'));
             $sql .= " AND p.brand_id IN ($placeholders)";
             $types .= str_repeat('i', count($filters['brands']));
-            $params = array_merge($params, $filters['brands']);
+            $values = array_merge($values, $filters['brands']);
         }
 
-        // Lọc theo Size (Mảng)
+        // 3. Lọc theo Size (sizes - MẢNG)
         if (!empty($filters['sizes']) && is_array($filters['sizes'])) {
             $placeholders = implode(',', array_fill(0, count($filters['sizes']), '?'));
             $sql .= " AND pv.size IN ($placeholders)";
             $types .= str_repeat('s', count($filters['sizes']));
-            $params = array_merge($params, $filters['sizes']);
+            $values = array_merge($values, $filters['sizes']);
         }
 
-        // Lọc theo Giá (Cải tiến từ price_range sang price_min/max)
+        // 4. Lọc theo Khoảng Giá
         if (!empty($filters['price_min'])) {
-            $sql .= " AND p.price >= ?";
-            $params[] = $filters['price_min'];
-            $types .= "d";
+            $sql .= " AND (p.price >= ? OR p.sale_price >= ?)";
+            $types .= "dd";
+            $values[] = $filters['price_min'];
+            $values[] = $filters['price_min']; // Check cả giá sale
         }
         if (!empty($filters['price_max'])) {
-            $sql .= " AND p.price <= ?";
-            $params[] = $filters['price_max'];
-            $types .= "d";
+            $sql .= " AND (p.price <= ? OR p.sale_price <= ?)";
+            $types .= "dd";
+            $values[] = $filters['price_max'];
+            $values[] = $filters['price_max'];
         }
-        
-        // Tìm kiếm từ khóa
+
+        // 5. Tìm kiếm từ khóa (Keyword)
         if (!empty($filters['keyword'])) {
             $sql .= " AND p.name LIKE ?";
-            $params[] = "%" . $filters['keyword'] . "%";
             $types .= "s";
+            $values[] = "%" . $filters['keyword'] . "%";
         }
 
         $sql .= " ORDER BY p.created_at DESC";
 
+        // Thực thi Dynamic Query
         $stmt = $this->conn->prepare($sql);
-        if (!empty($params)) {
-            // Sử dụng call_user_func_array để bind_param với mảng động
-            $stmt->bind_param($types, ...$params);
+        if (!empty($values)) {
+            // Cần tạo mảng tham chiếu cho call_user_func_array
+            $params_ref = array_merge([$types], $values);
+            $bind_params = [];
+            foreach ($params_ref as $key => $value) {
+                $bind_params[$key] = &$params_ref[$key];
+            }
+            call_user_func_array([$stmt, 'bind_param'], $bind_params);
         }
+        
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
@@ -292,5 +302,6 @@ class ProductModel extends Model {
         $stmt->execute();
         return $action;
     }
+    
 }
 ?>
