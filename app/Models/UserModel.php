@@ -3,72 +3,75 @@ namespace App\Models;
 use App\Core\Model;
 
 class UserModel extends Model {
- 
     protected $table = 'users';
-    // 1. HÀM ĐĂNG NHẬP 
+
+    // 1. Đăng nhập thường
     public function login($email, $password) {
-        // Chuẩn bị câu lệnh SQL
-        $sql = "SELECT * FROM users WHERE email = ?";
-        $stmt = $this->conn->prepare($sql);
-        // Gán giá trị vào dấu ? (s = string)
+        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
-            $user = $result->fetch_assoc();   
-            // Kiểm tra mật khẩu (So sánh mật khẩu nhập vào với mật khẩu mã hóa trong DB)
+            $user = $result->fetch_assoc();
             if (password_verify($password, $user['password'])) {
-                return $user; // Trả về thông tin user nếu đúng
+                return $user;
             }
         }
-        return false; // Sai email hoặc mật khẩu
+        return false;
     }
 
-    // 2. HÀM ĐĂNG KÝ 
+    // 2. Đăng ký thường
     public function register($full_name, $email, $password, $phone) {
-        // Bước 1: Kiểm tra xem email đã tồn tại chưa
-        $checkSql = "SELECT id FROM users WHERE email = ?";
-        $stmtCheck = $this->conn->prepare($checkSql);
-        $stmtCheck->bind_param("s", $email);
-        $stmtCheck->execute();
-        if ($stmtCheck->get_result()->num_rows > 0) {
-            return "Email này đã được sử dụng.";
-        }
-        // Bước 2: Mã hóa mật khẩu
+        $check = $this->findByEmail($email);
+        if ($check) return "Email này đã được sử dụng.";
+
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        
-        // Bước 3: Thêm vào CSDL
-        $sql = "INSERT INTO users (full_name, email, password, phone_number, role, status) VALUES (?, ?, ?, ?, 'member', 1)";
+        $sql = "INSERT INTO {$this->table} (full_name, email, password, phone_number, role, status) VALUES (?, ?, ?, ?, 'member', 1)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("ssss", $full_name, $email, $hashed_password, $phone);
         
-        if ($stmt->execute()) {
-            return true; // Đăng ký thành công
-        } else {
-            return "Lỗi hệ thống: " . $this->conn->error;
-        }
+        return $stmt->execute();
     }
 
-    // 3. HÀM LẤY DANH SÁCH (Dùng cho Admin quản lý sau này)
-    public function getAllUsers() {
-        $sql = "SELECT * FROM {$this->table} ORDER BY id DESC";
-        $result = $this->conn->query($sql);
-        return $result->fetch_all(MYSQLI_ASSOC);
-    }
-    // Hàm tìm người dùng theo Email
+    // 3. Tìm theo Email
     public function findByEmail($email) {
-        $sql = "SELECT * FROM users WHERE email = ?";
-        $stmt = $this->conn->prepare($sql);
+        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
+        return $result->num_rows > 0 ? $result->fetch_assoc() : false;
+    }
 
-        // Trả về dữ liệu user nếu tìm thấy, ngược lại trả về false
-        if ($result->num_rows > 0) {
-            return $result->fetch_assoc();
+    // 4. Tìm theo Google ID
+    public function findByGoogleId($googleId) {
+        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE google_id = ?");
+        $stmt->bind_param("s", $googleId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->num_rows > 0 ? $result->fetch_assoc() : false;
+    }
+
+    // 5. Tạo User từ Google
+    public function createFromGoogle($data) {
+        // Mật khẩu ngẫu nhiên cho user Google
+        $randomPass = password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT);
+        
+        $sql = "INSERT INTO {$this->table} (full_name, email, password, google_id, role, status, avatar) VALUES (?, ?, ?, ?, 'member', 1, ?)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("sssss", $data['name'], $data['email'], $randomPass, $data['id'], $data['picture']);
+        
+        if ($stmt->execute()) {
+            return $this->conn->insert_id;
         }
         return false;
+    }
+
+    // 6. Cập nhật Google ID (nếu email đã tồn tại)
+    public function updateGoogleId($id, $googleId, $avatar) {
+        $stmt = $this->conn->prepare("UPDATE {$this->table} SET google_id = ?, avatar = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $googleId, $avatar, $id);
+        $stmt->execute();
     }
 }
 ?>
