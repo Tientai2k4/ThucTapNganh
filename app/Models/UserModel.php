@@ -117,7 +117,26 @@ class UserModel extends Model {
         $stmt->bind_param("si", $hashed, $id);
         return $stmt->execute();
     }
+// 11. [MỚI] Cập nhật Vai trò và Trạng thái (Dùng cho Admin)
+    public function updateUserStatusAndRole($id, $role, $status) {
+        $sql = "UPDATE {$this->table} SET role = ?, status = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        // role là string, status là int, id là int
+        $stmt->bind_param("sii", $role, $status, $id);
+        return $stmt->execute();
+    }
 
+    // 12. [MỚI] Xóa vĩnh viễn người dùng
+    public function deleteUser($id) {
+        // Lưu ý: Nếu user này có đơn hàng, việc xóa có thể bị chặn bởi khóa ngoại (Foreign Key)
+        // Nên xóa các dữ liệu liên quan trước hoặc dùng Soft Delete (ẩn đi thay vì xóa thật)
+        
+        // Cách 1: Xóa thật (Cần đảm bảo DB có ON DELETE CASCADE hoặc xóa đơn hàng trước)
+        $sql = "DELETE FROM {$this->table} WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $id);
+        return $stmt->execute();
+    }
 }
 
 

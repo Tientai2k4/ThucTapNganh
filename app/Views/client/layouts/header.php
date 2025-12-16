@@ -71,10 +71,7 @@ $categories = $data['categories'] ?? [
                                             <a class="mega-item" href="#">Phoenix</a>
                                         </div>
                                         
-                                        <div class="col-md-3 text-center">
-                                            <img src="https://yeuboiloi.com/wp-content/uploads/2021/06/banner-kinh-boi-can.jpg" class="img-fluid rounded shadow-sm">
-                                            <p class="small mt-2">Sale tới 50%!</p>
-                                        </div>
+                                       
                                     </div>
                                 </div>
                             </div>
