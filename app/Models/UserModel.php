@@ -73,19 +73,5 @@ class UserModel extends Model {
         $stmt->bind_param("ssi", $googleId, $avatar, $id);
         $stmt->execute();
     }
-    public function getAllUsers() {
-        $sql = "SELECT id, full_name, email, phone_number, role, status, created_at, avatar 
-                FROM {$this->table} 
-                ORDER BY created_at DESC";
-        $result = $this->conn->query($sql);
-        
-        $users = [];
-        if ($result && $result->num_rows > 0) {
-            while ($row = $result->fetch_assoc()) {
-                $users[] = $row;
-            }
-        }
-        return $users;
-    }
 }
 ?>

@@ -48,18 +48,33 @@
                     </select>
                 </div>
                 
-                <div class="mb-4">
-                    <p class="mb-1">Tình trạng kho:</p>
-                    <h5 id="stockStatus">
-                        <span class="badge bg-secondary">Vui lòng chọn phân loại</span>
-                    </h5>
-                </div>
-                
-                <div class="d-grid gap-2">
-                    <button type="submit" id="btnBuy" class="btn btn-primary btn-lg py-3" disabled>
-                        <i class="fas fa-shopping-cart me-2"></i> Thêm vào giỏ hàng
+                 <div class="mb-4">
+                   <p class="mb-1">Tình trạng kho:</p>
+                   <h5 id="stockStatus">
+                    <span class="badge bg-secondary">Vui lòng chọn phân loại</span>
+                   </h5>
+                 </div>
+
+                    <div class="d-flex align-items-center mt-4">
+                        <form action="<?= BASE_URL ?>cart/add" method="POST" class="me-3 flex-grow-1">
+                          <input type="hidden" name="product_id" value="<?= $data['product']['id'] ?>">
+                          <button type="submit" id="btnBuy" class="btn btn-primary btn-lg py-3 w-100" disabled>
+                            <i class="fas fa-shopping-cart me-2"></i> Thêm vào giỏ hàng
+                          </button>
+                       </form>
+                    
+                    <button type="button" 
+                            class="btn btn-lg ms-3 <?= $data['is_wished'] ? 'btn-danger' : 'btn-outline-danger' ?>" 
+                            id="wishlistBtn"
+                            data-product-id="<?= $data['product']['id'] ?>"
+                            onclick="toggleWishlist(<?= $data['product']['id'] ?>)">
+                        <?php if ($data['is_wished']): ?>
+                            <i class="fas fa-heart"></i> Đã thích
+                        <?php else: ?>
+                            <i class="far fa-heart"></i> Yêu thích
+                        <?php endif; ?>
                     </button>
-                </div>
+             </div>
             </form>
         </div>
     </div>
@@ -224,5 +239,45 @@ function checkStock() {
         statusLabel.innerHTML = '<span class="text-danger">Lỗi kiểm tra kho!</span>';
     });
 }
-</script>
 
+function toggleWishlist(productId) {
+    if (!<?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>) {
+        alert('Vui lòng đăng nhập để thêm sản phẩm yêu thích.');
+        window.location.href = '<?= BASE_URL ?>client/auth/login';
+        return;
+    }
+
+    const btn = document.getElementById('wishlistBtn');
+    
+    // Gửi yêu cầu AJAX
+    fetch('<?= BASE_URL ?>wishlist/toggle', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ product_id: productId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status) {
+            if (data.action === 'added') {
+                // Thay đổi trái tim từ rỗng sang đầy (Trực quan hóa)
+                btn.innerHTML = '<i class="fas fa-heart text-danger"></i> Đã thích';
+                btn.classList.remove('btn-outline-danger');
+                btn.classList.add('btn-danger');
+                console.log('Sản phẩm đã được thêm vào Wishlist.');
+            } else if (data.action === 'removed') {
+                // Thay đổi trái tim từ đầy sang rỗng
+                btn.innerHTML = '<i class="far fa-heart"></i> Yêu thích';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-outline-danger');
+                console.log('Sản phẩm đã được xóa khỏi Wishlist.');
+            }
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => console.error('Lỗi AJAX:', error));
+}
+</script>

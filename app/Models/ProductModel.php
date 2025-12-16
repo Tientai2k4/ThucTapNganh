@@ -192,5 +192,44 @@ class ProductModel extends Model {
         $result = $stmt->get_result();
         return $result->fetch_assoc();
     }
+    // Hàm 1: Lấy danh sách sản phẩm yêu thích của 1 user (cho trang Wishlist)
+    public function getWishlistByUser($userId) {
+        $sql = "SELECT p.*, w.id as wishlist_id
+                FROM products p 
+                JOIN wishlists w ON p.id = w.product_id 
+                WHERE w.user_id = ?
+                ORDER BY w.created_at DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+
+    // Hàm 2: Kiểm tra sản phẩm đã có trong Wishlist chưa
+    public function isInWishlist($userId, $productId) {
+        $sql = "SELECT id FROM wishlists WHERE user_id = ? AND product_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("ii", $userId, $productId);
+        $stmt->execute();
+        return $stmt->get_result()->num_rows > 0;
+    }
+
+    // Hàm 3: Thêm hoặc Xóa sản phẩm yêu thích (Toggle Logic)
+    public function toggleWishlist($userId, $productId) {
+        if ($this->isInWishlist($userId, $productId)) {
+            // Đã có -> Xóa
+            $sql = "DELETE FROM wishlists WHERE user_id = ? AND product_id = ?";
+            $action = 'removed';
+        } else {
+            // Chưa có -> Thêm
+            $sql = "INSERT INTO wishlists (user_id, product_id) VALUES (?, ?)";
+            $action = 'added';
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("ii", $userId, $productId);
+        $stmt->execute();
+        return $action;
+    }
 }
 ?>

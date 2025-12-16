@@ -33,6 +33,12 @@ class ProductController extends Controller {
         $product = $model->getById($id);
         $variants = $model->getVariants($id);
 
+        $isWished = false;
+    
+        if (isset($_SESSION['user_id'])) {
+            // Kiểm tra xem user này đã thích sản phẩm này chưa
+            $isWished = $model->isInWishlist($_SESSION['user_id'], $id); 
+        }
         // Kiểm tra nếu sản phẩm không tồn tại
         if (!$product) {
             header('Location: ' . BASE_URL); 
@@ -47,7 +53,8 @@ class ProductController extends Controller {
             'title' => $product['name'],
             'product' => $product,
             'variants' => $variants,
-            'reviews' => $reviews // Truyền biến reviews sang View
+            'reviews' => $reviews, // Truyền biến reviews sang View
+            'is_wished' => $isWished
         ];
         
         $this->view('client/products/detail', $data);
