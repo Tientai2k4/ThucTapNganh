@@ -9,29 +9,17 @@ class AuthController extends Controller {
         $this->view('client/auth/login');
     }
 
-    public function processLogin() {
+  public function processLogin() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $email = $_POST['email'];
-            $pass = $_POST['password'];
+            $password = $_POST['password'];
 
             $model = $this->model('UserModel');
-            $user = $model->login($email, $pass);
+            $user = $model->login($email, $password);
 
             if ($user) {
-                // Lưu session
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_name'] = $user['full_name'];
-                $_SESSION['user_role'] = $user['role'];
-
-                // --> THÊM DÒNG NÀY: Tạo thông báo
-                 $_SESSION['flash_message'] = "Đăng nhập thành công! Chào mừng bạn quay lại.";
-
-                // Nếu là admin thì vào trang admin, khách thì vào trang chủ
-                if ($user['role'] == 'admin') {
-                    header('Location: ' . BASE_URL . 'admin/dashboard');
-                } else {
-                    header('Location: ' . BASE_URL);
-                }
+                $this->setUserSession($user);
+                $this->redirectUser($user['role']);
             } else {
                 $this->view('client/auth/login', ['error' => 'Sai email hoặc mật khẩu']);
             }
@@ -67,7 +55,79 @@ class AuthController extends Controller {
         }
     }
 
-    public function logout() {
+
+
+
+public function googleCallback() {
+        if (isset($_GET['code'])) {
+            $code = $_GET['code'];
+            
+            // 1. Lấy Access Token từ Google
+            $tokenUrl = 'https://oauth2.googleapis.com/token';
+            $postData = [
+                'code' => $code,
+                'client_id' => GOOGLE_CLIENT_ID,
+                'client_secret' => GOOGLE_CLIENT_SECRET,
+                'redirect_uri' => GOOGLE_REDIRECT_URL,
+                'grant_type' => 'authorization_code'
+            ];
+            
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $tokenUrl);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            $response = json_decode(curl_exec($ch), true);
+            curl_close($ch);
+            
+            if (isset($response['access_token'])) {
+                // 2. Lấy thông tin User
+                $infoUrl = 'https://www.googleapis.com/oauth2/v2/userinfo?access_token=' . $response['access_token'];
+                $userInfo = json_decode(file_get_contents($infoUrl), true);
+                
+                // 3. Xử lý logic DB
+                $model = $this->model('UserModel');
+                
+                // Check Google ID
+                $user = $model->findByGoogleId($userInfo['id']);
+                
+                if (!$user) {
+                    // Check Email
+                    $userByEmail = $model->findByEmail($userInfo['email']);
+                    if ($userByEmail) {
+                        // Email đã có -> Link Google ID
+                        $model->updateGoogleId($userByEmail['id'], $userInfo['id'], $userInfo['picture']);
+                        $user = $userByEmail;
+                        $user['avatar'] = $userInfo['picture']; // Update session avatar immediately
+                    } else {
+                        // Tạo mới
+                        $newId = $model->createFromGoogle($userInfo);
+                        $user = $model->findByGoogleId($userInfo['id']);
+                    }
+                }
+                
+                $this->setUserSession($user);
+                $this->redirectUser($user['role']);
+
+            } else {
+                echo "Lỗi xác thực Google: " . ($response['error_description'] ?? 'Unknown error');
+            }
+        }
+    }
+    private function setUserSession($user) {
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_name'] = $user['full_name'];
+        $_SESSION['user_role'] = $user['role'];
+        $_SESSION['user_avatar'] = $user['avatar'];
+    }
+private function redirectUser($role) {
+        if ($role == 'admin') {
+            header('Location: ' . BASE_URL . 'admin/dashboard');
+        } else {
+            header('Location: ' . BASE_URL);
+        }
+    }
+public function logout() {
         session_destroy();
         header('Location: ' . BASE_URL);
     }

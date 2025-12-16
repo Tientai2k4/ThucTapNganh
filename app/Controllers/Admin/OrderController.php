@@ -5,7 +5,8 @@ use App\Core\AuthMiddleware;
 
 class OrderController extends Controller {
     public function __construct() {
-        AuthMiddleware::isAdmin();
+        // [SỬA LỖI] Sử dụng hàm hasRole() để bảo vệ. Mặc định cho phép admin và staff.
+        AuthMiddleware::hasRole(); 
     }
 
     // Danh sách đơn hàng
@@ -34,6 +35,9 @@ class OrderController extends Controller {
 
     // Cập nhật trạng thái (Duyệt/Giao hàng/Hủy)
     public function updateStatus() {
+        // [Bảo vệ] Nếu chỉ Admin được phép hủy đơn hàng, bạn có thể thêm kiểm tra riêng tại đây:
+        // if ($_POST['status'] == 'cancelled') { AuthMiddleware::onlyAdmin(); } 
+
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $id = $_POST['order_id'];
             $status = $_POST['status'];
@@ -58,4 +62,3 @@ class OrderController extends Controller {
         }
     }
 }
-?>
