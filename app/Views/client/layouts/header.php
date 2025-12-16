@@ -1,3 +1,12 @@
+<?php
+// Giả định: Danh sách danh mục chính (Category) đã được truyền từ Controller
+// Ví dụ: $data['categories'] = [['name' => 'Kính Bơi', 'id' => 1], ['name' => 'Mũ Bơi', 'id' => 2], ...]
+$categories = $data['categories'] ?? [
+    ['name' => 'Kính Bơi', 'id' => 1, 'sub' => [['name'=>'Kính Cận'], ['name'=>'Kính Thi Đấu']]],
+    ['name' => 'Mũ Bơi', 'id' => 2, 'sub' => [['name'=>'Mũ Silicone'], ['name'=>'Mũ Vải']]],
+    ['name' => 'Quần Áo Bơi', 'id' => 3, 'sub' => [['name'=>'Đồ Nam'], ['name'=>'Đồ Nữ']]]
+];
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -25,6 +34,7 @@
                 <a class="navbar-brand fw-bold text-primary fs-3" href="<?= BASE_URL ?>">
                     <i class="fas fa-swimmer"></i> SWIM STORE
                 </a>
+                
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -32,40 +42,56 @@
                 <div class="collapse navbar-collapse" id="mainNav">
                     <ul class="navbar-nav mx-auto">
                         <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>">Trang chủ</a></li>
-                        
+                        <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>product">Sản phẩm</a></li>
+
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Kính bơi</a>
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Danh mục</a>
                             <div class="dropdown-menu mega-menu">
                                 <div class="container">
                                     <div class="row">
+                                        
                                         <div class="col-md-3">
-                                            <span class="mega-title">CÔNG DỤNG</span>
-                                            <a class="mega-item" href="#">Kính bơi cận</a>
-                                            <a class="mega-item" href="#">Kính thi đấu</a>
-                                            <a class="mega-item" href="#">Kính trẻ em</a>
+                                            <span class="mega-title">TẤT CẢ DANH MỤC</span>
+                                            <?php foreach ($categories as $cat): ?>
+                                                <a class="mega-item" href="<?= BASE_URL ?>product/category/<?= $cat['id'] ?>"><?= htmlspecialchars($cat['name']) ?></a>
+                                            <?php endforeach; ?>
                                         </div>
+                                        
                                         <div class="col-md-3">
-                                            <span class="mega-title">THƯƠNG HIỆU</span>
+                                            <span class="mega-title">PHÂN LOẠI NỔI BẬT</span>
+                                            <a class="mega-item" href="#">Đồ bơi Nam</a>
+                                            <a class="mega-item" href="#">Đồ bơi Nữ</a>
+                                            <a class="mega-item" href="#">Dụng cụ lặn</a>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <span class="mega-title">THƯƠNG HIỆU HÀNG ĐẦU</span>
                                             <a class="mega-item" href="#">Speedo</a>
                                             <a class="mega-item" href="#">Arena</a>
                                             <a class="mega-item" href="#">Phoenix</a>
                                         </div>
-                                        <div class="col-md-3">
-                                            <span class="mega-title">PHỤ KIỆN</span>
-                                            <a class="mega-item" href="#">Dây đeo kính</a>
-                                            <a class="mega-item" href="#">Hộp đựng kính</a>
-                                        </div>
-                                        <div class="col-md-3">
+                                        
+                                        <div class="col-md-3 text-center">
                                             <img src="https://yeuboiloi.com/wp-content/uploads/2021/06/banner-kinh-boi-can.jpg" class="img-fluid rounded shadow-sm">
+                                            <p class="small mt-2">Sale tới 50%!</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </li>
-
-                        <li class="nav-item"><a class="nav-link" href="#">Mũ bơi</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#">Quần áo bơi</a></li>
+                        
+                        <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>blog">Blog</a></li>
+                        <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>contact">Liên hệ</a></li>
                     </ul>
+
+                    <form action="<?= BASE_URL ?>search" method="GET" class="d-flex me-3">
+                        <div class="header-search-form">
+                            <input type="search" name="keyword" placeholder="Tìm sản phẩm..." required>
+                            <button type="submit" class="btn-search-icon">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
 
                     <div class="d-flex align-items-center">
                         <a href="<?= BASE_URL ?>cart" class="btn position-relative text-primary me-3 border-0">
