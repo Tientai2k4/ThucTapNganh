@@ -5,34 +5,43 @@ use App\Core\AuthMiddleware;
 
 class ReviewController extends Controller {
     public function __construct() {
-        AuthMiddleware::isAdmin(); // Chỉ Admin mới được vào
+        // [Kiểm tra chung] Cho phép Admin và Staff quản lý đánh giá
+        AuthMiddleware::hasRole(); 
     }
 
     public function index() {
         $model = $this->model('ReviewModel');
         $reviews = $model->getAllReviews();
         $data = [
-            'reviews' => $reviews // Gói biến vào mảng data
+            'reviews' => $reviews 
         ];
         $this->view('admin/reviews/index', $data);
     }
 
     // Duyệt (Hiện) hoặc Ẩn đánh giá
     public function toggleStatus($id, $status) {
+        // Chức năng này thường dành cho Admin/Staff
+        AuthMiddleware::hasRole(); 
+
         $model = $this->model('ReviewModel');
-        $model->updateStatus($id, $status);
+        $model->updateStatus($id, (int)$status);
         header('Location: ' . BASE_URL . 'admin/review');
         exit;
     }
 
     // Xử lý form trả lời đánh giá
     public function reply($id) {
+        // Chức năng này thường dành cho Admin/Staff
+        AuthMiddleware::hasRole(); 
+        
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $replyContent = $_POST['reply_content'] ?? '';
+            $replyContent = trim($_POST['reply_content'] ?? '');
+            
             if (!empty($replyContent)) {
                 $model = $this->model('ReviewModel');
                 $model->replyReview($id, $replyContent);
             }
+            // [Tùy chọn] Nên dùng flash message để báo thành công
             header('Location: ' . BASE_URL . 'admin/review');
             exit;
         }
@@ -40,10 +49,13 @@ class ReviewController extends Controller {
     
     // Xóa đánh giá
     public function delete($id) {
+        // [BẢO VỆ CẤP CAO] Chức năng xóa thường chỉ dành cho Admin cấp cao
+        AuthMiddleware::onlyAdmin(); 
+        
         $model = $this->model('ReviewModel');
         $model->delete($id);
+        
         header('Location: ' . BASE_URL . 'admin/review');
         exit;
     }
 }
-?>

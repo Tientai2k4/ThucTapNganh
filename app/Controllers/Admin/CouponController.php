@@ -5,7 +5,8 @@ use App\Core\AuthMiddleware;
 
 class CouponController extends Controller {
     public function __construct() {
-        AuthMiddleware::isAdmin();
+        // [Kiểm tra chung] Cho phép Admin và Staff quản lý Coupon
+        AuthMiddleware::hasRole(); 
     }
 
     // Danh sách
@@ -17,24 +18,33 @@ class CouponController extends Controller {
 
     // Form thêm mới
     public function create() {
+        // [BẢO VỆ CẤP CAO] Chỉ Admin cấp cao được thêm mã
+        AuthMiddleware::onlyAdmin();
         $this->view('admin/coupons/create');
     }
 
     // Xử lý lưu (Store)
     public function store() {
+        // [BẢO VỆ CẤP CAO] Chỉ Admin cấp cao được lưu mã
+        AuthMiddleware::onlyAdmin();
+
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            // Kiểm tra tính hợp lệ cơ bản của dữ liệu
+            if (empty($_POST['code']) || empty($_POST['discount_value'])) {
+                die("Lỗi: Mã code và giá trị giảm giá không được để trống.");
+            }
+
             $data = [
-                'code' => strtoupper($_POST['code']),
+                'code' => strtoupper(trim($_POST['code'])),
                 'discount_type' => $_POST['discount_type'],
-                'discount_value' => (int)$_POST['discount_value'],
-                'min_order_value' => (int)($_POST['min_order_value'] ?? 0),
-                'quantity' => (int)$_POST['quantity'],
+                'discount_value' => (float)$_POST['discount_value'], // Dùng float cho giá trị chiết khấu
+                'min_order_value' => (float)($_POST['min_order_value'] ?? 0),
+                'quantity' => (int)($_POST['quantity'] ?? 0),
                 'start_date' => $_POST['start_date'],
                 'end_date' => $_POST['end_date']
             ];
 
             $model = $this->model('CouponModel');
-            // Dùng hàm add() trong Model
             if ($model->add($data)) { 
                 header('Location: ' . BASE_URL . 'admin/coupon');
                 exit;
@@ -46,6 +56,9 @@ class CouponController extends Controller {
 
     // Form sửa
     public function edit($id) {
+        // [BẢO VỆ CẤP CAO] Chỉ Admin cấp cao được xem form sửa
+        AuthMiddleware::onlyAdmin();
+
         $model = $this->model('CouponModel');
         $coupon = $model->getById($id);
 
@@ -56,16 +69,19 @@ class CouponController extends Controller {
 
     // Xử lý cập nhật (Update)
     public function update($id) {
+        // [BẢO VỆ CẤP CAO] Chỉ Admin cấp cao được cập nhật mã
+        AuthMiddleware::onlyAdmin();
+
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $data = [
-                'code' => strtoupper($_POST['code']),
+                'code' => strtoupper(trim($_POST['code'])),
                 'discount_type' => $_POST['discount_type'],
-                'discount_value' => (int)$_POST['discount_value'],
-                'min_order_value' => (int)($_POST['min_order_value'] ?? 0),
-                'quantity' => (int)$_POST['quantity'],
+                'discount_value' => (float)$_POST['discount_value'],
+                'min_order_value' => (float)($_POST['min_order_value'] ?? 0),
+                'quantity' => (int)($_POST['quantity'] ?? 0),
                 'start_date' => $_POST['start_date'],
                 'end_date' => $_POST['end_date'],
-                'status' => isset($_POST['status']) ? 1 : 0 // Trạng thái cho phép bật/tắt
+                'status' => isset($_POST['status']) ? 1 : 0
             ];
 
             $model = $this->model('CouponModel');
@@ -80,10 +96,13 @@ class CouponController extends Controller {
 
     // Xóa
     public function delete($id) {
+        // [BẢO VỆ CẤP CAO] Chức năng xóa chỉ dành cho Admin cấp cao
+        AuthMiddleware::onlyAdmin();
+        
         $model = $this->model('CouponModel');
         $model->delete($id);
+        
         header('Location: ' . BASE_URL . 'admin/coupon');
         exit;
     }
 }
-?>

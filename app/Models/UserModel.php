@@ -73,6 +73,7 @@ class UserModel extends Model {
         $stmt->execute();
     }
 
+
     // 7. Tìm User theo ID
     public function findById($id) {
         $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE id = ?");
@@ -82,7 +83,25 @@ class UserModel extends Model {
         return $result->num_rows > 0 ? $result->fetch_assoc() : false;
     }
 
-    // 8. [MỚI] Cập nhật thông tin cá nhân (Tên, SĐT)
+    // 8. Lấy tất cả người dùng (Đã bổ sung để sửa lỗi Fatal Error)
+    /**
+     * Lấy tất cả người dùng từ database
+     */
+    public function getAllUsers() {
+        $sql = "SELECT id, full_name, email, phone_number, role, status, created_at, avatar 
+                FROM {$this->table} 
+                ORDER BY created_at DESC";
+        $result = $this->conn->query($sql);
+        
+        $users = [];
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $users[] = $row;
+            }
+        }
+        return $users;
+    }
+// 9. [MỚI] Cập nhật thông tin cá nhân (Tên, SĐT)
     public function updateProfile($id, $fullName, $phone) {
         $sql = "UPDATE {$this->table} SET full_name = ?, phone_number = ? WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
@@ -90,7 +109,7 @@ class UserModel extends Model {
         return $stmt->execute();
     }
 
-    // 9. [MỚI] Đổi mật khẩu (Dành cho người đã đăng nhập)
+    // 10. [MỚI] Đổi mật khẩu (Dành cho người đã đăng nhập)
     public function changePassword($id, $newPassword) {
         $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
         $sql = "UPDATE {$this->table} SET password = ? WHERE id = ?";
@@ -98,5 +117,13 @@ class UserModel extends Model {
         $stmt->bind_param("si", $hashed, $id);
         return $stmt->execute();
     }
+
 }
+
+
+
+
 ?>
+
+    
+    
