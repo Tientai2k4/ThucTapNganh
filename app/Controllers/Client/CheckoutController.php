@@ -1,6 +1,8 @@
 <?php
 namespace App\Controllers\Client;
 use App\Core\Controller;
+use App\Models\UserModel;
+use App\Models\AddressModel;
 
 class CheckoutController extends Controller {
 
@@ -17,6 +19,7 @@ class CheckoutController extends Controller {
             header('Location: ' . BASE_URL . 'cart');
             exit;
         }
+        
         // 1. TÍNH TỔNG TIỀN TẠM TÍNH ĐỂ TRUYỀN RA VIEW
         $prodModel = $this->model('ProductModel');
         $variantIds = array_keys($_SESSION['cart']);
@@ -29,7 +32,45 @@ class CheckoutController extends Controller {
             $totalMoney += $price * $qty;
         }
 
-        $this->view('client/checkout/index', ['totalMoney' => $totalMoney]);
+        $data = [
+            'totalMoney' => $totalMoney,
+        ];
+        
+        // ====================================================================
+        // PHẦN MỚI: TẢI SỔ ĐỊA CHỈ VÀ THÔNG TIN NGƯỜI DÙNG
+        // ====================================================================
+        if (isset($_SESSION['user_id'])) {
+            $userId = $_SESSION['user_id'];
+            
+            // Lấy thông tin User để điền Email mặc định và Tên mặc định
+            $userModel = $this->model('UserModel');
+            $user = $userModel->findById($userId);
+            
+            // Truyền thông tin User cơ bản
+            $data['user_email'] = $user['email'] ?? '';
+            // Dùng tên từ DB nếu có, không thì dùng tên từ Session (đã có ở view)
+            $data['user_name_from_db'] = $user['name'] ?? ($_SESSION['user_name'] ?? ''); 
+
+            // Lấy danh sách địa chỉ đã lưu
+            $addrModel = $this->model('AddressModel'); 
+            $addresses = $addrModel->getByUserId($userId); 
+            
+            // Truyền danh sách địa chỉ sang view
+            $data['addresses'] = $addresses;
+
+            // Tìm địa chỉ mặc định để tự động điền ban đầu
+            $defaultAddress = null;
+            foreach ($addresses as $addr) {
+                if ($addr['is_default'] == 1) {
+                    $defaultAddress = $addr;
+                    break;
+                }
+            }
+            $data['defaultAddress'] = $defaultAddress; // Truyền địa chỉ mặc định (nếu có)
+        }
+        // ====================================================================
+
+        $this->view('client/checkout/index', $data);
     }
 
     // XỬ LÝ NÚT ĐẶT HÀNG

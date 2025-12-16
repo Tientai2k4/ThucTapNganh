@@ -7,28 +7,78 @@
     <div class="row">
         
         <div class="col-md-7">
-            <div class="card p-4">
-                <h5 class="mb-3">Thông tin giao hàng</h5>
-                <div class="mb-3">
-                    <label>Họ và tên *</label>
-                    <input type="text" name="full_name" class="form-control" value="<?= $_SESSION['user_name'] ?? '' ?>" required>
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label>Số điện thoại *</label>
-                        <input type="text" name="phone" class="form-control" required>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label>Email</label>
-                        <input type="email" name="email" class="form-control">
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label>Địa chỉ nhận hàng *</label>
-                    <textarea name="address" class="form-control" rows="3" required></textarea>
-                </div>
+    <div class="card p-4">
+        <h5 class="mb-3">Thông tin giao hàng</h5>
+        
+        <?php 
+        // Lấy dữ liệu đã truyền từ Controller
+        $addresses = $data['addresses'] ?? [];
+        $defaultAddress = $data['defaultAddress'] ?? null;
+        $userName = $data['user_name_from_db'] ?? ($_SESSION['user_name'] ?? '');
+        $userEmail = $data['user_email'] ?? '';
+        
+        // Kiểm tra xem có địa chỉ nào đã lưu không
+        if (!empty($addresses)): 
+        ?>
+            <h6 class="mt-3">Chọn địa chỉ đã lưu:</h6>
+            <div class="list-group mb-3 address-select-list" id="savedAddresses">
+                <?php 
+                foreach ($addresses as $addr) {
+                    // Dùng key 'recipient_name' (giống trong user/profile)
+                    $addrJson = htmlspecialchars(json_encode($addr), ENT_QUOTES, 'UTF-8');
+                    $checked = ($addr['is_default'] == 1) ? 'checked' : '';
+                    ?>
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1 select-address-radio" type="radio" 
+                               name="address_choice" value="<?= $addr['id'] ?>" 
+                               data-address='<?= $addrJson ?>' <?= $checked ?>>
+                        <div class="address-details d-inline-block ms-2">
+                            
+                            <strong><?= htmlspecialchars($addr['recipient_name']) ?></strong> | 
+                            
+                            <?= htmlspecialchars($addr['phone']) ?> | 
+                            <?= htmlspecialchars($addr['address']) ?>
+                            <?php if ($addr['is_default'] == 1): ?>
+                                <span class="badge bg-primary ms-2">Mặc định</span>
+                            <?php endif; ?>
+                        </div>
+                    </label>
+                <?php } ?>
+                
+                <label class="list-group-item">
+                    <input class="form-check-input me-1 select-address-radio" type="radio" 
+                           name="address_choice" value="new" <?= ($defaultAddress == null) ? 'checked' : '' ?>>
+                    <div class="address-details d-inline-block ms-2">Nhập địa chỉ mới</div>
+                </label>
+            </div>
+            <hr>
+        <?php endif; ?>
+        
+        <h6 class="mb-3">Điền thông tin chi tiết:</h6>
+        
+        <div class="mb-3">
+            <label>Họ và tên *</label>
+            <input type="text" name="full_name" class="form-control" id="inputFullName" 
+                   value="<?= $defaultAddress['name'] ?? $userName ?>" required>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label>Số điện thoại *</label>
+                <input type="text" name="phone" class="form-control" id="inputPhone" 
+                       value="<?= $defaultAddress['phone'] ?? '' ?>" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Email</label>
+                <input type="email" name="email" class="form-control" id="inputEmail" 
+                       value="<?= $userEmail ?>" >
             </div>
         </div>
+        <div class="mb-3">
+            <label>Địa chỉ nhận hàng *</label>
+            <textarea name="address" class="form-control" rows="3" id="inputAddress" required><?= $defaultAddress['address'] ?? '' ?></textarea>
+        </div>
+    </div>
+</div>
 
         <div class="col-md-5">
             <div class="card p-4 bg-light">
@@ -116,4 +166,53 @@ function applyCoupon() {
         }
     });
 }
+</script>
+<script>
+// Hàm xử lý việc tự động điền địa chỉ
+function fillDeliveryInfo(addressData = null) {
+    const nameInput = document.getElementById('inputFullName');
+    const phoneInput = document.getElementById('inputPhone');
+    const addressTextarea = document.getElementById('inputAddress');
+    
+    // Lưu tên người dùng từ DB/Session để reset về nếu cần
+    const originalName = "<?= $userName ?>"; 
+
+    if (addressData) {
+        // ĐÃ SỬA: Dùng addressData.recipient_name
+        nameInput.value = addressData.recipient_name || '';
+        phoneInput.value = addressData.phone || '';
+        addressTextarea.value = addressData.address || '';
+    } else {
+        // Xóa/Reset form nếu chọn 'Nhập địa chỉ mới'
+        nameInput.value = originalName; 
+        phoneInput.value = '';
+        addressTextarea.value = '';
+    }
+}
+
+// Lắng nghe sự kiện change trên các radio button địa chỉ
+document.addEventListener('DOMContentLoaded', function() {
+    const addressRadios = document.querySelectorAll('.select-address-radio');
+    
+    addressRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                if (this.value === 'new') {
+                    // Nếu chọn nhập mới
+                    fillDeliveryInfo(null);
+                } else {
+                    // Nếu chọn địa chỉ đã lưu
+                    try {
+                        const addressJson = this.getAttribute('data-address');
+                        const addressData = JSON.parse(addressJson);
+                        fillDeliveryInfo(addressData);
+                    } catch (e) {
+                        console.error("Lỗi khi parse dữ liệu địa chỉ:", e);
+                        fillDeliveryInfo(null);
+                    }
+                }
+            }
+        });
+    });
+});
 </script>

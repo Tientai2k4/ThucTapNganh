@@ -54,7 +54,6 @@ class UserModel extends Model {
 
     // 5. Tạo User từ Google
     public function createFromGoogle($data) {
-        // Mật khẩu ngẫu nhiên cho user Google
         $randomPass = password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT);
         
         $sql = "INSERT INTO {$this->table} (full_name, email, password, google_id, role, status, avatar) VALUES (?, ?, ?, ?, 'member', 1, ?)";
@@ -67,11 +66,37 @@ class UserModel extends Model {
         return false;
     }
 
-    // 6. Cập nhật Google ID (nếu email đã tồn tại)
+    // 6. Cập nhật Google ID
     public function updateGoogleId($id, $googleId, $avatar) {
         $stmt = $this->conn->prepare("UPDATE {$this->table} SET google_id = ?, avatar = ? WHERE id = ?");
         $stmt->bind_param("ssi", $googleId, $avatar, $id);
         $stmt->execute();
+    }
+
+    // 7. Tìm User theo ID
+    public function findById($id) {
+        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->num_rows > 0 ? $result->fetch_assoc() : false;
+    }
+
+    // 8. [MỚI] Cập nhật thông tin cá nhân (Tên, SĐT)
+    public function updateProfile($id, $fullName, $phone) {
+        $sql = "UPDATE {$this->table} SET full_name = ?, phone_number = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("ssi", $fullName, $phone, $id);
+        return $stmt->execute();
+    }
+
+    // 9. [MỚI] Đổi mật khẩu (Dành cho người đã đăng nhập)
+    public function changePassword($id, $newPassword) {
+        $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
+        $sql = "UPDATE {$this->table} SET password = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("si", $hashed, $id);
+        return $stmt->execute();
     }
 }
 ?>
