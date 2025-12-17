@@ -123,13 +123,18 @@ public function googleCallback() {
         $_SESSION['user_role'] = $user['role'];
         $_SESSION['user_avatar'] = $user['avatar'];
     }
+// Tìm và sửa lại hàm redirectUser trong AuthController.php của bạn
 private function redirectUser($role) {
-        if ($role == 'admin') {
-            header('Location: ' . BASE_URL . 'admin/dashboard');
-        } else {
-            header('Location: ' . BASE_URL);
-        }
+    if ($role == 'admin') {
+        header('Location: ' . BASE_URL . 'admin/dashboard');
+    } elseif ($role == 'staff') {
+        // Chuyển hướng nhân viên vào khu vực riêng
+        header('Location: ' . BASE_URL . 'staff/dashboard');
+    } else {
+        header('Location: ' . BASE_URL);
     }
+    exit;
+}
 public function logout() {
         session_destroy();
         header('Location: ' . BASE_URL);

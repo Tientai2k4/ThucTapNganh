@@ -8,21 +8,29 @@ class App {
 
     public function __construct() {
         $url = $this->getUrl();
-        $folder = 'Client'; // Mặc định là Client
+        $folder = 'Client'; // Mặc định thư mục là Client
 
-        // 1. Kiểm tra Admin
-        if (isset($url[0]) && strtolower($url[0]) == 'admin') {
-            $folder = 'Admin';
-            array_shift($url);
-            $this->controller = 'DashboardController';
-        } 
-        // 2. Kiểm tra Client (để URL đẹp hơn, ta cho phép bỏ chữ client)
-        elseif (isset($url[0]) && strtolower($url[0]) == 'client') {
-            $folder = 'Client';
-            array_shift($url);
+        // 1. Phân luồng thư mục Controller (Admin / Staff / Client)
+        if (isset($url[0])) {
+            $firstParam = strtolower($url[0]);
+            
+            if ($firstParam == 'admin') {
+                $folder = 'Admin';
+                $this->controller = 'DashboardController'; // Controller mặc định của Admin
+                array_shift($url);
+            } 
+            elseif ($firstParam == 'staff') {
+                $folder = 'Staff';
+                $this->controller = 'DashboardController'; // Controller mặc định của Staff
+                array_shift($url);
+            } 
+            elseif ($firstParam == 'client') {
+                // Nếu URL có chữ /client/ thì bỏ đi để folder vẫn là Client
+                array_shift($url);
+            }
         }
 
-        // 3. Xác định Controller
+        // 2. Xác định tên Controller cụ thể từ URL
         if (isset($url[0])) {
             $controllerName = ucfirst($url[0]) . 'Controller';
             if (file_exists(ROOT_PATH . "/app/Controllers/$folder/" . $controllerName . ".php")) {
@@ -31,12 +39,12 @@ class App {
             }
         }
 
-        // 4. Require Controller
+        // 3. Nạp file Controller và Khởi tạo class
         require_once ROOT_PATH . "/app/Controllers/$folder/" . $this->controller . ".php";
         $controllerClass = "App\\Controllers\\$folder\\" . $this->controller;
         $this->controller = new $controllerClass;
 
-        // 5. Xác định Method
+        // 4. Xác định Action (Hàm) trong Controller
         if (isset($url[0])) {
             if (method_exists($this->controller, $url[0])) {
                 $this->action = $url[0];
@@ -44,7 +52,7 @@ class App {
             }
         }
 
-        // 6. Chạy
+        // 5. Khởi chạy ứng dụng với tham số còn lại
         $this->params = $url ? array_values($url) : [];
         call_user_func_array([$this->controller, $this->action], $this->params);
     }
@@ -56,4 +64,3 @@ class App {
         return [];
     }
 }
-?>

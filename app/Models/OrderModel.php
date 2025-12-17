@@ -4,6 +4,7 @@ namespace App\Models;
 use App\Core\Model;
 
 class OrderModel extends Model {
+    protected $table = 'orders';
 
     // --- CÁC HÀM CŨ (GIỮ NGUYÊN) ---
 
@@ -204,6 +205,22 @@ class OrderModel extends Model {
             'cancelled' => 'Đã hủy'
         ];
         return $statusMap[$status] ?? $status;
+    }
+    // Thêm hàm này để sửa lỗi Fatal Error
+   public function getOrdersByStatus($status) {
+        // Bây giờ $this->table sẽ có giá trị là 'orders'
+        $sql = "SELECT * FROM {$this->table} WHERE status = ?";
+        $stmt = $this->conn->prepare($sql);
+        
+        if (!$stmt) {
+            die("Lỗi SQL: " . $this->conn->error);
+        }
+
+        $stmt->bind_param("s", $status);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        return $result->fetch_all(MYSQLI_ASSOC);
     }
 }
 ?>

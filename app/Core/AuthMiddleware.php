@@ -71,4 +71,21 @@ class AuthMiddleware {
             </html>";
         exit;
     }
+
+    // app/Core/AuthMiddleware.php bổ sung thêm hàm sau:
+
+public static function isStaff() {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: ' . BASE_URL . 'client/auth/login');
+        exit;
+    }
+
+    // Admin và Staff đều có quyền vào khu vực làm việc của Staff
+    if ($_SESSION['user_role'] !== 'staff' && $_SESSION['user_role'] !== 'admin') {
+        echo "<script>alert('Khu vực dành riêng cho nhân viên!'); window.location.href='" . BASE_URL . "';</script>";
+        exit;
+    }
+}
 }
