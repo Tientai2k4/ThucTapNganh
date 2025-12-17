@@ -43,6 +43,9 @@ class AuthMiddleware {
             self::accessDenied("Bạn không có quyền truy cập trang này.");
         }
     }
+    public static function isAdminOrStaff() {
+        self::hasRole(['admin', 'staff']);
+    }
 
     // 3. Chỉ dành riêng cho ADMIN TỐI CAO (Chặn Staff, chỉ cho phép admin)
     public static function onlyAdmin() {

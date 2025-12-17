@@ -1,0 +1,94 @@
+<?php
+namespace App\Models;
+use App\Core\Model;
+
+class PostModel extends Model {
+    protected $table = 'posts';
+
+    // Lấy tất cả bài viết (kèm tên tác giả)
+    public function getAllPosts() {
+        $sql = "SELECT p.*, u.full_name as author_name 
+                FROM {$this->table} p 
+                LEFT JOIN users u ON p.user_id = u.id 
+                ORDER BY p.created_at DESC";
+        $result = $this->conn->query($sql);
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+
+    // Lấy chi tiết bài viết
+    public function getById($id) {
+        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
+
+    // Thêm bài viết mới
+    public function add($data) {
+        $sql = "INSERT INTO {$this->table} (title, slug, thumbnail, excerpt, content, user_id, status) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("sssssii", 
+            $data['title'], 
+            $data['slug'], 
+            $data['thumbnail'], 
+            $data['excerpt'], 
+            $data['content'], 
+            $data['user_id'],
+            $data['status']
+        );
+        
+        return $stmt->execute();
+    }
+
+    // Cập nhật bài viết
+    public function update($id, $data) {
+        $sql = "UPDATE {$this->table} SET title=?, slug=?, thumbnail=?, excerpt=?, content=?, status=? WHERE id=?";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("sssssii", 
+            $data['title'], 
+            $data['slug'], 
+            $data['thumbnail'], 
+            $data['excerpt'], 
+            $data['content'], 
+            $data['status'],
+            $id
+        );
+        
+        return $stmt->execute();
+    }
+
+    // Xóa bài viết
+    public function delete($id) {
+        $stmt = $this->conn->prepare("DELETE FROM {$this->table} WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        return $stmt->execute();
+    }
+
+    // --- Client Side ---
+    // Lấy bài viết active cho khách xem
+    public function getActivePosts() {
+        $sql = "SELECT * FROM {$this->table} WHERE status = 1 ORDER BY created_at DESC";
+        return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+    }
+    
+    // Lấy bài viết theo Slug (để URL đẹp) hoặc ID
+    public function getBySlugOrId($slugOrId) {
+        // Kiểm tra xem là ID (số) hay Slug (chuỗi)
+        if (is_numeric($slugOrId)) {
+            $sql = "SELECT p.*, u.full_name as author_name FROM {$this->table} p LEFT JOIN users u ON p.user_id = u.id WHERE p.id = ? AND p.status = 1";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $slugOrId);
+        } else {
+            $sql = "SELECT p.*, u.full_name as author_name FROM {$this->table} p LEFT JOIN users u ON p.user_id = u.id WHERE p.slug = ? AND p.status = 1";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("s", $slugOrId);
+        }
+        
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
+}
+?>
