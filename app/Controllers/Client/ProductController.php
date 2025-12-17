@@ -4,31 +4,47 @@ use App\Core\Controller;
 
 class ProductController extends Controller {
     
-    public function index() {
+   public function index() {
         $prodModel = $this->model('ProductModel');
         $catModel = $this->model('CategoryModel');
         $brandModel = $this->model('BrandModel'); 
 
-        // Nhận tham số từ URL
+        // 1. CẤU HÌNH PHÂN TRANG
+        $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+        if ($page < 1) $page = 1;
+        $limit = 12; // [SỬA] Hiển thị 12 sản phẩm/trang
+        $offset = ($page - 1) * $limit;
+
+        // 2. NHẬN THAM SỐ LỌC
         $filters = [
-            'category_id' => $_GET['cat'] ?? null,       // Danh mục (radio)
-            'brands'      => $_GET['brand'] ?? [],       // Thương hiệu (checkbox array)
-            'sizes'       => $_GET['size'] ?? [],        // Kích thước (checkbox array)
+            'category_id' => $_GET['cat'] ?? null,
+            'brands'      => $_GET['brand'] ?? [],
+            'sizes'       => $_GET['size'] ?? [],
             'price_min'   => $_GET['min'] ?? 0,
             'price_max'   => $_GET['max'] ?? 5000000,
-            'keyword'     => $_GET['keyword'] ?? ''
-            
-
+            'keyword'     => $_GET['keyword'] ?? '',
+            'limit'       => $limit,   // Truyền limit xuống Model
+            'offset'      => $offset   // Truyền offset xuống Model
         ];
-        // Đảm bảo brand/size là mảng khi không chọn gì (để tránh lỗi)
+
         if (!is_array($filters['brands'])) $filters['brands'] = [];
         if (!is_array($filters['sizes'])) $filters['sizes'] = [];
+
+        // 3. LẤY DỮ LIỆU
+        $products = $prodModel->filterProducts($filters);
+        $totalProducts = $prodModel->countFilterProducts($filters); // Hàm đếm tổng để tính số trang
+        $totalPages = ceil($totalProducts / $limit);
+
         $data = [
-            // Lọc sản phẩm theo các tham số
-            'products' => $prodModel->filterProducts($filters),
+            'products' => $products,
             'categories' => $catModel->getAll(),
             'brands' => $brandModel->getAll(),
-            'filters' => $filters // Gửi lại bộ lọc hiện tại cho View
+            'filters' => $filters,
+            'pagination' => [
+                'current_page' => $page,
+                'total_pages' => $totalPages,
+                'total_products' => $totalProducts
+            ]
         ];
         
         $this->view('client/products/index', $data);

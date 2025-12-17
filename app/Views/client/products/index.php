@@ -56,10 +56,14 @@
         </div>
 
         <div class="col-md-9">
-            <h4 class="mb-3 fw-bold text-dark">
-                <?= !empty($data['filters']['keyword']) ? 'Kết quả cho: "' . htmlspecialchars($data['filters']['keyword']) . '"' : 'Tất cả sản phẩm' ?>
-                <span class="fs-6 text-muted fw-normal">(<?= count($data['products']) ?> sản phẩm)</span>
-            </h4>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold text-dark m-0">
+                    <?= !empty($data['filters']['keyword']) ? 'Kết quả cho: "' . htmlspecialchars($data['filters']['keyword']) . '"' : 'Tất cả sản phẩm' ?>
+                </h4>
+                <span class="text-muted small">
+                    Hiển thị <?= count($data['products']) ?> / <?= $data['pagination']['total_products'] ?> sản phẩm
+                </span>
+            </div>
 
             <?php if(empty($data['products'])): ?>
                 <div class="alert alert-warning text-center p-5">
@@ -106,6 +110,33 @@
                         </div>
                     <?php endforeach; ?>
                 </div>
+
+                <?php if ($data['pagination']['total_pages'] > 1): ?>
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item <?= ($data['pagination']['current_page'] <= 1) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="<?= BASE_URL ?>product?page=<?= $data['pagination']['current_page'] - 1 ?>&<?= http_build_query(array_diff_key($data['filters'], ['limit'=>1, 'offset'=>1])) ?>">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+
+                            <?php for ($i = 1; $i <= $data['pagination']['total_pages']; $i++): ?>
+                                <li class="page-item <?= ($i == $data['pagination']['current_page']) ? 'active' : '' ?>">
+                                    <a class="page-link" href="<?= BASE_URL ?>product?page=<?= $i ?>&<?= http_build_query(array_diff_key($data['filters'], ['limit'=>1, 'offset'=>1])) ?>">
+                                        <?= $i ?>
+                                    </a>
+                                </li>
+                            <?php endfor; ?>
+
+                            <li class="page-item <?= ($data['pagination']['current_page'] >= $data['pagination']['total_pages']) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="<?= BASE_URL ?>product?page=<?= $data['pagination']['current_page'] + 1 ?>&<?= http_build_query(array_diff_key($data['filters'], ['limit'=>1, 'offset'=>1])) ?>">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                <?php endif; ?>
+
             <?php endif; ?>
         </div>
     </div>

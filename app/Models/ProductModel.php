@@ -120,72 +120,60 @@ class ProductModel extends Model {
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-    // [CẬP NHẬT - NÂNG CAO] 9. Lọc sản phẩm (Filter Advanced)
-    public function filterProducts($filters) {
-        // Sử dụng DISTINCT để tránh lặp sản phẩm khi join với variants
+   public function filterProducts($filters) {
         $sql = "SELECT DISTINCT p.* FROM products p 
                 LEFT JOIN product_variants pv ON p.id = pv.product_id 
                 WHERE p.is_active = 1";
         
-        $params = [];
         $types = "";
         $values = [];
 
-        // 1. Lọc theo Danh mục (category_id)
+        // --- Logic Lọc (Giống cũ) ---
         if (!empty($filters['category_id'])) {
             $sql .= " AND p.category_id = ?";
-            $types .= "i";
-            $values[] = $filters['category_id'];
+            $types .= "i"; $values[] = $filters['category_id'];
         }
-
-        // 2. Lọc theo Thương hiệu (brands - MẢNG)
         if (!empty($filters['brands']) && is_array($filters['brands'])) {
             $placeholders = implode(',', array_fill(0, count($filters['brands']), '?'));
             $sql .= " AND p.brand_id IN ($placeholders)";
             $types .= str_repeat('i', count($filters['brands']));
             $values = array_merge($values, $filters['brands']);
         }
-
-        // 3. Lọc theo Size (sizes - MẢNG)
         if (!empty($filters['sizes']) && is_array($filters['sizes'])) {
             $placeholders = implode(',', array_fill(0, count($filters['sizes']), '?'));
             $sql .= " AND pv.size IN ($placeholders)";
             $types .= str_repeat('s', count($filters['sizes']));
             $values = array_merge($values, $filters['sizes']);
         }
-
-        // 4. Lọc theo Khoảng Giá
         if (!empty($filters['price_min'])) {
             $sql .= " AND (p.price >= ? OR p.sale_price >= ?)";
-            $types .= "dd";
-            $values[] = $filters['price_min'];
-            $values[] = $filters['price_min']; // Check cả giá sale
+            $types .= "dd"; $values[] = $filters['price_min']; $values[] = $filters['price_min'];
         }
         if (!empty($filters['price_max'])) {
             $sql .= " AND (p.price <= ? OR p.sale_price <= ?)";
-            $types .= "dd";
-            $values[] = $filters['price_max'];
-            $values[] = $filters['price_max'];
+            $types .= "dd"; $values[] = $filters['price_max']; $values[] = $filters['price_max'];
         }
-
-        // 5. Tìm kiếm từ khóa (Keyword)
         if (!empty($filters['keyword'])) {
             $sql .= " AND p.name LIKE ?";
-            $types .= "s";
-            $values[] = "%" . $filters['keyword'] . "%";
+            $types .= "s"; $values[] = "%" . $filters['keyword'] . "%";
         }
 
         $sql .= " ORDER BY p.created_at DESC";
 
-        // Thực thi Dynamic Query
+        // --- [MỚI] THÊM LIMIT VÀ OFFSET CHO PHÂN TRANG ---
+        if (isset($filters['limit']) && isset($filters['offset'])) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $types .= "ii";
+            $values[] = $filters['limit'];
+            $values[] = $filters['offset'];
+        }
+
+        // Thực thi
         $stmt = $this->conn->prepare($sql);
         if (!empty($values)) {
-            // Cần tạo mảng tham chiếu cho call_user_func_array
-            $params_ref = array_merge([$types], $values);
             $bind_params = [];
-            foreach ($params_ref as $key => $value) {
-                $bind_params[$key] = &$params_ref[$key];
-            }
+            $params_ref = array_merge([$types], $values);
+            foreach ($params_ref as $key => $value) $bind_params[$key] = &$params_ref[$key];
             call_user_func_array([$stmt, 'bind_param'], $bind_params);
         }
         
@@ -314,6 +302,44 @@ class ProductModel extends Model {
         $stmt->bind_param("si", $likeKeyword, $limit);
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+   // [MỚI] Hàm đếm tổng số sản phẩm (để tính số trang)
+    public function countFilterProducts($filters) {
+        $sql = "SELECT COUNT(DISTINCT p.id) as total FROM products p 
+                LEFT JOIN product_variants pv ON p.id = pv.product_id 
+                WHERE p.is_active = 1";
+        
+        // (Copy lại logic lọc y hệt hàm trên, KHÔNG có Limit/Order By)
+        $types = ""; $values = [];
+        
+        if (!empty($filters['category_id'])) { $sql .= " AND p.category_id = ?"; $types .= "i"; $values[] = $filters['category_id']; }
+        if (!empty($filters['brands']) && is_array($filters['brands'])) {
+            $placeholders = implode(',', array_fill(0, count($filters['brands']), '?'));
+            $sql .= " AND p.brand_id IN ($placeholders)";
+            $types .= str_repeat('i', count($filters['brands']));
+            $values = array_merge($values, $filters['brands']);
+        }
+        if (!empty($filters['sizes']) && is_array($filters['sizes'])) {
+            $placeholders = implode(',', array_fill(0, count($filters['sizes']), '?'));
+            $sql .= " AND pv.size IN ($placeholders)";
+            $types .= str_repeat('s', count($filters['sizes']));
+            $values = array_merge($values, $filters['sizes']);
+        }
+        if (!empty($filters['price_min'])) { $sql .= " AND (p.price >= ? OR p.sale_price >= ?)"; $types .= "dd"; $values[] = $filters['price_min']; $values[] = $filters['price_min']; }
+        if (!empty($filters['price_max'])) { $sql .= " AND (p.price <= ? OR p.sale_price <= ?)"; $types .= "dd"; $values[] = $filters['price_max']; $values[] = $filters['price_max']; }
+        if (!empty($filters['keyword'])) { $sql .= " AND p.name LIKE ?"; $types .= "s"; $values[] = "%" . $filters['keyword'] . "%"; }
+
+        $stmt = $this->conn->prepare($sql);
+        if (!empty($values)) {
+            $bind_params = [];
+            $params_ref = array_merge([$types], $values);
+            foreach ($params_ref as $key => $value) $bind_params[$key] = &$params_ref[$key];
+            call_user_func_array([$stmt, 'bind_param'], $bind_params);
+        }
+        
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        return $row['total'];
     }
 }
 ?>
