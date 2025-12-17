@@ -47,7 +47,7 @@
             
             <hr>
 
-            <form action="<?= BASE_URL ?>cart/add" method="POST">
+            <form id="addToCartForm" action="<?= BASE_URL ?>cart/add" method="POST">
                 <input type="hidden" name="product_id" value="<?= $data['product']['id'] ?>">
                 
                 <div class="mb-4">
@@ -217,22 +217,20 @@
 </div>
 
 <script>
-// Chức năng đổi ảnh chính
+// 1. Chức năng đổi ảnh chính
 function changeImage(src) {
     document.getElementById('mainImage').src = src;
-    // Tùy chọn: Thêm hiệu ứng border cho ảnh đang chọn
     document.querySelectorAll('.thumbnail-selector').forEach(img => img.classList.remove('border-primary'));
     event.target.classList.add('border-primary');
 }
 
-// Chức năng kiểm tra tồn kho (Giữ nguyên)
+// 2. Chức năng kiểm tra tồn kho
 function checkStock() {
     let selectBox = document.getElementById('variantSelect');
     let variantId = selectBox.value;
     let btn = document.getElementById('btnBuy');
     let statusLabel = document.getElementById('stockStatus');
     
-    // Logic AJAX đã kiểm tra và chạy đúng
     if(!variantId) { 
         statusLabel.innerHTML = '<span class="badge bg-secondary">Vui lòng chọn phân loại</span>';
         btn.disabled = true;
@@ -260,7 +258,7 @@ function checkStock() {
     .catch(error => { statusLabel.innerHTML = '<span class="text-danger">Lỗi kiểm tra kho!</span>'; });
 }
 
-// Chức năng Wishlist (Giữ nguyên)
+// 3. Chức năng Wishlist
 function toggleWishlist(productId) {
     if (!<?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>) {
         alert('Vui lòng đăng nhập để thêm sản phẩm yêu thích.');
@@ -279,7 +277,7 @@ function toggleWishlist(productId) {
     .then(data => {
         if (data.status) {
             if (data.action === 'added') {
-                btn.innerHTML = '<i class="fas fa-heart"></i> Đã thích';
+                btn.innerHTML = '<i class="fas fa-heart text-danger"></i> Đã thích';
                 btn.classList.remove('btn-outline-danger');
                 btn.classList.add('btn-danger');
             } else if (data.action === 'removed') {
@@ -294,5 +292,53 @@ function toggleWishlist(productId) {
     .catch(error => console.error('Lỗi AJAX:', error));
 }
 
+// [MỚI] 4. Bắt sự kiện thêm vào giỏ hàng (Chặn load trang)
+document.addEventListener('DOMContentLoaded', function() {
+    const cartForm = document.getElementById('addToCartForm');
+    
+    if (cartForm) {
+        cartForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Chặn chuyển trang
 
+            const formData = new FormData(this);
+            const btn = document.getElementById('btnBuy');
+            const originalText = btn.innerHTML;
+
+            // Hiệu ứng loading
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang xử lý...';
+            btn.disabled = true;
+
+            // Gửi AJAX
+            fetch('<?= BASE_URL ?>cart/add', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Khôi phục nút
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+
+                if (data.status) {
+                    // Thông báo thành công
+                    alert(data.message); 
+                    
+                    // Cập nhật số lượng trên Header nếu có thẻ span id="cart-count"
+                    const cartCountEl = document.getElementById('cart-count');
+                    if (cartCountEl) {
+                        cartCountEl.innerText = data.cart_count;
+                    }
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                alert('Đã có lỗi xảy ra, vui lòng thử lại.');
+            });
+        });
+    }
+});
 </script>

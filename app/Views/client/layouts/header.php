@@ -1,6 +1,5 @@
 <?php
 // Giả định: Danh sách danh mục chính (Category) đã được truyền từ Controller
-// Ví dụ: $data['categories'] = [['name' => 'Kính Bơi', 'id' => 1], ['name' => 'Mũ Bơi', 'id' => 2], ...]
 $categories = $data['categories'] ?? [
     ['name' => 'Kính Bơi', 'id' => 1, 'sub' => [['name'=>'Kính Cận'], ['name'=>'Kính Thi Đấu']]],
     ['name' => 'Mũ Bơi', 'id' => 2, 'sub' => [['name'=>'Mũ Silicone'], ['name'=>'Mũ Vải']]],
@@ -94,7 +93,7 @@ $categories = $data['categories'] ?? [
                     <div class="d-flex align-items-center">
                         <a href="<?= BASE_URL ?>cart" class="btn position-relative text-primary me-3 border-0">
                             <i class="fas fa-shopping-bag fa-lg"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                                 <?= getCartQuantity() ?>
                             </span>
                         </a>
