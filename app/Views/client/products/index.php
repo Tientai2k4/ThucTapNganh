@@ -1,6 +1,6 @@
 <div class="container py-4">
     <div class="row">
-        <div class="col-md-3">
+        <div class="col-md-3" style="position: sticky; top: 90px; height: fit-content; z-index: 100;">
             <form action="<?= BASE_URL ?>product" method="GET" class="card shadow-sm border-0 p-3">
                 <h5 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fas fa-filter"></i> BỘ LỌC TÌM KIẾM</h5>
                 
@@ -70,19 +70,36 @@
                 <div class="row">
                     <?php foreach($data['products'] as $prod): ?>
                         <div class="col-6 col-md-4 mb-4">
-                            <div class="card product-card h-100 border-0 shadow-sm">
+                            <div class="card product-card h-100 border-0 shadow-sm position-relative">
+                                
+                                <?php if($prod['sale_price'] > 0): ?>
+                                    <div class="position-absolute top-0 end-0 bg-danger text-white px-2 py-1 m-2 rounded small fw-bold shadow-sm" style="z-index: 10;">
+                                        -<?= round((($prod['price'] - $prod['sale_price']) / $prod['price']) * 100) ?>%
+                                    </div>
+                                <?php endif; ?>
+
                                 <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>">
                                     <img src="<?= BASE_URL ?>public/uploads/<?= $prod['image'] ?>" class="card-img-top p-3" style="height: 200px; object-fit: contain;">
                                 </a>
+                                
                                 <div class="card-body text-center d-flex flex-column">
                                     <h6 class="card-title text-truncate">
                                         <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="text-decoration-none text-dark">
                                             <?= htmlspecialchars($prod['name']) ?>
                                         </a>
                                     </h6>
+                                    
                                     <div class="mt-auto">
-                                        <span class="text-danger fw-bold fs-5"><?= number_format($prod['price']) ?>đ</span>
+                                        <?php if($prod['sale_price'] > 0): ?>
+                                            <div class="d-flex justify-content-center align-items-center gap-2">
+                                                <span class="text-danger fw-bold fs-5"><?= number_format($prod['sale_price']) ?>đ</span>
+                                                <small class="text-muted text-decoration-line-through"><?= number_format($prod['price']) ?>đ</small>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="text-danger fw-bold fs-5"><?= number_format($prod['price']) ?>đ</span>
+                                        <?php endif; ?>
                                     </div>
+
                                     <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="btn btn-sm btn-primary mt-2">Xem chi tiết</a>
                                 </div>
                             </div>

@@ -80,18 +80,7 @@
                         <i class="fas fa-shopping-cart me-2"></i> Thêm vào giỏ hàng
                     </button>
                     
-                    <button type="button" 
-                            class="btn btn-lg ms-3" 
-                            id="wishlistBtn"
-                            data-product-id="<?= $data['product']['id'] ?>"
-                            onclick="toggleWishlist(<?= $data['product']['id'] ?>)">
-                        <?php if ($data['is_wished']): ?>
-                            <i class="fas fa-heart text-danger"></i> Đã thích
-                        <?php else: ?>
-                            <i class="far fa-heart"></i> Yêu thích
-                        <?php endif; ?>
-                    </button>
-             </div>
+                    </div>
             </form>
             
             <div class="alert alert-light border-start border-4 border-success mt-4 small">
@@ -258,41 +247,9 @@ function checkStock() {
     .catch(error => { statusLabel.innerHTML = '<span class="text-danger">Lỗi kiểm tra kho!</span>'; });
 }
 
-// 3. Chức năng Wishlist
-function toggleWishlist(productId) {
-    if (!<?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>) {
-        alert('Vui lòng đăng nhập để thêm sản phẩm yêu thích.');
-        window.location.href = '<?= BASE_URL ?>client/auth/login';
-        return;
-    }
+// 3. (Đã xóa hàm toggleWishlist)
 
-    const btn = document.getElementById('wishlistBtn');
-    
-    fetch('<?= BASE_URL ?>wishlist/toggle', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: JSON.stringify({ product_id: productId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status) {
-            if (data.action === 'added') {
-                btn.innerHTML = '<i class="fas fa-heart text-danger"></i> Đã thích';
-                btn.classList.remove('btn-outline-danger');
-                btn.classList.add('btn-danger');
-            } else if (data.action === 'removed') {
-                btn.innerHTML = '<i class="far fa-heart"></i> Yêu thích';
-                btn.classList.remove('btn-danger');
-                btn.classList.add('btn-outline-danger');
-            }
-        } else {
-            alert(data.message);
-        }
-    })
-    .catch(error => console.error('Lỗi AJAX:', error));
-}
-
-// [MỚI] 4. Bắt sự kiện thêm vào giỏ hàng (Chặn load trang)
+// 4. Bắt sự kiện thêm vào giỏ hàng (Chặn load trang)
 document.addEventListener('DOMContentLoaded', function() {
     const cartForm = document.getElementById('addToCartForm');
     

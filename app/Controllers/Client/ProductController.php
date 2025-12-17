@@ -125,5 +125,26 @@ class ProductController extends Controller {
             exit;
         }
     }
+    // [MỚI] API Xử lý Live Search
+    public function liveSearch() {
+        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+            $keyword = $_GET['keyword'] ?? '';
+            
+            // Chỉ tìm khi từ khóa dài hơn 1 ký tự
+            if (mb_strlen($keyword) > 1) {
+                $model = $this->model('ProductModel');
+                $products = $model->searchByName($keyword, 5); // Lấy tối đa 5 kết quả
+                
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => true,
+                    'data' => $products
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'data' => []]);
+            }
+            exit;
+        }
+    }
 }
 ?>

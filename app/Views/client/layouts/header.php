@@ -81,14 +81,124 @@ $categories = $data['categories'] ?? [
                         <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>contact">Liên hệ</a></li>
                     </ul>
 
-                    <form action="<?= BASE_URL ?>search" method="GET" class="d-flex me-3">
-                        <div class="header-search-form">
-                            <input type="search" name="keyword" placeholder="Tìm sản phẩm..." required>
-                            <button type="submit" class="btn-search-icon">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                    </form>
+                   <form action="<?= BASE_URL ?>product" method="GET" class="d-flex me-3 position-relative">
+    <div class="header-search-form w-100">
+        <input type="search" id="searchInput" name="keyword" placeholder="Tìm sản phẩm..." required autocomplete="off">
+        <button type="submit" class="btn-search-icon">
+            <i class="fas fa-search"></i>
+        </button>
+    </div>
+
+    <div id="searchResults" class="position-absolute bg-white shadow rounded start-0 end-0" style="top: 100%; z-index: 1000; display: none; overflow: hidden;">
+        </div>
+</form>
+
+<style>
+    /* CSS cho từng dòng kết quả */
+    .search-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #f1f1f1;
+        text-decoration: none;
+        color: #333;
+        transition: background 0.2s;
+    }
+    .search-item:hover {
+        background-color: #f8f9fa;
+        color: #0d6efd; /* Màu xanh primary */
+    }
+    .search-item img {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        margin-right: 10px;
+        border-radius: 4px;
+    }
+    .search-info h6 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+    .search-info span {
+        font-size: 12px;
+        color: #dc3545; /* Màu đỏ cho giá */
+        font-weight: bold;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    let timeout = null;
+
+    // Hàm định dạng tiền tệ
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    };
+
+    searchInput.addEventListener('input', function() {
+        const keyword = this.value.trim();
+
+        // Xóa timeout cũ để tránh gọi server quá nhiều (Debounce)
+        clearTimeout(timeout);
+
+        if (keyword.length < 2) {
+            searchResults.style.display = 'none';
+            searchResults.innerHTML = '';
+            return;
+        }
+
+        // Đợi 300ms sau khi ngừng gõ mới gọi API
+        timeout = setTimeout(() => {
+            fetch(`<?= BASE_URL ?>product/liveSearch?keyword=${encodeURIComponent(keyword)}`)
+                .then(response => response.json())
+                .then(res => {
+                    if (res.success && res.data.length > 0) {
+                        let html = '';
+                        res.data.forEach(prod => {
+                            // Xử lý giá hiển thị
+                            let priceDisplay = '';
+                            if (prod.sale_price > 0) {
+                                priceDisplay = `${formatCurrency(prod.sale_price)} <del class="text-muted small ms-1">${formatCurrency(prod.price)}</del>`;
+                            } else {
+                                priceDisplay = formatCurrency(prod.price);
+                            }
+
+                            html += `
+                                <a href="<?= BASE_URL ?>product/detail/${prod.id}" class="search-item">
+                                    <img src="<?= BASE_URL ?>public/uploads/${prod.image}" alt="${prod.name}">
+                                    <div class="search-info">
+                                        <h6 class="text-truncate" style="max-width: 200px;">${prod.name}</h6>
+                                        <span>${priceDisplay}</span>
+                                    </div>
+                                </a>
+                            `;
+                        });
+                        // Thêm nút xem tất cả nếu cần
+                        html += `<a href="<?= BASE_URL ?>product?keyword=${encodeURIComponent(keyword)}" class="d-block text-center p-2 text-primary small bg-light text-decoration-none">Xem tất cả kết quả cho "${keyword}"</a>`;
+                        
+                        searchResults.innerHTML = html;
+                        searchResults.style.display = 'block';
+                    } else {
+                        searchResults.innerHTML = '<div class="p-3 text-center text-muted small">Không tìm thấy sản phẩm nào</div>';
+                        searchResults.style.display = 'block';
+                    }
+                })
+                .catch(err => console.error(err));
+        }, 300);
+    });
+
+    // Ẩn kết quả khi click ra ngoài
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.style.display = 'none';
+        }
+    });
+});
+</script>
 
                     <div class="d-flex align-items-center">
                         <a href="<?= BASE_URL ?>cart" class="btn position-relative text-primary me-3 border-0">

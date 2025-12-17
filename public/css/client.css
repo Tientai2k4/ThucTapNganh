@@ -1,41 +1,94 @@
-/* public/css/client.css */
-:root {
-    --primary-color: #0056b3; /* Xanh dương đậm chuẩn Yeuboiloi */
-    --accent-color: #ff6600;  /* Cam nổi bật */
-    --text-color: #333;
-    --light-bg: #f8f9fa;
+/* --- FOOTER DARK PREMIUM STYLES --- */
+
+footer {
+    background-color: #0f0f0f; /* Nền đen sâu thẳm */
+    color: #a0a0a0; /* Màu chữ xám trung tính (không phải trắng) */
+    font-size: 0.9rem;
+    border-top: 3px solid var(--primary-color); /* Viền trên tạo điểm nhấn */
 }
 
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light-bg); color: var(--text-color); }
-a { text-decoration: none; }
-
-/* Sticky Header */
-.main-header {
-    background: #fff;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    position: sticky; top: 0; z-index: 1000;
+/* Tiêu đề các cột */
+footer h5 {
+    color: #d1d1d1; /* Màu xám bạc sáng (không phải trắng tinh) */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 25px;
+    position: relative;
+    font-size: 1.1rem;
 }
 
-/* Mega Menu */
-.navbar-nav .nav-item { position: static; } /* Quan trọng để menu full width */
-.navbar-nav .nav-link { 
-    color: #333; font-weight: 700; text-transform: uppercase; padding: 20px 15px !important; font-size: 0.9rem;
+/* Gạch chân trang trí dưới tiêu đề */
+footer h5::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -8px;
+    width: 40px;
+    height: 3px;
+    background-color: var(--accent-color); /* Dùng màu cam để nổi bật trên nền đen */
 }
-.navbar-nav .nav-link:hover { color: var(--primary-color); }
 
-.dropdown-menu.mega-menu {
-    width: 100%; left: 0; right: 0; 
-    border-top: 3px solid var(--primary-color); border-radius: 0; margin-top: 0; 
-    padding: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+/* Đoạn văn và danh sách */
+footer p {
+    line-height: 1.6;
+    margin-bottom: 10px;
 }
-.mega-title { color: var(--primary-color); font-weight: bold; margin-bottom: 15px; display: block; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-.mega-item { display: block; color: #555; padding: 8px 0; font-size: 0.95rem; }
-.mega-item:hover { color: var(--accent-color); padding-left: 5px; transition: 0.3s; }
 
-/* Buttons */
-.btn-google { background: #db4437; color: white; border: none; font-weight: bold; }
-.btn-google:hover { background: #c53929; color: white; }
+footer ul li {
+    margin-bottom: 10px;
+}
 
-/* Product Card */
-.product-card { border: none; transition: 0.3s; background: #fff; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
-.product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+/* Đường link trong footer */
+footer a.footer-link {
+    color: #a0a0a0; /* Xám cùng tông văn bản */
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+footer a.footer-link:hover {
+    color: var(--primary-color); /* Hover chuyển sang xanh chủ đạo */
+    transform: translateX(5px); /* Hiệu ứng trượt nhẹ sang phải */
+}
+
+/* Icon mạng xã hội */
+.social-icons a {
+    width: 40px;
+    height: 40px;
+    background-color: #1f1f1f; /* Nền icon sáng hơn nền footer một chút */
+    color: #d1d1d1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%; /* Bo tròn */
+    margin-right: 10px;
+    text-decoration: none;
+    transition: 0.4s;
+    border: 1px solid #333;
+}
+
+.social-icons a:hover {
+    background-color: var(--primary-color);
+    color: #fff; /* Lúc hover mới cho hiện trắng để nổi bật */
+    border-color: var(--primary-color);
+    transform: translateY(-3px);
+}
+
+/* Phần bản quyền dưới cùng */
+.footer-bottom {
+    background-color: #050505; /* Đen gần như tuyệt đối */
+    padding: 20px 0;
+    border-top: 1px solid #222;
+    margin-top: 40px;
+    font-size: 0.85rem;
+    color: #777; /* Màu chữ tối hơn phần trên */
+}
+
+/* Icon liên hệ */
+.contact-icon {
+    width: 25px;
+    color: var(--primary-color);
+    text-align: center;
+    margin-right: 10px;
+}

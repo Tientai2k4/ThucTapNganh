@@ -302,6 +302,18 @@ class ProductModel extends Model {
         $stmt->execute();
         return $action;
     }
-    
+    // [MỚI] 11. Tìm kiếm nhanh cho Live Search (Autocomplete)
+    public function searchByName($keyword, $limit = 5) {
+        $sql = "SELECT id, name, image, price, sale_price 
+                FROM {$this->table} 
+                WHERE name LIKE ? AND is_active = 1 
+                LIMIT ?";
+        
+        $stmt = $this->conn->prepare($sql);
+        $likeKeyword = "%" . $keyword . "%";
+        $stmt->bind_param("si", $likeKeyword, $limit);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
 }
 ?>
