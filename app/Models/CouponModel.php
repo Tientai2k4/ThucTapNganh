@@ -5,11 +5,29 @@ use App\Core\Model;
 class CouponModel extends Model {
     protected $table = 'coupons';
 
-    // Lấy tất cả coupon
+    // Lấy tất cả coupon (Cho Admin)
     public function getAll() {
         $sql = "SELECT * FROM {$this->table} ORDER BY id DESC";
         $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
+    }
+
+    // [MỚI] Lấy danh sách Coupon hợp lệ cho Trang chủ
+    public function getAvailableCoupons($limit = 6) {
+        $today = date('Y-m-d H:i:s');
+        // Điều kiện: status=1, ngày bắt đầu <= hôm nay, ngày kết thúc >= hôm nay, số lượng > 0
+        $sql = "SELECT * FROM {$this->table} 
+                WHERE status = 1 
+                AND start_date <= ? 
+                AND end_date >= ? 
+                AND quantity > 0 
+                ORDER BY end_date ASC 
+                LIMIT ?";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("ssi", $today, $today, $limit);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
     // Lấy một coupon theo ID
@@ -25,7 +43,6 @@ class CouponModel extends Model {
         $sql = "INSERT INTO {$this->table} (code, discount_type, discount_value, min_order_value, quantity, start_date, end_date, status) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, 1)";
         $stmt = $this->conn->prepare($sql);
-        // Kiểu dữ liệu: string, string, integer, integer, integer, string, string
         $stmt->bind_param("ssiiiss", 
             $data['code'], $data['discount_type'], $data['discount_value'], 
             $data['min_order_value'], $data['quantity'], $data['start_date'], $data['end_date']
@@ -40,9 +57,7 @@ class CouponModel extends Model {
                 min_order_value = ?, quantity = ?, start_date = ?, 
                 end_date = ?, status = ?
                 WHERE id = ?";
-        
         $stmt = $this->conn->prepare($sql);
-        // Kiểu dữ liệu: string, string, integer, integer, integer, string, string, integer, integer
         $stmt->bind_param("ssiiissii", 
             $data['code'], $data['discount_type'], $data['discount_value'], 
             $data['min_order_value'], $data['quantity'], $data['start_date'], 
@@ -59,7 +74,7 @@ class CouponModel extends Model {
         return $stmt->execute();
     }
     
-    // Hàm kiểm tra mã giảm giá (Dùng cho Client)
+    // Hàm tìm Coupon theo mã (để áp dụng vào đơn hàng)
     public function findByCode($code) {
         $today = date('Y-m-d H:i:s');
         $sql = "SELECT * FROM {$this->table} WHERE code = ? AND status = 1 AND start_date <= ? AND end_date >= ? AND quantity > 0";

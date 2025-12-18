@@ -2,26 +2,33 @@
     <div class="row">
         
         <div class="col-md-6">
-            <div class="card border-0 mb-3 shadow-sm text-center">
+            <div class="card border-0 mb-3 shadow-sm text-center position-relative group-hover-zoom">
                 <img id="mainImage" 
                      src="<?= BASE_URL ?>public/uploads/<?= $data['product']['image'] ?>" 
                      class="img-fluid p-3 rounded" 
                      alt="<?= htmlspecialchars($data['product']['name']) ?>"
-                     style="max-height: 450px; object-fit: contain;">
+                     style="max-height: 450px; object-fit: contain; cursor: zoom-in;"
+                     onclick="openLightbox(this.src)">
+                
+                <div class="position-absolute bottom-0 end-0 p-3">
+                    <button class="btn btn-light rounded-circle shadow-sm" onclick="openLightbox(document.getElementById('mainImage').src)">
+                        <i class="fas fa-expand-alt"></i>
+                    </button>
+                </div>
             </div>
             
-            <div class="d-flex gap-2 overflow-auto pb-2">
+            <div class="d-flex gap-2 overflow-auto pb-2" style="scrollbar-width: thin;">
                 <img src="<?= BASE_URL ?>public/uploads/<?= $data['product']['image'] ?>" 
                      class="img-thumbnail thumbnail-selector border-primary" 
                      style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
-                     onclick="changeImage(this.src)">
+                     onclick="changeImage(this.src, this)">
                 
                 <?php if(!empty($data['gallery'])): ?>
                     <?php foreach($data['gallery'] as $img): ?>
                         <img src="<?= BASE_URL ?>public/uploads/<?= $img['image_url'] ?>" 
                              class="img-thumbnail thumbnail-selector" 
                              style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
-                             onclick="changeImage(this.src)">
+                             onclick="changeImage(this.src, this)">
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
@@ -205,15 +212,89 @@
 
 </div>
 
+<div class="modal fade" id="lightboxModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 95%; margin: auto;">
+        <div class="modal-content bg-transparent border-0 shadow-none">
+            
+            <div class="text-end mb-2" style="position: absolute; top: -40px; right: 0; z-index: 1060;">
+                <button type="button" class="btn btn-light rounded-circle shadow" data-bs-dismiss="modal">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-body text-center d-flex justify-content-center align-items-center" style="height: 85vh; overflow: hidden; padding: 0;">
+                <img id="lightboxImg" src="" class="img-fluid shadow-lg" 
+                     style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s ease-out; cursor: grab;">
+            </div>
+
+            <div class="text-center mt-2 fixed-bottom mb-4" style="pointer-events: none;">
+                <div class="btn-group bg-white rounded shadow p-1" style="pointer-events: auto;">
+                    <button class="btn btn-outline-secondary px-3" onclick="zoomOut()"><i class="fas fa-minus"></i></button>
+                    <button class="btn btn-outline-primary px-3" onclick="resetZoom()"><i class="fas fa-sync-alt"></i></button>
+                    <button class="btn btn-outline-secondary px-3" onclick="zoomIn()"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-// 1. Chức năng đổi ảnh chính
-function changeImage(src) {
+// --- LOGIC ĐỔI ẢNH ---
+function changeImage(src, element) {
     document.getElementById('mainImage').src = src;
+    
+    // Xóa border active cũ
     document.querySelectorAll('.thumbnail-selector').forEach(img => img.classList.remove('border-primary'));
-    event.target.classList.add('border-primary');
+    
+    // Thêm border active mới
+    if(element) element.classList.add('border-primary');
 }
 
-// 2. Chức năng kiểm tra tồn kho
+// --- LOGIC LIGHTBOX & ZOOM ---
+let currentScale = 1;
+// Đoạn này sẽ chạy được vì đã có bootstrap.bundle.min.js ở trên
+const lightboxModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
+const lightboxImg = document.getElementById('lightboxImg');
+
+function openLightbox(src) {
+    lightboxImg.src = src;
+    resetZoom(); // Reset zoom khi mở ảnh mới
+    lightboxModal.show();
+}
+
+function updateTransform() {
+    lightboxImg.style.transform = `scale(${currentScale})`;
+}
+
+function zoomIn() {
+    currentScale += 0.2;
+    updateTransform();
+}
+
+function zoomOut() {
+    if (currentScale > 0.4) { // Giới hạn nhỏ nhất
+        currentScale -= 0.2;
+        updateTransform();
+    }
+}
+
+function resetZoom() {
+    currentScale = 1;
+    updateTransform();
+}
+
+// Thêm chức năng Zoom bằng lăn chuột
+lightboxImg.addEventListener('wheel', function(e) {
+    if (e.deltaY < 0) {
+        zoomIn();
+    } else {
+        zoomOut();
+    }
+    e.preventDefault(); // Ngăn cuộn trang
+});
+
+// --- LOGIC GIỎ HÀNG & KHO ---
 function checkStock() {
     let selectBox = document.getElementById('variantSelect');
     let variantId = selectBox.value;
@@ -247,40 +328,31 @@ function checkStock() {
     .catch(error => { statusLabel.innerHTML = '<span class="text-danger">Lỗi kiểm tra kho!</span>'; });
 }
 
-// 3. (Đã xóa hàm toggleWishlist)
-
-// 4. Bắt sự kiện thêm vào giỏ hàng (Chặn load trang)
 document.addEventListener('DOMContentLoaded', function() {
     const cartForm = document.getElementById('addToCartForm');
     
     if (cartForm) {
         cartForm.addEventListener('submit', function(e) {
-            e.preventDefault(); // Chặn chuyển trang
+            e.preventDefault(); 
 
             const formData = new FormData(this);
             const btn = document.getElementById('btnBuy');
             const originalText = btn.innerHTML;
 
-            // Hiệu ứng loading
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang xử lý...';
             btn.disabled = true;
 
-            // Gửi AJAX
             fetch('<?= BASE_URL ?>cart/add', {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
-                // Khôi phục nút
                 btn.innerHTML = originalText;
                 btn.disabled = false;
 
                 if (data.status) {
-                    // Thông báo thành công
                     alert(data.message); 
-                    
-                    // Cập nhật số lượng trên Header nếu có thẻ span id="cart-count"
                     const cartCountEl = document.getElementById('cart-count');
                     if (cartCountEl) {
                         cartCountEl.innerText = data.cart_count;

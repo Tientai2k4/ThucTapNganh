@@ -114,11 +114,23 @@ class ProductModel extends Model {
     }
 
     // [CŨ - GIỮ NGUYÊN] Lấy sản phẩm để hiển thị trang chủ (Client)
-    public function getHomeProducts($limit = 8) {
-        $sql = "SELECT * FROM {$this->table} WHERE is_active = 1 ORDER BY created_at DESC LIMIT $limit";
-        $result = $this->conn->query($sql);
-        return $result->fetch_all(MYSQLI_ASSOC);
-    }
+ // Trong file App/Models/ProductModel.php
+
+public function getHomeProducts($limit = 8) {
+    // Kết nối bảng products với product_variants để tính tổng tồn kho
+    // Chỉ lấy sản phẩm Active và có Tổng tồn kho > 0
+    $sql = "SELECT p.*, SUM(pv.stock_quantity) as total_stock 
+            FROM products p
+            LEFT JOIN product_variants pv ON p.id = pv.product_id
+            WHERE p.is_active = 1 
+            GROUP BY p.id
+            HAVING total_stock > 0 
+            ORDER BY p.created_at DESC 
+            LIMIT " . (int)$limit;
+            
+    $result = $this->conn->query($sql);
+    return $result->fetch_all(MYSQLI_ASSOC);
+}
 
    public function filterProducts($filters) {
         $sql = "SELECT DISTINCT p.* FROM products p 

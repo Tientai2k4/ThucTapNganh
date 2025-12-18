@@ -12,7 +12,7 @@ class ProductController extends Controller {
         // 1. CẤU HÌNH PHÂN TRANG
         $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
         if ($page < 1) $page = 1;
-        $limit = 12; // [SỬA] Hiển thị 12 sản phẩm/trang
+        $limit = 12; // Hiển thị 12 sản phẩm/trang
         $offset = ($page - 1) * $limit;
 
         // 2. NHẬN THAM SỐ LỌC
@@ -51,24 +51,30 @@ class ProductController extends Controller {
     }
 
    public function detail($id) {
-        // 1. Lấy sản phẩm
+        // 1. Lấy sản phẩm chính
         $model = $this->model('ProductModel');
         $product = $model->getById($id);
-        $variants = $model->getVariants($id);
-
-        $isWished = false;
-    
-        if (isset($_SESSION['user_id'])) {
-            // Kiểm tra xem user này đã thích sản phẩm này chưa
-            $isWished = $model->isInWishlist($_SESSION['user_id'], $id); 
-        }
+        
         // Kiểm tra nếu sản phẩm không tồn tại
         if (!$product) {
             header('Location: ' . BASE_URL); 
             exit;
         }
 
-        // 2. [QUAN TRỌNG] Gọi ReviewModel nằm TRONG hàm này
+        // 2. Lấy các dữ liệu phụ trợ (Đây là phần BỔ SUNG để hiện ảnh con và sp liên quan)
+        $variants = $model->getVariants($id);
+        $gallery = $model->getGalleryImages($id); // [QUAN TRỌNG] Lấy ảnh album
+        
+        // Lấy sản phẩm liên quan (cùng danh mục, trừ sản phẩm hiện tại)
+        $related = $model->getRelatedProducts($product['category_id'], $id, 4);
+
+        $isWished = false;
+        if (isset($_SESSION['user_id'])) {
+            // Kiểm tra xem user này đã thích sản phẩm này chưa
+            $isWished = $model->isInWishlist($_SESSION['user_id'], $id); 
+        }
+
+        // 3. Gọi ReviewModel lấy đánh giá
         $reviewModel = $this->model('ReviewModel');
         $reviews = $reviewModel->getApprovedByProductId($id);
 
@@ -76,12 +82,15 @@ class ProductController extends Controller {
             'title' => $product['name'],
             'product' => $product,
             'variants' => $variants,
-            'reviews' => $reviews, // Truyền biến reviews sang View
+            'gallery' => $gallery, // Truyền biến gallery sang View
+            'related' => $related, // Truyền biến related sang View
+            'reviews' => $reviews,
             'is_wished' => $isWished
         ];
         
         $this->view('client/products/detail', $data);
     }
+
     //  HÀM XỬ LÝ GỬI ĐÁNH GIÁ TỪ FORM 
     public function postReview() {
         // Đảm bảo session đã bật
@@ -92,8 +101,6 @@ class ProductController extends Controller {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $productId = $_POST['product_id'];
             
-            // --- [SỬA ĐOẠN NÀY] ---
-            // Dựa vào ảnh bạn gửi: $_SESSION['user_id']
             $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : NULL;
 
             // Nếu code trên vẫn không nhận, thử các trường hợp dự phòng:
@@ -116,24 +123,16 @@ class ProductController extends Controller {
         }
     }
 
-    // 
+    // API Kiểm tra tồn kho
     public function checkStock() {
-        // 1. Chỉ nhận method POST
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            
-            // 2. Đặt header JSON để trình duyệt hiểu
             header('Content-Type: application/json');
-
-            // 3. Lấy dữ liệu gửi từ Fetch JS
             $input = json_decode(file_get_contents('php://input'), true);
             $variantId = $input['variant_id'] ?? 0;
 
             if ($variantId) {
-                // 4. Gọi Model để lấy dữ liệu (An toàn hơn query trực tiếp)
                 $model = $this->model('ProductModel');
                 $stock = $model->getVariantStock($variantId);
-                
-                // 5. Trả về JSON
                 echo json_encode(['success' => true, 'stock' => $stock]);
             } else {
                 echo json_encode(['success' => false, 'stock' => 0]);
@@ -141,15 +140,15 @@ class ProductController extends Controller {
             exit;
         }
     }
-    // [MỚI] API Xử lý Live Search
+
+    // API Xử lý Live Search
     public function liveSearch() {
         if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             $keyword = $_GET['keyword'] ?? '';
             
-            // Chỉ tìm khi từ khóa dài hơn 1 ký tự
             if (mb_strlen($keyword) > 1) {
                 $model = $this->model('ProductModel');
-                $products = $model->searchByName($keyword, 5); // Lấy tối đa 5 kết quả
+                $products = $model->searchByName($keyword, 5);
                 
                 header('Content-Type: application/json');
                 echo json_encode([

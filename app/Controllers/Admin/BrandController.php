@@ -15,10 +15,10 @@ class BrandController extends Controller {
             $name = $_POST['name'];
             $logo = null;
 
-            // XỬ LÝ UPLOAD ẢNH
+            // XỬ LÝ UPLOAD ẢNH (Vào thư mục brands)
             if (isset($_FILES['logo']) && $_FILES['logo']['error'] == 0) {
-                // Định nghĩa đường dẫn vật lý và đường dẫn công khai (ROOT_PATH và BASE_URL cần được định nghĩa ở đâu đó như index.php hoặc config)
-                $targetDir = ROOT_PATH . "/uploads/"; 
+                // [SỬA LẠI] Đường dẫn lưu trữ vào thư mục con 'brands'
+                $targetDir = ROOT_PATH . "/public/uploads/brands/"; 
                 
                 // Kiểm tra thư mục có tồn tại không, nếu không thì tạo
                 if (!file_exists($targetDir)) {
@@ -27,7 +27,7 @@ class BrandController extends Controller {
 
                 // Tạo tên file ngẫu nhiên để tránh trùng
                 $fileExtension = pathinfo($_FILES["logo"]["name"], PATHINFO_EXTENSION);
-                $fileName = time() . '_' . uniqid() . '.' . $fileExtension; // Tạo tên file ngẫu nhiên hơn
+                $fileName = time() . '_' . uniqid() . '.' . $fileExtension;
                 $targetFile = $targetDir . $fileName;
 
                 if (move_uploaded_file($_FILES["logo"]["tmp_name"], $targetFile)) {
@@ -37,9 +37,8 @@ class BrandController extends Controller {
             
             $model = $this->model('BrandModel');
             $model->create($name, $logo);
-            // Có thể thêm session flash message ở đây
             header('Location: ' . BASE_URL . 'admin/brand');
-            exit; // Thêm exit để đảm bảo không có code nào chạy tiếp
+            exit;
         } else {
             $this->view('admin/brands/create');
         }
@@ -61,13 +60,15 @@ class BrandController extends Controller {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $name = $_POST['name'];
             $model = $this->model('BrandModel');
-            $currentBrand = $model->getById($id); // Lấy thông tin cũ để xử lý xóa ảnh
+            $currentBrand = $model->getById($id); 
 
             // Kiểm tra xem có upload ảnh mới không
             if (isset($_FILES['logo']) && $_FILES['logo']['error'] == 0 && !empty($_FILES['logo']['tmp_name'])) {
-                $targetDir = ROOT_PATH . "/uploads/";
+                // [SỬA LẠI] Đường dẫn lưu trữ vào thư mục con 'brands'
+                $targetDir = ROOT_PATH . "/public/uploads/brands/";
+                if (!file_exists($targetDir)) mkdir($targetDir, 0777, true);
 
-                // XÓA ẢNH CŨ TRƯỚC
+                // XÓA ẢNH CŨ TRƯỚC (Nếu có)
                 if ($currentBrand && !empty($currentBrand['logo'])) {
                     $oldFilePath = $targetDir . $currentBrand['logo'];
                     if (file_exists($oldFilePath) && is_file($oldFilePath)) {
@@ -84,23 +85,19 @@ class BrandController extends Controller {
                     // Update cả tên và logo mới
                     $model->updateWithLogo($id, $name, $fileName);
                 } else {
-                    // Nếu upload thất bại, chỉ update tên, giữ logo cũ
+                    // Nếu upload thất bại, chỉ update tên
                     $model->updateNameOnly($id, $name);
                 }
             } else {
-                // Không chọn ảnh mới -> Chỉ update tên, giữ nguyên ảnh cũ
+                // Không chọn ảnh mới -> Chỉ update tên
                 $model->updateNameOnly($id, $name);
             }
 
             header('Location: ' . BASE_URL . 'admin/brand');
             exit;
-        } else {
-            header('Location: ' . BASE_URL . 'admin/brand/edit/' . $id);
-            exit;
         }
     }
     
-    // Thêm logic xóa an toàn hơn, xóa cả ảnh
     public function delete($id) {
         $model = $this->model('BrandModel');
         $brand = $model->getById($id);
@@ -108,7 +105,8 @@ class BrandController extends Controller {
         if ($brand) {
              // XÓA ẢNH LIÊN QUAN TRƯỚC
             if (!empty($brand['logo'])) {
-                $targetDir = ROOT_PATH . "/uploads/";
+                // [SỬA LẠI] Đường dẫn xóa
+                $targetDir = ROOT_PATH . "/public/uploads/brands/";
                 $filePath = $targetDir . $brand['logo'];
                 if (file_exists($filePath) && is_file($filePath)) {
                     unlink($filePath);

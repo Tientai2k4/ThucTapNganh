@@ -5,7 +5,7 @@ use App\Core\Model;
 class PostModel extends Model {
     protected $table = 'posts';
 
-    // Lấy tất cả bài viết (kèm tên tác giả)
+    // Lấy tất cả bài viết (kèm tên tác giả) - Dùng cho Admin
     public function getAllPosts() {
         $sql = "SELECT p.*, u.full_name as author_name 
                 FROM {$this->table} p 
@@ -15,7 +15,7 @@ class PostModel extends Model {
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-    // Lấy chi tiết bài viết
+    // Lấy chi tiết bài viết theo ID
     public function getById($id) {
         $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE id = ?");
         $stmt->bind_param("i", $id);
@@ -68,7 +68,17 @@ class PostModel extends Model {
     }
 
     // --- Client Side ---
-    // Lấy bài viết active cho khách xem
+
+    // [MỚI - SỬA LỖI] Lấy bài viết mới nhất (có giới hạn số lượng)
+    public function getLatestPosts($limit = 4) {
+        $sql = "SELECT * FROM {$this->table} WHERE status = 1 ORDER BY created_at DESC LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $limit);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+
+    // Lấy tất cả bài viết active cho trang danh sách tin tức
     public function getActivePosts() {
         $sql = "SELECT * FROM {$this->table} WHERE status = 1 ORDER BY created_at DESC";
         return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);

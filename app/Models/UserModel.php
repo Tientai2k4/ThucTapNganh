@@ -101,15 +101,32 @@ class UserModel extends Model {
         }
         return $users;
     }
-// 9. [MỚI] Cập nhật thông tin cá nhân (Tên, SĐT)
+// 9. Cập nhật thông tin cá nhân (Họ tên, SĐT)
     public function updateProfile($id, $fullName, $phone) {
+        // Lưu ý: Trong database cột là 'phone_number', không phải 'phone'
         $sql = "UPDATE {$this->table} SET full_name = ?, phone_number = ? WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("ssi", $fullName, $phone, $id);
         return $stmt->execute();
     }
+// 10. Cập nhật Avatar (Ảnh đại diện)
+    public function updateAvatar($id, $avatarPath) {
+        $sql = "UPDATE {$this->table} SET avatar = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("si", $avatarPath, $id);
+        return $stmt->execute();
+    }
 
-    // 10. [MỚI] Đổi mật khẩu (Dành cho người đã đăng nhập)
+  // 11. Kiểm tra mật khẩu cũ (Để phục vụ chức năng đổi mật khẩu)
+    public function checkPassword($id, $passwordInput) {
+        $user = $this->findById($id);
+        if ($user && password_verify($passwordInput, $user['password'])) {
+            return true;
+        }
+        return false;
+    }
+
+    // 12. Đổi mật khẩu mới
     public function changePassword($id, $newPassword) {
         $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
         $sql = "UPDATE {$this->table} SET password = ? WHERE id = ?";

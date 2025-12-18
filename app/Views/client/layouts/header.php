@@ -1,10 +1,18 @@
 <?php
-// Giả định: Danh sách danh mục chính (Category) đã được truyền từ Controller
-$categories = $data['categories'] ?? [
-    ['name' => 'Kính Bơi', 'id' => 1],
-    ['name' => 'Mũ Bơi', 'id' => 2],
-    ['name' => 'Quần Áo Bơi', 'id' => 3]
-];
+// =================================================================
+// XỬ LÝ LẤY DANH MỤC TỪ DATABASE (Thay thế dữ liệu giả lập)
+// =================================================================
+
+if (isset($data['categories'])) {
+    // Trường hợp Controller đã truyền danh mục xuống
+    $categories = $data['categories'];
+} else {
+    // Trường hợp Controller không truyền, ta tự gọi Model để lấy
+    // Khởi tạo CategoryModel
+    $cateModel = new \App\Models\CategoryModel();
+    // Gọi hàm getAll() đã có trong Model bạn cung cấp
+    $categories = $cateModel->getAll();
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -27,7 +35,7 @@ $categories = $data['categories'] ?? [
         </div>
     </div>
 
-    <header class="main-header border-bottom shadow-sm">
+    <header class="main-header border-bottom shadow-sm sticky-top bg-white" style="z-index: 1020;">
         <nav class="navbar navbar-expand-lg navbar-light bg-white py-2">
             <div class="container">
                 <a class="navbar-brand fw-bold text-primary fs-3" href="<?= BASE_URL ?>">
@@ -46,11 +54,16 @@ $categories = $data['categories'] ?? [
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle px-3" href="#" data-bs-toggle="dropdown">Danh mục</a>
                             <div class="dropdown-menu shadow-sm border-0 mt-2 rounded-3">
-                                <?php foreach ($categories as $cat): ?>
-                                    <a class="dropdown-item py-2" href="<?= BASE_URL ?>product/category/<?= $cat['id'] ?>">
-                                        <?= htmlspecialchars($cat['name']) ?>
-                                    </a>
-                                <?php endforeach; ?>
+                                <?php if (!empty($categories)): ?>
+                                    <?php foreach ($categories as $cat): ?>
+                                        <a class="dropdown-item py-2" href="<?= BASE_URL ?>product/category/<?= $cat['id'] ?>">
+                                            <?= htmlspecialchars($cat['name']) ?>
+                                        </a>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <span class="dropdown-item py-2 text-muted">Chưa có danh mục</span>
+                                <?php endif; ?>
+                                
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item py-2 text-primary" href="<?= BASE_URL ?>product">Xem tất cả</a>
                             </div>
@@ -92,10 +105,27 @@ $categories = $data['categories'] ?? [
                                     <span class="small fw-bold text-truncate" style="max-width: 100px;"><?= htmlspecialchars($_SESSION['user_name']) ?></span>
                                 </button>
                                 
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3" style="min-width: 200px;">
-                                    <li class="px-3 py-2 border-bottom mb-2 bg-light rounded-top-3">
-                                        <small class="text-muted d-block">Xin chào,</small>
-                                        <strong class="text-primary"><?= htmlspecialchars($_SESSION['user_name']) ?></strong>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3" style="min-width: 250px;">
+                                    <li>
+                                        <a href="<?= BASE_URL ?>user/profile" class="dropdown-item px-3 py-2 border-bottom mb-2 bg-light rounded-top-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <?php if(!empty($_SESSION['user_avatar'])): ?>
+                                                        <img src="<?= $_SESSION['user_avatar'] ?>" class="rounded-circle object-fit-cover" width="40" height="40">
+                                                    <?php else: ?>
+                                                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                            <i class="fas fa-user small"></i>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block" style="font-size: 11px;">Xin chào,</small>
+                                                    <div class="fw-bold text-primary text-truncate" style="max-width: 140px;">
+                                                        <?= htmlspecialchars($_SESSION['user_name']) ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </a>
                                     </li>
 
                                     <?php if($_SESSION['user_role'] == 'admin'): ?>

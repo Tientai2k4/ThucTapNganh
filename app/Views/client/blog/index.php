@@ -16,9 +16,11 @@
             <div class="col-md-4 mb-4">
                 <div class="card h-100 border-0 shadow-sm hover-shadow transition">
                     <a href="<?= BASE_URL ?>blog/detail/<?= $p['slug'] ? $p['slug'] : $p['id'] ?>">
-                        <img src="<?= BASE_URL ?>public/uploads/<?= $p['thumbnail'] ?? 'default_blog.jpg' ?>" 
-                             class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?= htmlspecialchars($p['title']) ?>">
-                    </a>
+                        <img src="<?= BASE_URL ?>public/uploads/posts/<?= !empty($p['thumbnail']) ? $p['thumbnail'] : 'default_blog.jpg' ?>" 
+                             class="card-img-top" 
+                             style="height: 200px; object-fit: cover;" 
+                             alt="<?= htmlspecialchars($p['title']) ?>"
+                             onerror="this.src='<?= BASE_URL ?>public/assets/images/default_blog.jpg'"> </a>
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title fw-bold">
                             <a href="<?= BASE_URL ?>blog/detail/<?= $p['slug'] ? $p['slug'] : $p['id'] ?>" class="text-decoration-none text-dark">

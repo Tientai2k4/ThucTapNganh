@@ -5,32 +5,42 @@ use App\Core\Controller;
 class HomeController extends Controller {
     public function index() {
         
-        // 1. Lấy danh mục
+        // 1. Danh mục
         $catModel = $this->model('CategoryModel');
         $categories = $catModel->getAll();
 
-        // 2. Lấy sản phẩm nổi bật
+        // 2. Sản phẩm nổi bật (Lấy 9 sản phẩm)
         $prodModel = $this->model('ProductModel');
-        $products = $prodModel->getHomeProducts(8); // Lấy 8 sản phẩm mới nhất
+        $products = $prodModel->getHomeProducts(9); 
 
-        // 3. LẤY DANH SÁCH SLIDER (PHẦN MỚI BỔ SUNG)
-        // Cần tạo SliderModel nếu bạn chưa tạo trong thư mục Models/
+        // 3. Slider
         $sliderModel = $this->model('SliderModel');
-        // Lấy tất cả slider đang hoạt động (Giả định Model có hàm getActiveSliders() 
-        // hoặc dùng getAll() và lọc ở View, nhưng gọi riêng là tốt nhất)
         $sliders = $sliderModel->getAll(); 
-        
-        // Chỉ lấy những slider có status = 1 để hiển thị ra ngoài
         $activeSliders = array_filter($sliders, function($s) {
             return $s['status'] == 1;
         });
 
+        // 4. Thương hiệu
+        $brandModel = $this->model('BrandModel');
+        $brands = $brandModel->getAll(); 
+
+        // 5. Tin tức (Lấy 4 tin)
+        $postModel = $this->model('PostModel');
+        $posts = $postModel->getLatestPosts(4); 
+
+        // 6. [MỚI] Mã giảm giá (Lấy 6 mã)
+        // Lưu ý: Bạn cần chắc chắn file CouponModel.php đã có trong thư mục Models
+        $couponModel = $this->model('CouponModel');
+        $coupons = $couponModel->getAvailableCoupons(6);
 
         $data = [
-            'title' => 'Trang chủ - Swimming Store',
+            'title'      => 'Trang chủ - Swimming Store',
             'categories' => $categories, 
-            'products' => $products,
-            'sliders' => $activeSliders // TRUYỀN BIẾN SLIDER VÀO VIEW
+            'products'   => $products,
+            'sliders'    => $activeSliders,
+            'brands'     => $brands,
+            'posts'      => $posts,
+            'coupons'    => $coupons // Truyền sang View
         ];
         
         $this->view('client/home/index', $data);
