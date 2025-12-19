@@ -5,33 +5,23 @@ use App\Core\AuthMiddleware;
 
 class OrderController extends Controller {
     public function __construct() {
-        AuthMiddleware::hasRole(['staff']); 
+        AuthMiddleware::isStaffArea();
     }
 
     public function index() {
         $model = $this->model('OrderModel');
-        // Lấy danh sách đơn hàng
         $orders = $model->getAllOrders();
-        
-        // [QUAN TRỌNG] Truyền biến 'role_prefix' => 'staff' xuống View
-        $this->view('admin/orders/index', [
-            'orders' => $orders,
-            'role_prefix' => 'staff' 
-        ]);
+        // Gửi view riêng của staff
+        $this->view('staff/orders/index', ['orders' => $orders]);
     }
 
     public function detail($code) {
         $model = $this->model('OrderModel');
         $order = $model->getOrderByCode($code);
-        if (!$order) { echo "Đơn hàng không tồn tại"; return; }
+        if (!$order) { die("Không tìm thấy đơn hàng"); }
         $details = $model->getOrderDetails($order['id']);
 
-        // [QUAN TRỌNG] Truyền biến 'role_prefix' => 'staff' xuống View
-        $this->view('admin/orders/detail', [
-            'order' => $order,
-            'details' => $details,
-            'role_prefix' => 'staff'
-        ]);
+        $this->view('staff/orders/detail', ['order' => $order, 'details' => $details]);
     }
 
     public function updateStatus() {
@@ -39,17 +29,14 @@ class OrderController extends Controller {
             $id = $_POST['order_id'];
             $status = $_POST['status'];
             $code = $_POST['order_code'];
-
-            // Chặn quyền Hủy đơn đối với Staff
-            if ($status == 'cancelled') {
-                echo "<script>alert('Bạn không có quyền Hủy đơn!'); window.history.back();</script>";
+            
+            // Nhân viên không có quyền Hủy đơn hàng đã được duyệt
+            if ($status == 'cancelled' && $_SESSION['user_role'] != 'admin') {
+                echo "<script>alert('Bạn không có quyền hủy đơn hàng. Vui lòng liên hệ Admin!'); window.history.back();</script>";
                 return;
             }
 
-            $model = $this->model('OrderModel');
-            $model->updateStatus($id, $status);
-
-            // [SỬA LỖI Ở ĐÂY]: Chuyển hướng về STAFF, không phải ADMIN
+            $this->model('OrderModel')->updateStatus($id, $status);
             header('Location: ' . BASE_URL . 'staff/order/detail/' . $code);
             exit;
         }

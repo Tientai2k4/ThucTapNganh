@@ -222,5 +222,60 @@ class OrderModel extends Model {
         
         return $result->fetch_all(MYSQLI_ASSOC);
     }
+    // [THÊM MỚI] Hàm lấy danh sách đơn hàng có lọc và sắp xếp cho Admin
+    public function getFilterOrders($filters = []) {
+        $sql = "SELECT * FROM orders WHERE 1=1";
+        
+        $types = "";
+        $values = [];
+
+        // 1. Lọc theo từ khóa (Mã đơn, Tên khách, SĐT)
+        if (!empty($filters['keyword'])) {
+            $sql .= " AND (order_code LIKE ? OR customer_name LIKE ? OR customer_phone LIKE ?)";
+            $types .= "sss";
+            $keyword = "%" . $filters['keyword'] . "%";
+            $values[] = $keyword;
+            $values[] = $keyword;
+            $values[] = $keyword;
+        }
+
+        // 2. Lọc theo Trạng thái
+        if (!empty($filters['status'])) {
+            $sql .= " AND status = ?";
+            $types .= "s";
+            $values[] = $filters['status'];
+        }
+
+        // 3. Sắp xếp
+        $sort = $filters['sort'] ?? 'newest';
+        switch ($sort) {
+            case 'oldest':
+                $sql .= " ORDER BY created_at ASC"; // Cũ nhất trước
+                break;
+            case 'total_desc':
+                $sql .= " ORDER BY total_money DESC"; // Tiền cao nhất
+                break;
+            case 'total_asc':
+                $sql .= " ORDER BY total_money ASC"; // Tiền thấp nhất
+                break;
+            case 'newest':
+            default:
+                $sql .= " ORDER BY created_at DESC"; // Mới nhất (Mặc định)
+                break;
+        }
+
+        // Thực thi
+        $stmt = $this->conn->prepare($sql);
+        
+        if (!empty($values)) {
+            $bind_params = [];
+            $params_ref = array_merge([$types], $values);
+            foreach ($params_ref as $key => $value) $bind_params[$key] = &$params_ref[$key];
+            call_user_func_array([$stmt, 'bind_param'], $bind_params);
+        }
+
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
 }
 ?>

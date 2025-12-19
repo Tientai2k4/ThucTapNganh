@@ -1,6 +1,5 @@
 <div class="container my-5">
     <div class="row">
-        
         <div class="col-md-6">
             <div class="card border-0 mb-3 shadow-sm text-center position-relative group-hover-zoom">
                 <img id="mainImage" 
@@ -11,7 +10,7 @@
                      onclick="openLightbox(this.src)">
                 
                 <div class="position-absolute bottom-0 end-0 p-3">
-                    <button class="btn btn-light rounded-circle shadow-sm" onclick="openLightbox(document.getElementById('mainImage').src)">
+                    <button class="btn btn-light rounded-circle shadow-sm" type="button" onclick="openLightbox(document.getElementById('mainImage').src)">
                         <i class="fas fa-expand-alt"></i>
                     </button>
                 </div>
@@ -37,7 +36,7 @@
         <div class="col-md-6">
             <h2 class="fw-bold text-dark"><?= htmlspecialchars($data['product']['name']) ?></h2>
             <div class="mb-2">
-                <span class="badge bg-info text-dark"><?= $data['product']['brand_name'] ?? 'Brand' ?></span>
+                <span class="badge bg-info text-dark"><?= $data['product']['brand_name'] ?? 'Thương hiệu' ?></span>
                 <span class="text-muted ms-2">Mã SP: <?= htmlspecialchars($data['product']['sku_code']) ?></span>
             </div>
 
@@ -86,8 +85,7 @@
                     <button type="submit" id="btnBuy" class="btn btn-primary btn-lg py-3 flex-grow-1" disabled>
                         <i class="fas fa-shopping-cart me-2"></i> Thêm vào giỏ hàng
                     </button>
-                    
-                    </div>
+                </div>
             </form>
             
             <div class="alert alert-light border-start border-4 border-success mt-4 small">
@@ -212,22 +210,21 @@
 
 </div>
 
-<div class="modal fade" id="lightboxModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="lightboxModal" tabindex="-1" aria-hidden="true" style="z-index: 10000;">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 95%; margin: auto;">
-        <div class="modal-content bg-transparent border-0 shadow-none">
+        <div class="modal-content bg-transparent border-0 shadow-none position-relative">
             
-            <div class="text-end mb-2" style="position: absolute; top: -40px; right: 0; z-index: 1060;">
-                <button type="button" class="btn btn-light rounded-circle shadow" data-bs-dismiss="modal">
-                    <i class="fas fa-times fa-lg"></i>
-                </button>
-            </div>
+            <button type="button" class="btn btn-light rounded-circle shadow" data-bs-dismiss="modal" 
+                    style="position: absolute; top: 10px; right: 10px; z-index: 10001;">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
 
             <div class="modal-body text-center d-flex justify-content-center align-items-center" style="height: 85vh; overflow: hidden; padding: 0;">
                 <img id="lightboxImg" src="" class="img-fluid shadow-lg" 
                      style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s ease-out; cursor: grab;">
             </div>
 
-            <div class="text-center mt-2 fixed-bottom mb-4" style="pointer-events: none;">
+            <div class="text-center mt-2 fixed-bottom mb-4" style="pointer-events: none; z-index: 10001;">
                 <div class="btn-group bg-white rounded shadow p-1" style="pointer-events: auto;">
                     <button class="btn btn-outline-secondary px-3" onclick="zoomOut()"><i class="fas fa-minus"></i></button>
                     <button class="btn btn-outline-primary px-3" onclick="resetZoom()"><i class="fas fa-sync-alt"></i></button>
@@ -237,7 +234,6 @@
         </div>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 // --- LOGIC ĐỔI ẢNH ---
@@ -253,13 +249,14 @@ function changeImage(src, element) {
 
 // --- LOGIC LIGHTBOX & ZOOM ---
 let currentScale = 1;
-// Đoạn này sẽ chạy được vì đã có bootstrap.bundle.min.js ở trên
-const lightboxModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
+// Khởi tạo Modal
+const lightboxModalElement = document.getElementById('lightboxModal');
+const lightboxModal = new bootstrap.Modal(lightboxModalElement);
 const lightboxImg = document.getElementById('lightboxImg');
 
 function openLightbox(src) {
     lightboxImg.src = src;
-    resetZoom(); // Reset zoom khi mở ảnh mới
+    resetZoom(); 
     lightboxModal.show();
 }
 
@@ -273,7 +270,7 @@ function zoomIn() {
 }
 
 function zoomOut() {
-    if (currentScale > 0.4) { // Giới hạn nhỏ nhất
+    if (currentScale > 0.4) { 
         currentScale -= 0.2;
         updateTransform();
     }
@@ -284,14 +281,14 @@ function resetZoom() {
     updateTransform();
 }
 
-// Thêm chức năng Zoom bằng lăn chuột
+// Zoom bằng lăn chuột
 lightboxImg.addEventListener('wheel', function(e) {
     if (e.deltaY < 0) {
         zoomIn();
     } else {
         zoomOut();
     }
-    e.preventDefault(); // Ngăn cuộn trang
+    e.preventDefault(); 
 });
 
 // --- LOGIC GIỎ HÀNG & KHO ---
@@ -353,6 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (data.status) {
                     alert(data.message); 
+                    // Cập nhật số lượng giỏ hàng trên Header nếu có
                     const cartCountEl = document.getElementById('cart-count');
                     if (cartCountEl) {
                         cartCountEl.innerText = data.cart_count;

@@ -27,13 +27,13 @@
                         <div class="mb-4">
                             <label class="form-label fw-bold">Trạng thái tài khoản</label>
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="radio" name="status" id="statusOn" value="1" <?= $data['user']['status'] == 1 ? 'checked' : '' ?>>
-                                <label class="form-check-label text-success" for="statusOn">Hoạt động bình thường</label>
+                                <input type="hidden" name="status" value="0">
+                                <input class="form-check-input" type="checkbox" name="status" id="statusSwitch" value="1" <?= $data['user']['status'] == 1 ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="statusSwitch">
+                                    Hoạt động / Khóa tài khoản
+                                </label>
                             </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="radio" name="status" id="statusOff" value="0" <?= $data['user']['status'] == 0 ? 'checked' : '' ?>>
-                                <label class="form-check-label text-danger" for="statusOff">Khóa tài khoản (Tạm ngưng)</label>
-                            </div>
+                            <div class="form-text">Gạt sang phải để kích hoạt, tắt để khóa tài khoản.</div>
                         </div>
 
                         <div class="d-flex justify-content-between">

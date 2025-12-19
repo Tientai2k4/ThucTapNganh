@@ -4,8 +4,9 @@ use App\Core\Controller;
 use App\Core\AuthMiddleware;
 
 class PostController extends Controller {
-    public function __construct() {
-        AuthMiddleware::isAdminOrStaff(); 
+  public function __construct() {
+        // Sử dụng phương thức đã định nghĩa ở Middleware mới để cho phép cả Admin và Staff
+        AuthMiddleware::isStaffArea(); 
     }
 
     public function index() {

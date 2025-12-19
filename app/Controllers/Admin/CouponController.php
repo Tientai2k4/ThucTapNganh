@@ -6,8 +6,7 @@ use App\Core\AuthMiddleware;
 class CouponController extends Controller {
     public function __construct() {
         // [Kiểm tra chung] Cho phép Admin và Staff quản lý Coupon
-        AuthMiddleware::hasRole(); 
-    }
+AuthMiddleware::isStaffArea();    }
 
     // Danh sách
     public function index() {
