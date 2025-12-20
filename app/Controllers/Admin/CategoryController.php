@@ -1,8 +1,14 @@
 <?php
 namespace App\Controllers\Admin;
 use App\Core\Controller;
-
+use App\Core\AuthMiddleware;
 class CategoryController extends Controller {
+    public function __construct() {
+        // [QUAN TRỌNG] Chỉ Admin tối cao mới được quản lý Danh mục
+        // Content Staff KHÔNG ĐƯỢC PHÉP vào đây
+        AuthMiddleware::onlyAdmin(); 
+    }
+
     public function index() {
         $model = $this->model('CategoryModel');
         $categories = $model->getAll();

@@ -4,23 +4,33 @@ use App\Core\Controller;
 use App\Core\AuthMiddleware;
 
 class ReviewController extends Controller {
+    
     public function __construct() {
-        AuthMiddleware::isStaffArea();
+        AuthMiddleware::isCare(); 
     }
 
     public function index() {
         $model = $this->model('ReviewModel');
         $reviews = $model->getAllReviews();
-        $this->view('staff/reviews/index', ['reviews' => $reviews]);
+        
+        $this->view('staff/reviews/index', [
+            'reviews' => $reviews
+        ]);
     }
 
-    public function updateStatus() {
+    // Ẩn/Hiện review
+    public function toggleStatus($id, $status) {
+        $this->model('ReviewModel')->updateStatus($id, (int)$status);
+        header('Location: ' . BASE_URL . 'staff/review');
+    }
+
+    // Trả lời review
+    public function reply($id) {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $id = $_POST['review_id'];
-            $status = $_POST['status'];
-            $this->model('ReviewModel')->updateStatus($id, $status);
-            header('Location: ' . BASE_URL . 'staff/review');
-            exit;
+            $content = $_POST['reply_content'];
+            $this->model('ReviewModel')->replyReview($id, $content);
+            header('Location: ' . BASE_URL . 'staff/review?msg=replied');
         }
     }
 }
+?>

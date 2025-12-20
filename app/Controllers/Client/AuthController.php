@@ -4,7 +4,22 @@ use App\Core\Controller;
 
 class AuthController extends Controller {
 
-    public function index() {
+// Sửa lại hàm index để tự động đăng nhập nếu có Cookie
+public function index() {
+    if (isset($_SESSION['user_id'])) {
+        $model = $this->model('UserModel');
+        $user = $model->findById($_SESSION['user_id']);
+        $this->redirectUser($user['role']);
+    } elseif (isset($_COOKIE['remember_user'])) {
+        // Tự động đăng nhập từ Cookie
+        $userId = $_COOKIE['remember_user'];
+        $model = $this->model('UserModel');
+        $user = $model->findById($userId);
+        if ($user) {
+            $this->setUserSession($user);
+            $this->redirectUser($user['role']);
+        }
+    }
     $this->login();
 }
     // === LOGIN ===
@@ -12,22 +27,31 @@ class AuthController extends Controller {
         $this->view('client/auth/login');
     }
 
-  public function processLogin() {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $email = $_POST['email'];
-            $password = $_POST['password'];
+public function processLogin() {
+    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        $email = $_POST['email'];
+        $password = $_POST['password'];
+        $remember = isset($_POST['remember']); // Kiểm tra xem người dùng có tích nút Lưu không
 
-            $model = $this->model('UserModel');
-            $user = $model->login($email, $password);
+        $model = $this->model('UserModel');
+        $user = $model->login($email, $password);
 
-            if ($user) {
-                $this->setUserSession($user);
-                $this->redirectUser($user['role']);
-            } else {
-                $this->view('client/auth/login', ['error' => 'Sai email hoặc mật khẩu']);
+        if ($user) {
+            $this->setUserSession($user);
+
+            // === XỬ LÝ LƯU THÔNG TIN (COOKIE) ===
+            if ($remember) {
+                // Tạo một token ngẫu nhiên hoặc lưu ID người dùng (an toàn hơn là tạo token trong DB)
+                // Ở đây tôi ví dụ lưu ID đơn giản, thực tế nên dùng Token
+                setcookie('remember_user', $user['id'], time() + (86400 * 30), "/"); // Lưu trong 30 ngày
             }
+
+            $this->redirectUser($user['role']);
+        } else {
+            $this->view('client/auth/login', ['error' => 'Sai email hoặc mật khẩu']);
         }
     }
+}
 
     // === REGISTER ===
     public function register() {
@@ -123,21 +147,45 @@ public function googleCallback() {
         $_SESSION['user_role'] = $user['role'];
         $_SESSION['user_avatar'] = $user['avatar'];
     }
-// Tìm và sửa lại hàm redirectUser trong AuthController.php của bạn
 private function redirectUser($role) {
-    if ($role == 'admin') {
-        header('Location: ' . BASE_URL . 'admin/dashboard');
-    } elseif ($role == 'staff') {
-        // Chuyển hướng nhân viên vào khu vực riêng
-        header('Location: ' . BASE_URL . 'staff/dashboard');
-    } else {
-        header('Location: ' . BASE_URL);
+        switch ($role) {
+            case 'admin':
+                // Admin vào trang tổng quát của admin
+                header('Location: ' . BASE_URL . 'admin/dashboard');
+                break;
+
+            case 'sales_staff':
+                // Nhân viên bán hàng vào thẳng trang quản lý đơn hàng/kho
+                header('Location: ' . BASE_URL . 'staff/dashboard');
+                break;
+
+            case 'content_staff':
+                // Nhân viên nội dung vào trang blog/banner
+                header('Location: ' . BASE_URL . 'staff/dashboard'); 
+                break;
+
+            case 'care_staff':
+                // Nhân viên CSKH vào trang liên hệ/review
+                header('Location: ' . BASE_URL . 'staff/dashboard');
+                break;
+
+            default:
+                // Khách hàng về trang chủ
+                header('Location: ' . BASE_URL);
+                break;
+        }
+        exit;
     }
-    exit;
-}
-public function logout() {
+// Đảm bảo hàm logout xóa sạch các dấu vết
+    public function logout() {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        session_unset();
         session_destroy();
-        header('Location: ' . BASE_URL);
+        if (isset($_COOKIE['remember_user'])) {
+            setcookie('remember_user', '', time() - 3600, '/');
+        }
+        header('Location: ' . BASE_URL . 'client/auth/login');
+        exit;
     }
 
     // 1. Hiện Form nhập email

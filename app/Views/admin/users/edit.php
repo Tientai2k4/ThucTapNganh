@@ -15,13 +15,15 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Phân quyền (Vai trò)</label>
+                            <label class="form-label fw-bold">Phân quyền (Vai trò cụ thể)</label>
                             <select name="role" class="form-select">
-                                <option value="member" <?= $data['user']['role'] == 'member' ? 'selected' : '' ?>>Member (Khách hàng)</option>
-                                <option value="staff" <?= $data['user']['role'] == 'staff' ? 'selected' : '' ?>>Staff (Nhân viên)</option>
-                                <option value="admin" <?= $data['user']['role'] == 'admin' ? 'selected' : '' ?>>Admin (Quản trị viên)</option>
+                                <option value="member" <?= $data['user']['role'] == 'member' ? 'selected' : '' ?>>Khách hàng (Member)</option>
+                                <option value="sales_staff" <?= $data['user']['role'] == 'sales_staff' ? 'selected' : '' ?>>Nhân viên Bán hàng (Sales)</option>
+                                <option value="content_staff" <?= $data['user']['role'] == 'content_staff' ? 'selected' : '' ?>>Nhân viên Nội dung (Content)</option>
+                                <option value="care_staff" <?= $data['user']['role'] == 'care_staff' ? 'selected' : '' ?>>Nhân viên CSKH (Care)</option>
+                                <option value="admin" <?= $data['user']['role'] == 'admin' ? 'selected' : '' ?>>Quản trị viên (Admin)</option>
                             </select>
-                            <div class="form-text text-danger">* Lưu ý: Admin có toàn quyền hệ thống.</div>
+                            <div class="form-text text-muted">* Mỗi vai trò sẽ có quyền hạn truy cập các phân khu khác nhau.</div>
                         </div>
 
                         <div class="mb-4">
@@ -33,7 +35,7 @@
                                     Hoạt động / Khóa tài khoản
                                 </label>
                             </div>
-                            <div class="form-text">Gạt sang phải để kích hoạt, tắt để khóa tài khoản.</div>
+                            <div class="form-text">Gạt sang phải để kích hoạt, tắt để khóa tài khoản khách/nhân viên.</div>
                         </div>
 
                         <div class="d-flex justify-content-between">

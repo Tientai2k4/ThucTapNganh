@@ -34,11 +34,20 @@
                 </td>
                 <td>
                     <?php 
-                        $roleColors = ['admin' => 'danger', 'staff' => 'warning', 'member' => 'primary'];
-                        $roleName = ucfirst($u['role']);
-                        $color = $roleColors[$u['role']] ?? 'secondary';
+                        // Định nghĩa màu sắc và tên hiển thị cho từng quyền mới
+                        $roleConfig = [
+                            'admin'         => ['color' => 'danger',  'name' => 'Admin'],
+                            'sales_staff'   => ['color' => 'success', 'name' => 'Kinh doanh'],
+                            'content_staff' => ['color' => 'info',    'name' => 'Nội dung'],
+                            'care_staff'    => ['color' => 'warning', 'name' => 'CSKH'],
+                            'member'        => ['color' => 'primary', 'name' => 'Khách hàng']
+                        ];
+                        
+                        $currentRole = $u['role'];
+                        $color = $roleConfig[$currentRole]['color'] ?? 'secondary';
+                        $name  = $roleConfig[$currentRole]['name'] ?? ucfirst($currentRole);
                     ?>
-                    <span class="badge bg-<?= $color ?>"><?= $roleName ?></span>
+                    <span class="badge bg-<?= $color ?>"><?= $name ?></span>
                 </td>
                 <td>
                     <?php if($u['status'] == 1): ?>
@@ -49,12 +58,12 @@
                 </td>
                 <td>
                     <div class="btn-group btn-group-sm">
-                        <a href="<?= BASE_URL ?>admin/user/edit/<?= $u['id'] ?>" class="btn btn-info text-white" title="Phân quyền & Khóa">
+                        <a href="<?= BASE_URL ?>admin/user/edit/<?= $u['id'] ?>" class="btn btn-info text-white" title="Sửa quyền & Trạng thái">
                             <i class="fas fa-edit"></i>
                         </a>
                         
                         <a href="<?= BASE_URL ?>admin/user/delete/<?= $u['id'] ?>" class="btn btn-danger" 
-                           onclick="return confirm('CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn người dùng này khỏi hệ thống. Bạn có chắc chắn không?')" title="Xóa vĩnh viễn">
+                           onclick="return confirm('CẢNH BÁO: Xóa vĩnh viễn tài khoản này?')" title="Xóa vĩnh viễn">
                             <i class="fas fa-trash"></i>
                         </a>
                     </div>
