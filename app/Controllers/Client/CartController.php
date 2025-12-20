@@ -10,29 +10,23 @@ class CartController extends Controller {
 
         if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
             $prodModel = $this->model('ProductModel');
-            
-            // Lấy danh sách ID biến thể từ session
             $variantIds = array_keys($_SESSION['cart']);
-            
-            // Lấy thông tin chi tiết từ DB (để đảm bảo giá luôn đúng)
-            // Bạn cần thêm hàm getCartDetails trong ProductModel
             $products = $prodModel->getVariantsDetail($variantIds);
 
             foreach ($products as $p) {
-                $qty = $_SESSION['cart'][$p['variant_id']];
-                $subtotal = $p['price'] * $qty;
-                if ($p['sale_price'] > 0) {
-                    $subtotal = $p['sale_price'] * $qty;
-                }
+                $vId = $p['variant_id'];
+                $qty = $_SESSION['cart'][$vId];
+                $price = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price'];
+                $subtotal = $price * $qty;
 
                 $cartData[] = [
                     'product_id' => $p['product_id'],
-                    'variant_id' => $p['variant_id'],
+                    'variant_id' => $vId,
                     'name' => $p['name'],
                     'image' => $p['image'],
                     'size' => $p['size'],
                     'color' => $p['color'],
-                    'price' => ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price'],
+                    'price' => $price,
                     'qty' => $qty,
                     'subtotal' => $subtotal
                 ];
@@ -46,76 +40,70 @@ class CartController extends Controller {
         ]);
     }
 
-    // Thêm vào giỏ hàng (Sử dụng AJAX)
-public function add() {
+ public function add() {
+    // Xóa bỏ mọi ký tự thừa phát sinh trước đó (khoảng trắng, dòng trống)
+    if (ob_get_length()) ob_clean();
+
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        // Lấy dữ liệu từ POST
-        // Dùng null-coalescing operator (??) và ép kiểu an toàn
         $variantId = $_POST['variant_id'] ?? null;
         $qty = (int)($_POST['quantity'] ?? 1);
 
         if ($variantId && $qty > 0) {
-            // 1. Cập nhật Session giỏ hàng
-            if (!isset($_SESSION['cart'])) {
-                $_SESSION['cart'] = [];
+            $prodModel = $this->model('ProductModel');
+            $stock = $prodModel->getVariantStock($variantId);
+            
+            if (!isset($_SESSION['cart'])) $_SESSION['cart'] = [];
+
+            $currentInCart = $_SESSION['cart'][$variantId] ?? 0;
+            $newQty = $currentInCart + $qty;
+
+            // Kiểm tra kho
+            if ($newQty > $stock) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['status' => false, 'message' => "Kho không đủ! Hiện còn: $stock"]);
+                exit;
             }
 
-            if (isset($_SESSION['cart'][$variantId])) {
-                $_SESSION['cart'][$variantId] += $qty;
-            } else {
-                $_SESSION['cart'][$variantId] = $qty;
-            }
+            // Lưu vào session
+            $_SESSION['cart'][$variantId] = $newQty;
 
-            // 2. Lấy số lượng mới
-            $newCount = \getCartQuantity(); 
+            // Tính tổng số lượng hiển thị trên Header
+            $totalCount = 0;
+            foreach($_SESSION['cart'] as $q) $totalCount += $q;
 
-            // 3. Trả về phản hồi JSON
-            header('Content-Type: application/json');
+            // TRẢ VỀ JSON
+            header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'status' => true, 
-                'message' => 'Đã thêm sản phẩm vào giỏ hàng.', 
-                'cart_count' => $newCount // Trả về số lượng mới để cập nhật trên header
+                'message' => 'Đã thêm sản phẩm vào giỏ hàng thành công.', 
+                'cart_count' => $totalCount
             ]);
-            exit; // Kết thúc request sau khi trả về JSON
+            exit; // Bắt buộc phải có exit
         }
     }
-    
-    // Nếu không phải POST hoặc thiếu dữ liệu
-    header('Content-Type: application/json');
-    echo json_encode(['status' => false, 'message' => 'Lỗi dữ liệu đầu vào.']);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['status' => false, 'message' => 'Lỗi dữ liệu!']);
     exit;
 }
-    // Cập nhật số lượng
     public function update() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $variantId = $_POST['variant_id'];
             $qty = (int)$_POST['qty'];
-
             if ($qty > 0) {
                 $_SESSION['cart'][$variantId] = $qty;
             } else {
                 unset($_SESSION['cart'][$variantId]);
             }
-            header('Location: ' . BASE_URL . 'cart');
         }
+        header('Location: ' . BASE_URL . 'cart');
+        exit;
     }
 
-    // Xóa sản phẩm
     public function delete($id) {
         if (isset($_SESSION['cart'][$id])) {
             unset($_SESSION['cart'][$id]);
         }
         header('Location: ' . BASE_URL . 'cart');
-    }
-    // Hàm mới: Trả về số lượng giỏ hàng dưới dạng JSON
-    public function getCartCount() {
-        // Hàm getCartQuantity() đã có trong Helpers.php của bạn
-        $count = getCartQuantity(); 
-        
-        // Trả về JSON
-        header('Content-Type: application/json');
-        echo json_encode(['count' => $count]);
         exit;
     }
 }
-?>

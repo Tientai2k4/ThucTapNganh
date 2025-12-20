@@ -253,15 +253,15 @@ public function getAll() {
         return $stmt->execute();
     }
 
-    // [CŨ - GIỮ NGUYÊN] Lấy số lượng tồn kho (Trả về số nguyên)
-    public function getVariantStock($variantId) {
-        $sql = "SELECT stock_quantity FROM product_variants WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("i", $variantId);
-        $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
-        return $result ? (int)$result['stock_quantity'] : 0;
-    }
+// Tìm đến hàm getVariantStock và sửa lại cho chắc chắn
+public function getVariantStock($variantId) {
+    $sql = "SELECT stock_quantity FROM product_variants WHERE id = ?";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bind_param("i", $variantId);
+    $stmt->execute();
+    $result = $stmt->get_result()->fetch_assoc();
+    return $result ? (int)$result['stock_quantity'] : 0;
+}
 
     // --- CÁC HÀM XỬ LÝ WISHLIST (GIỮ NGUYÊN) ---
     
