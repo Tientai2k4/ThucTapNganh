@@ -4,21 +4,38 @@ use App\Core\Controller;
 use App\Core\AuthMiddleware;
 
 class DashboardController extends Controller {
-    public function index() {
-        // Chỉ Admin mới được xem thống kê doanh thu
-        AuthMiddleware::onlyAdmin();
+    private $model;
 
-        $model = $this->model('ReportModel');
-        
+    public function __construct() {
+        AuthMiddleware::onlyAdmin();
+        $this->model = $this->model('ReportModel');
+    }
+
+    // Trang chủ Dashboard
+    public function index() {
         $data = [
-            'title'         => 'Bảng điều khiển quản trị',
-            'counters'      => $model->getCounters(),
-            'revenue'       => $model->getRevenueByDate(),
-            'top_products'  => $model->getTopProducts(),
-            'low_stock'     => $model->getLowStockProducts(),
-            'top_customers' => $model->getTopCustomers()
+            'counters'        => $this->model->getCounters(),
+            'recent_orders'   => $this->model->getRecentOrders(),   // [MỚI]
+            'recent_contacts' => $this->model->getRecentContacts(), // [MỚI]
+            'low_stock'       => $this->model->getLowStockLimit(),
+            'top_customers'   => $this->model->getTopCustomersLimit()
         ];
-        
         $this->view('admin/dashboard/index', $data);
+    }
+
+    // Các trang chi tiết giữ nguyên
+    public function view_low_stock() {
+        $data['products'] = $this->model->getAllLowStock();
+        $this->view('admin/dashboard/detail_low_stock', $data);
+    }
+
+    public function view_customers() {
+        $data['customers'] = $this->model->getAllTopCustomers();
+        $this->view('admin/dashboard/detail_customers', $data);
+    }
+
+    public function view_revenue() {
+        $data['revenue'] = $this->model->getRevenueDetail();
+        $this->view('admin/dashboard/detail_revenue', $data);
     }
 }

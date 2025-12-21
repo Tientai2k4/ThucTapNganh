@@ -4,32 +4,33 @@ use App\Core\Controller;
 use App\Core\AuthMiddleware;
 
 class ReviewController extends Controller {
+    
     public function __construct() {
-        AuthMiddleware::hasRole(['staff']);
+        AuthMiddleware::isCare(); 
     }
 
     public function index() {
         $model = $this->model('ReviewModel');
         $reviews = $model->getAllReviews();
-
-        // Truyền prefix staff
-        $this->view('admin/reviews/index', [
-            'reviews' => $reviews,
-            'role_prefix' => 'staff'
+        
+        $this->view('staff/reviews/index', [
+            'reviews' => $reviews
         ]);
     }
 
-    public function updateStatus() {
+    // Ẩn/Hiện review
+    public function toggleStatus($id, $status) {
+        $this->model('ReviewModel')->updateStatus($id, (int)$status);
+        header('Location: ' . BASE_URL . 'staff/review');
+    }
+
+    // Trả lời review
+    public function reply($id) {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $id = $_POST['review_id'];
-            $status = $_POST['status'];
-            
-            $model = $this->model('ReviewModel');
-            $model->updateStatus($id, $status);
-            
-            // [SỬA LỖI Ở ĐÂY]: Chuyển hướng về STAFF
-            header('Location: ' . BASE_URL . 'staff/review');
-            exit;
+            $content = $_POST['reply_content'];
+            $this->model('ReviewModel')->replyReview($id, $content);
+            header('Location: ' . BASE_URL . 'staff/review?msg=replied');
         }
     }
 }
+?>

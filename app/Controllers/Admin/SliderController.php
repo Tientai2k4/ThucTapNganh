@@ -4,10 +4,11 @@ use App\Core\Controller;
 use App\Core\AuthMiddleware; // Nhúng Middleware
 
 class SliderController extends Controller {
-    public function __construct() {
-        // [Kiểm tra chung] Cho phép Admin và Staff quản lý Slider
-        AuthMiddleware::hasRole(); 
+  public function __construct() {
+        // Sử dụng phương thức đã định nghĩa ở Middleware mới để cho phép cả Admin và Staff
+        AuthMiddleware::isStaffArea(); 
     }
+
 
     public function index() {
         $model = $this->model('SliderModel');

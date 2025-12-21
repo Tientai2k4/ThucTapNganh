@@ -38,7 +38,7 @@ class ProductModel extends Model {
         return $stmt->execute();
     }
 
-    // [MỚI] 3. Thêm ảnh phụ vào bảng product_images
+// [GIỮ NGUYÊN] 3. Thêm ảnh phụ
     public function addGalleryImage($productId, $imageUrl) {
         $sql = "INSERT INTO product_images (product_id, image_url) VALUES (?, ?)";
         $stmt = $this->conn->prepare($sql);
@@ -46,7 +46,7 @@ class ProductModel extends Model {
         return $stmt->execute();
     }
 
-    // [MỚI] 4. Lấy danh sách ảnh phụ
+    // [GIỮ NGUYÊN] 4. Lấy danh sách ảnh phụ
     public function getGalleryImages($productId) {
         $sql = "SELECT * FROM product_images WHERE product_id = ? ORDER BY id ASC";
         $stmt = $this->conn->prepare($sql);
@@ -54,9 +54,26 @@ class ProductModel extends Model {
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
+
+    // [BỔ SUNG QUAN TRỌNG] Lấy 1 ảnh phụ theo ID (để lấy tên file mà xóa)
+    public function getGalleryImageById($imageId) {
+        $sql = "SELECT * FROM product_images WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $imageId);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
+
+    // [BỔ SUNG QUAN TRỌNG] Xóa ảnh phụ theo ID
+    public function deleteGalleryImage($imageId) {
+        $sql = "DELETE FROM product_images WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $imageId);
+        return $stmt->execute();
+    }
+
     
-    // 5. Cập nhật thông tin sản phẩm
-    public function update($id, $data) {
+public function update($id, $data) {
         $sql = "UPDATE {$this->table} SET 
                 category_id = ?, brand_id = ?, name = ?, sku_code = ?, 
                 price = ?, sale_price = ?, description = ?, image = ? 
@@ -68,7 +85,6 @@ class ProductModel extends Model {
             $data['sku_code'], $data['price'], $data['sale_price'], 
             $data['description'], $data['image'], $id
         );
-        
         return $stmt->execute();
     }
 
@@ -83,7 +99,7 @@ class ProductModel extends Model {
     // --- CÁC HÀM LẤY DỮ LIỆU (READ) ---
 
     // [CẬP NHẬT] 7. Lấy sản phẩm theo ID (Kèm tên danh mục, thương hiệu)
-    public function getById($id) {
+public function getById($id) {
         $sql = "SELECT p.*, c.name as category_name, b.name as brand_name 
                 FROM {$this->table} p
                 LEFT JOIN categories c ON p.category_id = c.id
@@ -95,16 +111,14 @@ class ProductModel extends Model {
         return $stmt->get_result()->fetch_assoc();
     }
 
-    // [CẬP NHẬT] 8. Lấy danh sách biến thể theo ID sản phẩm (Chỉ lấy stock > 0)
-    public function getVariants($productId) {
+ public function getVariants($productId) {
         $stmt = $this->conn->prepare("SELECT * FROM product_variants WHERE product_id = ? AND stock_quantity > 0");
         $stmt->bind_param("i", $productId);
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
     
-    // [CŨ - GIỮ NGUYÊN] Lấy tất cả sản phẩm (kèm tên danh mục) - Dùng cho trang Admin
-    public function getAll() {
+public function getAll() {
         $sql = "SELECT p.*, c.name as cat_name 
                 FROM products p 
                 LEFT JOIN categories c ON p.category_id = c.id 
@@ -114,23 +128,11 @@ class ProductModel extends Model {
     }
 
     // [CŨ - GIỮ NGUYÊN] Lấy sản phẩm để hiển thị trang chủ (Client)
- // Trong file App/Models/ProductModel.php
-
-public function getHomeProducts($limit = 8) {
-    // Kết nối bảng products với product_variants để tính tổng tồn kho
-    // Chỉ lấy sản phẩm Active và có Tổng tồn kho > 0
-    $sql = "SELECT p.*, SUM(pv.stock_quantity) as total_stock 
-            FROM products p
-            LEFT JOIN product_variants pv ON p.id = pv.product_id
-            WHERE p.is_active = 1 
-            GROUP BY p.id
-            HAVING total_stock > 0 
-            ORDER BY p.created_at DESC 
-            LIMIT " . (int)$limit;
-            
-    $result = $this->conn->query($sql);
-    return $result->fetch_all(MYSQLI_ASSOC);
-}
+    public function getHomeProducts($limit = 8) {
+        $sql = "SELECT * FROM {$this->table} WHERE is_active = 1 ORDER BY created_at DESC LIMIT $limit";
+        $result = $this->conn->query($sql);
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
 
    public function filterProducts($filters) {
         $sql = "SELECT DISTINCT p.* FROM products p 
@@ -251,15 +253,15 @@ public function getHomeProducts($limit = 8) {
         return $stmt->execute();
     }
 
-    // [CŨ - GIỮ NGUYÊN] Lấy số lượng tồn kho (Trả về số nguyên)
-    public function getVariantStock($variantId) {
-        $sql = "SELECT stock_quantity FROM product_variants WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("i", $variantId);
-        $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
-        return $result ? (int)$result['stock_quantity'] : 0;
-    }
+// Tìm đến hàm getVariantStock và sửa lại cho chắc chắn
+public function getVariantStock($variantId) {
+    $sql = "SELECT stock_quantity FROM product_variants WHERE id = ?";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bind_param("i", $variantId);
+    $stmt->execute();
+    $result = $stmt->get_result()->fetch_assoc();
+    return $result ? (int)$result['stock_quantity'] : 0;
+}
 
     // --- CÁC HÀM XỬ LÝ WISHLIST (GIỮ NGUYÊN) ---
     
@@ -352,6 +354,65 @@ public function getHomeProducts($limit = 8) {
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         return $row['total'];
+    }
+    // [THÊM MỚI] Hàm lấy danh sách cho Admin có lọc và sắp xếp
+    public function getAdminList($filters = []) {
+        // Select cơ bản kèm tên danh mục
+        $sql = "SELECT p.*, c.name as cat_name, b.name as brand_name 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                LEFT JOIN brands b ON p.brand_id = b.id
+                WHERE 1=1"; // Mẹo để dễ nối chuỗi AND phía sau
+
+        $types = "";
+        $values = [];
+
+        // 1. Lọc theo từ khóa (Tên hoặc mã SKU)
+        if (!empty($filters['keyword'])) {
+            $sql .= " AND (p.name LIKE ? OR p.sku_code LIKE ?)";
+            $types .= "ss";
+            $keyword = "%" . $filters['keyword'] . "%";
+            $values[] = $keyword;
+            $values[] = $keyword;
+        }
+
+        // 2. Lọc theo Danh mục
+        if (!empty($filters['category_id'])) {
+            $sql .= " AND p.category_id = ?";
+            $types .= "i";
+            $values[] = $filters['category_id'];
+        }
+
+        // 3. Xử lý Sắp xếp (Sort)
+        $sort = $filters['sort'] ?? 'newest';
+        switch ($sort) {
+            case 'price_asc':
+                $sql .= " ORDER BY p.price ASC"; // Giá thấp đến cao
+                break;
+            case 'price_desc':
+                $sql .= " ORDER BY p.price DESC"; // Giá cao xuống thấp
+                break;
+            case 'oldest':
+                $sql .= " ORDER BY p.id ASC"; // Cũ nhất trước
+                break;
+            case 'newest':
+            default:
+                $sql .= " ORDER BY p.id DESC"; // Mới nhất trước (mặc định)
+                break;
+        }
+
+        // Thực thi Query
+        $stmt = $this->conn->prepare($sql);
+        
+        if (!empty($values)) {
+            $bind_params = [];
+            $params_ref = array_merge([$types], $values);
+            foreach ($params_ref as $key => $value) $bind_params[$key] = &$params_ref[$key];
+            call_user_func_array([$stmt, 'bind_param'], $bind_params);
+        }
+
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 }
 ?>

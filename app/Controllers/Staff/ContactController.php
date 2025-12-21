@@ -4,29 +4,42 @@ use App\Core\Controller;
 use App\Core\AuthMiddleware;
 
 class ContactController extends Controller {
+    
     public function __construct() {
-        AuthMiddleware::hasRole(['staff']);
+        // Chỉ cho phép Care Staff và Admin
+        AuthMiddleware::isCare(); 
     }
 
     public function index() {
         $model = $this->model('ContactModel');
-        // Lưu ý: Đảm bảo ContactModel có hàm getAll(). 
-        // Nếu ContactModel dùng getAllContacts() thì sửa lại cho khớp.
-        $contacts = $model->getAll(); 
+        $filters = [
+            'keyword' => $_GET['keyword'] ?? '',
+            'status'  => $_GET['status'] ?? '',
+            'sort'    => 'newest'
+        ];
         
-        $this->view('admin/contacts/index', [
+        $contacts = $model->getFilterList($filters);
+        
+        // Đếm số chưa đọc
+        $unreadCount = count(array_filter($contacts, fn($c) => $c['status'] == 0));
+
+        $this->view('staff/contacts/index', [
             'contacts' => $contacts,
-            'role_prefix' => 'staff'
+            'filters'  => $filters,
+            'unread'   => $unreadCount
         ]);
     }
 
-    // Staff đánh dấu đã xử lý
-    public function updateStatus($id) {
-        $model = $this->model('ContactModel');
-        // Staff chỉ được update status, không được xóa
-        $model->markAsRead($id); // Hoặc tên hàm updateStatus($id, 1) tùy Model của bạn
-        
+    // Đánh dấu đã đọc
+    public function mark($id) {
+        $this->model('ContactModel')->markAsRead($id);
         header('Location: ' . BASE_URL . 'staff/contact');
-        exit;
+    }
+
+    // Xóa liên hệ spam
+    public function delete($id) {
+        $this->model('ContactModel')->delete($id);
+        header('Location: ' . BASE_URL . 'staff/contact');
     }
 }
+?>

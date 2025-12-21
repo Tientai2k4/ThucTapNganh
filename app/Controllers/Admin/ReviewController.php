@@ -4,10 +4,11 @@ use App\Core\Controller;
 use App\Core\AuthMiddleware;
 
 class ReviewController extends Controller {
-    public function __construct() {
-        // [Kiểm tra chung] Cho phép Admin và Staff quản lý đánh giá
-        AuthMiddleware::hasRole(); 
+   public function __construct() {
+        // Sử dụng phương thức đã định nghĩa ở Middleware mới để cho phép cả Admin và Staff
+        AuthMiddleware::isStaffArea(); 
     }
+
 
     public function index() {
         $model = $this->model('ReviewModel');
@@ -21,7 +22,7 @@ class ReviewController extends Controller {
     // Duyệt (Hiện) hoặc Ẩn đánh giá
     public function toggleStatus($id, $status) {
         // Chức năng này thường dành cho Admin/Staff
-        AuthMiddleware::hasRole(); 
+        AuthMiddleware::isStaffArea(); 
 
         $model = $this->model('ReviewModel');
         $model->updateStatus($id, (int)$status);
@@ -32,7 +33,7 @@ class ReviewController extends Controller {
     // Xử lý form trả lời đánh giá
     public function reply($id) {
         // Chức năng này thường dành cho Admin/Staff
-        AuthMiddleware::hasRole(); 
+        AuthMiddleware::isStaffArea(); 
         
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $replyContent = trim($_POST['reply_content'] ?? '');

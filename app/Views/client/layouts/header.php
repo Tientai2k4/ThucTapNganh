@@ -105,62 +105,65 @@ if (isset($data['categories'])) {
                                     <span class="small fw-bold text-truncate" style="max-width: 100px;"><?= htmlspecialchars($_SESSION['user_name']) ?></span>
                                 </button>
                                 
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3" style="min-width: 250px;">
-                                    <li>
-                                        <a href="<?= BASE_URL ?>user/profile" class="dropdown-item px-3 py-2 border-bottom mb-2 bg-light rounded-top-3">
-                                            <div class="d-flex align-items-center">
-                                                <div class="me-3">
-                                                    <?php if(!empty($_SESSION['user_avatar'])): ?>
-                                                        <img src="<?= $_SESSION['user_avatar'] ?>" class="rounded-circle object-fit-cover" width="40" height="40">
-                                                    <?php else: ?>
-                                                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                            <i class="fas fa-user small"></i>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block" style="font-size: 11px;">Xin chào,</small>
-                                                    <div class="fw-bold text-primary text-truncate" style="max-width: 140px;">
-                                                        <?= htmlspecialchars($_SESSION['user_name']) ?>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </li>
+                               <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3" style="min-width: 250px;">
+    <li>
+        <a href="<?= BASE_URL ?>user/profile" class="dropdown-item px-3 py-2 border-bottom mb-2 bg-light rounded-top-3">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <?php if(!empty($_SESSION['user_avatar'])): ?>
+                        <img src="<?= $_SESSION['user_avatar'] ?>" class="rounded-circle object-fit-cover" width="40" height="40">
+                    <?php else: ?>
+                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="fas fa-user small"></i>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <small class="text-muted d-block" style="font-size: 11px;">Xin chào,</small>
+                    <div class="fw-bold text-primary text-truncate" style="max-width: 140px;">
+                        <?= htmlspecialchars($_SESSION['user_name']) ?>
+                    </div>
+                    <span class="badge bg-info text-dark" style="font-size: 9px;">
+                        <?= strtoupper(str_replace('_', ' ', $_SESSION['user_role'])) ?>
+                    </span>
+                </div>
+            </div>
+        </a>
+    </li>
 
-                                    <?php if($_SESSION['user_role'] == 'admin'): ?>
-                                        <li>
-                                            <a class="dropdown-item py-2 text-danger fw-bold" href="<?= BASE_URL ?>admin/dashboard">
-                                                <i class="fas fa-cogs me-2 w-25 text-center"></i>Admin Panel
-                                            </a>
-                                        </li>
-                                    <?php elseif($_SESSION['user_role'] == 'staff'): ?>
-                                        <li>
-                                            <a class="dropdown-item py-2 text-success fw-bold" href="<?= BASE_URL ?>staff/dashboard">
-                                                <i class="fas fa-user-tie me-2 w-25 text-center"></i>Staff Panel
-                                            </a>
-                                        </li>
-                                    <?php endif; ?>
+    <?php if($_SESSION['user_role'] == 'admin'): ?>
+        <li>
+            <a class="dropdown-item py-2 text-danger fw-bold" href="<?= BASE_URL ?>admin/dashboard">
+                <i class="fas fa-user-shield me-2 w-25 text-center"></i>Admin Panel
+            </a>
+        </li>
+    <?php elseif(in_array($_SESSION['user_role'], ['sales_staff', 'content_staff', 'care_staff'])): ?>
+        <li>
+            <a class="dropdown-item py-2 text-success fw-bold" href="<?= BASE_URL ?>staff/dashboard">
+                <i class="fas fa-user-tie me-2 w-25 text-center"></i>Staff Panel
+            </a>
+        </li>
+    <?php endif; ?>
 
-                                    <li>
-                                        <a class="dropdown-item py-2" href="<?= BASE_URL ?>user/profile">
-                                            <i class="fas fa-id-card me-2 w-25 text-center text-secondary"></i>Hồ sơ của tôi
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item py-2" href="<?= BASE_URL ?>user/history">
-                                            <i class="fas fa-box-open me-2 w-25 text-center text-secondary"></i>Đơn mua
-                                        </a>
-                                    </li>
-                                    
-                                    <li><hr class="dropdown-divider my-2"></li>
-                                    
-                                    <li>
-                                        <a class="dropdown-item py-2 text-danger" href="<?= BASE_URL ?>client/auth/logout">
-                                            <i class="fas fa-sign-out-alt me-2 w-25 text-center"></i>Đăng xuất
-                                        </a>
-                                    </li>
-                                </ul>
+    <li>
+        <a class="dropdown-item py-2" href="<?= BASE_URL ?>user/profile">
+            <i class="fas fa-id-card me-2 w-25 text-center text-secondary"></i>Hồ sơ cá nhân
+        </a>
+    </li>
+    <li>
+        <a class="dropdown-item py-2" href="<?= BASE_URL ?>user/history">
+            <i class="fas fa-box-open me-2 w-25 text-center text-secondary"></i>Lịch sử đơn mua
+        </a>
+    </li>
+    
+    <li><hr class="dropdown-divider my-2"></li>
+    
+    <li>
+        <a class="dropdown-item py-2 text-danger" href="<?= BASE_URL ?>client/auth/logout">
+            <i class="fas fa-sign-out-alt me-2 w-25 text-center"></i>Đăng xuất
+        </a>
+    </li>
+</ul>
                             </div>
                         <?php else: ?>
                             <div class="d-flex gap-2">

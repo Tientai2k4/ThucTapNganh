@@ -6,13 +6,30 @@ use App\Core\AuthMiddleware;
 class OrderController extends Controller {
     public function __construct() {
         AuthMiddleware::hasRole(); 
+        // Sử dụng phương thức đã định nghĩa ở Middleware mới để cho phép cả Admin và Staff
+        AuthMiddleware::isStaffArea(); 
+
     }
 
-    // Danh sách đơn hàng
-    public function index() {
+
+   public function index() {
         $model = $this->model('OrderModel');
-        $orders = $model->getAllOrders();
-        $this->view('admin/orders/index', ['orders' => $orders]);
+        
+        // Lấy tham số từ URL
+        $filters = [
+            'keyword' => $_GET['keyword'] ?? '',
+            'status'  => $_GET['status'] ?? '',
+            'sort'    => $_GET['sort'] ?? 'newest'
+        ];
+
+        // Gọi hàm lọc mới trong Model
+        $orders = $model->getFilterOrders($filters);
+
+        // Truyền data sang View
+        $this->view('admin/orders/index', [
+            'orders'  => $orders,
+            'filters' => $filters
+        ]);
     }
 
     // Xem chi tiết đơn hàng
