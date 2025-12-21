@@ -30,10 +30,19 @@
                         <input type="hidden" name="order_code" value="<?= $data['order']['order_code'] ?>">
                         
                         <div class="mb-3">
-                            <label class="form-label">Trạng thái:</label>
+                            <label class="form-label fw-bold">Mã vận đơn:</label>
+                            <input type="text" name="tracking_code" 
+                                   class="form-control" 
+                                   placeholder="VD: LKV12345"
+                                   value="<?= $data['order']['tracking_code'] ?>">
+                           
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Trạng thái đơn hàng:</label>
                             <select name="status" class="form-select">
                                 <option value="pending" <?= $data['order']['status']=='pending'?'selected':'' ?>>Chờ xử lý</option>
-                                <option value="processing" <?= $data['order']['status']=='processing'?'selected':'' ?>>Đang chuẩn bị</option>
+                                <option value="processing" <?= $data['order']['status']=='processing'?'selected':'' ?>>Đang chuẩn bị hàng</option>
                                 <option value="shipping" <?= $data['order']['status']=='shipping'?'selected':'' ?>>Đang giao hàng</option>
                                 
                                 <?php if($prefix == 'admin'): ?>
@@ -46,9 +55,19 @@
                         </div>
                         
                         <button type="submit" class="btn btn-success w-100 fw-bold">
-                            <i class="fas fa-save me-2"></i>Cập nhật
+                            <i class="fas fa-save me-2"></i>Cập nhật Đơn hàng
                         </button>
                     </form>
+
+                    <?php if (!empty($data['order']['tracking_code'])): ?>
+                        <hr>
+                        <div class="d-grid">
+                            <a href="https://ghn.vn/blogs/trang-thai-don-hang?order_code=<?= $data['order']['tracking_code'] ?>" 
+                               target="_blank" class="btn btn-outline-primary">
+                               <i class="fas fa-search me-2"></i>Bấm để tra cứu hành trình (GHN)
+                            </a>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -98,3 +117,59 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('check-tracking-btn');
+    const resultsDiv = document.getElementById('tracking-log-results');
+
+    if (btn) {
+        btn.addEventListener('click', function() {
+            // 1. Lấy thông tin từ nút bấm
+            const orderCode = this.getAttribute('data-order-code');
+            const apiUrl = this.getAttribute('data-url');
+            
+            // 2. Hiển thị trạng thái "Đang tải"
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Đang kết nối GHN...</div>';
+            btn.disabled = true;
+
+            // 3. Gọi AJAX lên Server (TrackingController)
+            // Lưu ý: apiUrl đã là BASE_URL . 'admin/tracking/getOrderStatus'
+            fetch(`${apiUrl}?order_code=${orderCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    btn.disabled = false;
+                    
+                    if (data.success) {
+                        // 4. Vẽ HTML lịch sử hành trình
+                        let html = `<div class="alert alert-success mb-2"><strong>Trạng thái hiện tại:</strong> ${data.status}</div>`;
+                        html += '<ul class="list-group list-group-flush small">';
+                        
+                        if (data.log && data.log.length > 0) {
+                            data.log.forEach(log => {
+                                // Format ngày giờ
+                                const date = new Date(log.updated_date);
+                                const dateStr = date.toLocaleString('vi-VN');
+                                html += `<li class="list-group-item">
+                                            <span class="fw-bold">${dateStr}</span>: ${log.status}
+                                         </li>`;
+                            });
+                        } else {
+                            html += '<li class="list-group-item">Chưa có lịch sử di chuyển.</li>';
+                        }
+                        html += '</ul>';
+                        resultsDiv.innerHTML = html;
+                    } else {
+                        resultsDiv.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    btn.disabled = false;
+                    resultsDiv.innerHTML = '<div class="alert alert-danger">Lỗi kết nối Server! Hãy kiểm tra Console (F12).</div>';
+                });
+        });
+    }
+});
+</script>

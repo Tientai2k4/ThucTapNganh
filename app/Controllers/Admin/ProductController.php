@@ -168,25 +168,44 @@ class ProductController extends Controller {
         }
     }
     
-    // Xử lý xóa (Thêm hàm delete)
-    public function delete($id) {
-        // [BẢO VỆ CẤP CAO] Chức năng xóa thường chỉ dành cho Admin cấp cao
-        AuthMiddleware::onlyAdmin(); 
-        
-        $model = $this->model('ProductModel');
-        $product = $model->getById($id);
-        
-        if (!$product) {
-            die("Sản phẩm không tồn tại.");
-        }
-        
-        if ($model->delete($id)) {
-            // [TÙY CHỌN] Xóa ảnh và biến thể/gallery liên quan (Cần code thêm)
-            
-            header('Location: ' . BASE_URL . 'admin/product');
-            exit;
-        } else {
-            die("Lỗi xóa sản phẩm.");
-        }
+    // Xử lý xóa sản phẩm (Hàm đã hợp nhất phân quyền Staff)
+public function delete($id) {
+    // 1. [BẢO VỆ CẤP CAO] Kiểm tra xem đã đăng nhập chưa (Middleware)
+    // Nếu bạn dùng AuthMiddleware::isStaff() thì cả Admin và Staff đều vào được hàm này
+    // Nhưng chúng ta cần chặn Staff ở bước tiếp theo.
+    AuthMiddleware::isStaff(); 
+
+    // 2. [PHÂN QUYỀN RIÊNG] Chỉ Admin mới có quyền xóa vĩnh viễn, Staff chỉ được xem/sửa
+    if ($_SESSION['user_role'] !== 'admin') {
+        echo "<script>
+                alert('Nhân viên (Staff) không có quyền xóa sản phẩm! Vui lòng liên hệ Admin.'); 
+                window.history.back();
+              </script>";
+        exit;
     }
+
+    $model = $this->model('ProductModel');
+    
+    // 3. Kiểm tra sản phẩm tồn tại
+    $product = $model->getById($id);
+    if (!$product) {
+        die("Sản phẩm không tồn tại.");
+    }
+
+    // 4. Thực hiện xóa
+    if ($model->delete($id)) {
+        // [TÙY CHỌN] Xóa file ảnh vật lý trong thư mục uploads để tránh rác server
+        if (!empty($product['image'])) {
+            $imagePath = ROOT_PATH . '/public/uploads/' . $product['image'];
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+        }
+
+        header('Location: ' . BASE_URL . 'admin/product');
+        exit;
+    } else {
+        die("Lỗi xóa sản phẩm. Có thể do ràng buộc dữ liệu (đơn hàng).");
+    }
+}
 }

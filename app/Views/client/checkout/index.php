@@ -74,11 +74,31 @@
             </div>
         </div>
         <div class="mb-3">
-            <label>Địa chỉ nhận hàng *</label>
-            <textarea name="address" class="form-control" rows="3" id="inputAddress" required><?= $defaultAddress['address'] ?? '' ?></textarea>
+                <select name="province_id" id="province" class="form-control" required>
+                    <option value="">-- Chọn Tỉnh/Thành --</option>
+                    <?php if(!empty($data['provinces'])): ?>
+                        <?php foreach($data['provinces'] as $p): ?>
+                            <option value="<?= $p['ProvinceID'] ?>"><?= $p['ProvinceName'] ?></option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label>Quận/Huyện *</label>
+                    <select name="district_id" id="district" class="form-control" required></select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label>Phường/Xã *</label>
+                    <select name="ward_code" id="ward" class="form-control" required></select>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label>Địa chỉ chi tiết (Số nhà, tên đường) *</label>
+                <textarea name="address_detail" id="inputAddress" class="form-control" required></textarea>
+            </div>
+                </div>
         </div>
-    </div>
-</div>
 
         <div class="col-md-5">
             <div class="card p-4 bg-light">
@@ -168,51 +188,120 @@ function applyCoupon() {
 }
 </script>
 <script>
-// Hàm xử lý việc tự động điền địa chỉ
-function fillDeliveryInfo(addressData = null) {
-    const nameInput = document.getElementById('inputFullName');
-    const phoneInput = document.getElementById('inputPhone');
-    const addressTextarea = document.getElementById('inputAddress');
-    
-    // Lưu tên người dùng từ DB/Session để reset về nếu cần
-    const originalName = "<?= $userName ?>"; 
-
-    if (addressData) {
-        // ĐÃ SỬA: Dùng addressData.recipient_name
-        nameInput.value = addressData.recipient_name || '';
-        phoneInput.value = addressData.phone || '';
-        addressTextarea.value = addressData.address || '';
-    } else {
-        // Xóa/Reset form nếu chọn 'Nhập địa chỉ mới'
-        nameInput.value = originalName; 
-        phoneInput.value = '';
-        addressTextarea.value = '';
-    }
-}
-
-// Lắng nghe sự kiện change trên các radio button địa chỉ
 document.addEventListener('DOMContentLoaded', function() {
+    const provinceSelect = document.getElementById('province');
+    const districtSelect = document.getElementById('district');
+    const wardSelect = document.getElementById('ward');
     const addressRadios = document.querySelectorAll('.select-address-radio');
-    
+
+    // --- PHẦN 1: Lắng nghe chọn địa chỉ đã lưu ---
     addressRadios.forEach(radio => {
         radio.addEventListener('change', function() {
-            if (this.checked) {
-                if (this.value === 'new') {
-                    // Nếu chọn nhập mới
-                    fillDeliveryInfo(null);
-                } else {
-                    // Nếu chọn địa chỉ đã lưu
-                    try {
-                        const addressJson = this.getAttribute('data-address');
-                        const addressData = JSON.parse(addressJson);
-                        fillDeliveryInfo(addressData);
-                    } catch (e) {
-                        console.error("Lỗi khi parse dữ liệu địa chỉ:", e);
-                        fillDeliveryInfo(null);
-                    }
+            if (this.value === 'new') {
+                fillDeliveryInfo(null);
+            } else {
+                try {
+                    const data = JSON.parse(this.getAttribute('data-address'));
+                    fillDeliveryInfo(data);
+                } catch (e) {
+                    console.error("Lỗi parse địa chỉ:", e);
                 }
             }
         });
     });
+
+    // --- PHẦN 2: Tải Quận/Huyện khi Tỉnh thay đổi ---
+    provinceSelect.addEventListener('change', function() {
+        const pId = this.value;
+        districtSelect.innerHTML = '<option value="">-- Đang tải Quận/Huyện --</option>';
+        wardSelect.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>';
+
+        if (pId) {
+            fetch('<?= BASE_URL ?>address/getDistricts?province_id=' + pId)
+                .then(res => res.json())
+                .then(data => {
+                    let html = '<option value="">-- Chọn Quận/Huyện --</option>';
+                    if (Array.isArray(data)) {
+                        data.forEach(d => {
+                            html += `<option value="${d.DistrictID}">${d.DistrictName}</option>`;
+                        });
+                    }
+                    districtSelect.innerHTML = html;
+
+                    // TỰ ĐỘNG CHỌN HUYỆN (nếu có biến pending từ fillDeliveryInfo)
+                    if (window.pendingDistrictId) {
+                        districtSelect.value = window.pendingDistrictId;
+                        window.pendingDistrictId = null; // Xóa sau khi dùng
+                        districtSelect.dispatchEvent(new Event('change'));
+                    }
+                })
+                .catch(err => console.error("Lỗi tải huyện:", err));
+        }
+    });
+
+    // --- PHẦN 3: Tải Phường/Xã khi Huyện thay đổi ---
+    districtSelect.addEventListener('change', function() {
+        const dId = this.value;
+        wardSelect.innerHTML = '<option value="">-- Đang tải Phường/Xã --</option>';
+
+        if (dId) {
+            fetch('<?= BASE_URL ?>address/getWards?district_id=' + dId)
+                .then(res => res.json())
+                .then(data => {
+                    let html = '<option value="">-- Chọn Phường/Xã --</option>';
+                    if (Array.isArray(data)) {
+                        data.forEach(w => {
+                            html += `<option value="${w.WardCode}">${w.WardName}</option>`;
+                        });
+                    }
+                    wardSelect.innerHTML = html;
+
+                    // TỰ ĐỘNG CHỌN XÃ (nếu có biến pending từ fillDeliveryInfo)
+                    if (window.pendingWardCode) {
+                        wardSelect.value = window.pendingWardCode;
+                        window.pendingWardCode = null; // Xóa sau khi dùng
+                    }
+                })
+                .catch(err => console.error("Lỗi tải xã:", err));
+        }
+    });
+
+    // Kích hoạt tự động điền cho địa chỉ mặc định khi vừa load trang
+    const defaultRadio = document.querySelector('.select-address-radio:checked');
+    if (defaultRadio && defaultRadio.value !== 'new') {
+        defaultRadio.dispatchEvent(new Event('change'));
+    }
 });
+
+// --- PHẦN 4: Hàm điền thông tin vào Form ---
+function fillDeliveryInfo(addressData = null) {
+    const nameInput = document.getElementById('inputFullName');
+    const phoneInput = document.getElementById('inputPhone');
+    const addressTextarea = document.getElementById('inputAddress');
+    const provinceSelect = document.getElementById('province');
+    const originalName = "<?= $userName ?>"; 
+
+    if (addressData) {
+        nameInput.value = addressData.recipient_name || '';
+        phoneInput.value = addressData.phone || '';
+        addressTextarea.value = addressData.address || '';
+        
+        if (addressData.province_id) {
+            // Lưu lại ID huyện/xã vào biến toàn cục để Phần 2 và 3 sử dụng sau khi AJAX load xong
+            window.pendingDistrictId = addressData.district_id;
+            window.pendingWardCode = addressData.ward_code;
+
+            // Chọn tỉnh và kích hoạt sự kiện change
+            provinceSelect.value = addressData.province_id;
+            provinceSelect.dispatchEvent(new Event('change'));
+        }
+    } else {
+        nameInput.value = originalName; 
+        phoneInput.value = '';
+        addressTextarea.value = '';
+        provinceSelect.value = '';
+        document.getElementById('district').innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+        document.getElementById('ward').innerHTML = '<option value="">-- Chọn Phường/Xã --</option>';
+    }
+}
 </script>

@@ -5,7 +5,6 @@ use App\Core\AuthMiddleware;
 
 class OrderController extends Controller {
     public function __construct() {
-        // [SỬA LỖI] Sử dụng hàm hasRole() để bảo vệ. Mặc định cho phép admin và staff.
         AuthMiddleware::hasRole(); 
     }
 
@@ -33,29 +32,31 @@ class OrderController extends Controller {
         ]);
     }
 
-    // Cập nhật trạng thái (Duyệt/Giao hàng/Hủy)
+    // Cập nhật trạng thái & Mã vận đơn (Thủ công)
     public function updateStatus() {
-        // [Bảo vệ] Nếu chỉ Admin được phép hủy đơn hàng, bạn có thể thêm kiểm tra riêng tại đây:
-        // if ($_POST['status'] == 'cancelled') { AuthMiddleware::onlyAdmin(); } 
-
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $id = $_POST['order_id'];
-            $status = $_POST['status'];
+            $status = $_POST['status']; 
             $code = $_POST['order_code'];
+            
+            // Lấy mã vận đơn admin nhập tay (nếu có)
+            $manualTrackingCode = isset($_POST['tracking_code']) ? trim($_POST['tracking_code']) : '';
 
             $model = $this->model('OrderModel');
 
-            // [LOGIC MỚI] Nếu Admin chọn "Hủy đơn", gọi hàm cancelOrderById để Rollback kho
+            // 1. Cập nhật trạng thái
             if ($status == 'cancelled') {
                 $result = $model->cancelOrderById($id);
                 if ($result !== true) {
-                    // Nếu lỗi, có thể lưu vào session flash message (ở đây echo tạm)
-                    echo "Lỗi hủy đơn: " . $result;
-                    return;
+                    echo "Lỗi hủy đơn: " . $result; return;
                 }
             } else {
-                // Các trạng thái khác (Duyệt, Giao hàng) chỉ cần update status
                 $model->updateStatus($id, $status);
+            }
+
+            // 2. Cập nhật Mã vận đơn (Nếu admin có nhập)
+            if (!empty($manualTrackingCode)) {
+                $model->updateTrackingCode($id, $manualTrackingCode);
             }
 
             header('Location: ' . BASE_URL . 'admin/order/detail/' . $code);

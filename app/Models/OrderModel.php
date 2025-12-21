@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use App\Core\Model;
+use App\Services\ShippingService;
 
 class OrderModel extends Model {
     protected $table = 'orders';
@@ -29,11 +30,21 @@ class OrderModel extends Model {
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-    public function updateStatus($id, $status) {
+   public function updateStatus($id, $status) {
         $stmt = $this->conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
         $stmt->bind_param("si", $status, $id);
         return $stmt->execute();
     }
+   
+
+
+// Hàm bổ trợ lấy thông tin đơn hàng theo ID
+public function getOrderById($id) {
+    $stmt = $this->conn->prepare("SELECT * FROM orders WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_assoc();
+}
 
     public function updatePaymentStatusByCode($code, $status) {
         $stmt = $this->conn->prepare("UPDATE orders SET payment_status = ? WHERE order_code = ?");
@@ -43,20 +54,20 @@ class OrderModel extends Model {
     
     // --- PHẦN 1: TẠO ĐƠN & KHO ---
     
-    public function createOrder($userId, $customerData, $cartItems, $finalTotal, $paymentMethod, $discountAmount = 0, $couponCode = null) {
+    public function createOrder($userId, $customerData, $cartItems, $finalTotal, $paymentMethod, $discountAmount = 0, $couponCode = null,$provinceId = null, $districtId = null, $wardCode = null) {
         $this->conn->begin_transaction();
         try {
             $status = ($paymentMethod == 'COD') ? 'pending' : 'pending_payment';
             $paymentStatus = 0; 
 
             $orderCode = 'DH' . time() . rand(100, 999); 
-            $sqlOrder = "INSERT INTO orders (user_id, order_code, customer_name, customer_phone, customer_email, shipping_address, total_money, discount_amount, coupon_code, payment_method, payment_status, status) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sqlOrder = "INSERT INTO orders (user_id, order_code, customer_name, customer_phone, customer_email, shipping_address,shipping_province_id, shipping_district_id, shipping_ward_code, total_money, discount_amount, coupon_code, payment_method, payment_status, status) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)";
             
             $stmt = $this->conn->prepare($sqlOrder);
-            $stmt->bind_param("isssssddssis", 
+            $stmt->bind_param("isssssiisddssis", 
             $userId, $orderCode, $customerData['name'], $customerData['phone'], 
-            $customerData['email'], $customerData['address'], 
+            $customerData['email'], $customerData['address'], $provinceId,$districtId,$wardCode,
             $finalTotal, $discountAmount, $couponCode,
             $paymentMethod, $paymentStatus, $status
             );
@@ -222,5 +233,13 @@ class OrderModel extends Model {
         
         return $result->fetch_all(MYSQLI_ASSOC);
     }
+
+    // Hàm cập nhật mã vận đơn vào Database
+    public function updateTrackingCode($orderId, $trackingCode) {
+        $stmt = $this->conn->prepare("UPDATE orders SET tracking_code = ? WHERE id = ?");
+        $stmt->bind_param("si", $trackingCode, $orderId);
+        return $stmt->execute();
+    }
+   
 }
 ?>

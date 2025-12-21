@@ -4,8 +4,13 @@ use App\Core\Controller;
 use App\Models\UserModel;
 use App\Models\AddressModel;
 
+
+
+
 class CheckoutController extends Controller {
 
+    
+    
     // Config Sandbox ZaloPay (Key chuẩn Sandbox)
     private $config = [
         "app_id" => 2553,
@@ -14,13 +19,12 @@ class CheckoutController extends Controller {
         "endpoint" => "https://sb-openapi.zalopay.vn/v2/create"
     ];
 
-    public function index() {
+   public function index() {
         if (empty($_SESSION['cart'])) {
             header('Location: ' . BASE_URL . 'cart');
             exit;
         }
         
-        // 1. TÍNH TỔNG TIỀN TẠM TÍNH ĐỂ TRUYỀN RA VIEW
         $prodModel = $this->model('ProductModel');
         $variantIds = array_keys($_SESSION['cart']);
         $products = $prodModel->getVariantsDetail($variantIds);
@@ -32,51 +36,35 @@ class CheckoutController extends Controller {
             $totalMoney += $price * $qty;
         }
 
-        $data = [
-            'totalMoney' => $totalMoney,
-        ];
+        $data = ['totalMoney' => $totalMoney, 'provinces' => []]; // Khởi tạo provinces rỗng
         
-        // ====================================================================
-        // PHẦN MỚI: TẢI SỔ ĐỊA CHỈ VÀ THÔNG TIN NGƯỜI DÙNG
-        // ====================================================================
         if (isset($_SESSION['user_id'])) {
             $userId = $_SESSION['user_id'];
-            
-            // Lấy thông tin User để điền Email mặc định và Tên mặc định
             $userModel = $this->model('UserModel');
             $user = $userModel->findById($userId);
-            
-            // Truyền thông tin User cơ bản
             $data['user_email'] = $user['email'] ?? '';
-            // Dùng tên từ DB nếu có, không thì dùng tên từ Session (đã có ở view)
             $data['user_name_from_db'] = $user['name'] ?? ($_SESSION['user_name'] ?? ''); 
-
-            // Lấy danh sách địa chỉ đã lưu
             $addrModel = $this->model('AddressModel'); 
             $addresses = $addrModel->getByUserId($userId); 
-            
-            // Truyền danh sách địa chỉ sang view
             $data['addresses'] = $addresses;
-
-            // Tìm địa chỉ mặc định để tự động điền ban đầu
             $defaultAddress = null;
             foreach ($addresses as $addr) {
-                if ($addr['is_default'] == 1) {
-                    $defaultAddress = $addr;
-                    break;
-                }
+                if ($addr['is_default'] == 1) { $defaultAddress = $addr; break; }
             }
-            $data['defaultAddress'] = $defaultAddress; // Truyền địa chỉ mặc định (nếu có)
+            $data['defaultAddress'] = $defaultAddress; 
         }
-        // ====================================================================
-
+            $addressModel = $this->model('AddressModel');
+        $data['provinces'] = $addressModel->getAllProvinces();
         $this->view('client/checkout/index', $data);
     }
 
     // XỬ LÝ NÚT ĐẶT HÀNG
     public function submit() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-                        
+                        // LẤY DỮ LIỆU ĐỊA CHỈ TỪ FORM (MỚI)
+                $provinceId = $_POST['province_id'] ?? null;
+                $districtId = $_POST['district_id'] ?? null;
+                $wardCode   = $_POST['ward_code'] ?? null;
             // --- FIX LỖI 1: KIỂM TRA GIỎ HÀNG RỖNG ---
             if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
                 header('Location: ' . BASE_URL . 'cart'); 
@@ -112,14 +100,14 @@ class CheckoutController extends Controller {
 
             $customerData = [
                 'name' => $_POST['full_name'], 'phone' => $_POST['phone'],
-                'email' => $_POST['email'], 'address' => $_POST['address']
+                'email' => $_POST['email'], 'address' => $_POST['address_detail']
             ];
             $paymentMethod = $_POST['payment_method']; 
             $userId = $_SESSION['user_id'] ?? null;
 
             // 2. TẠO ĐƠN VÀ TRỪ KHO
             $orderModel = $this->model('OrderModel');
-            $orderCode = $orderModel->createOrder($userId, $customerData, $cartItems, $finalTotal, $paymentMethod, $discountAmount, $couponCode);
+            $orderCode = $orderModel->createOrder($userId, $customerData, $cartItems, $finalTotal, $paymentMethod, $discountAmount, $couponCode,$provinceId,$districtId,$wardCode);
 
             if (is_string($orderCode) && strpos($orderCode, 'DH') === 0) { 
                 // Thành công

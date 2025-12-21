@@ -47,6 +47,18 @@ $orderModel = $this->model('OrderModel');
         <p><strong>Điện thoại:</strong> <?= $order['customer_phone'] ?></p>
         <p><strong>Email:</strong> <?= $order['customer_email'] ?></p>
         <p><strong>Địa chỉ:</strong> <?= $order['shipping_address'] ?></p>
+        <?php if (!empty($order['tracking_code'])): ?>
+            <hr>
+            <div class="mt-3 p-3 bg-light border rounded">
+                <h6 class="text-primary"><i class="fas fa-shipping-fast me-2"></i>Thông tin vận chuyển</h6>
+                <p class="mb-1"><strong>Hãng vận chuyển:</strong> Giao Hàng Nhanh (GHN)</p>
+                <p class="mb-2"><strong>Mã vận đơn:</strong> <span class="badge bg-dark"><?= $order['tracking_code'] ?></span></p>
+                <a href="https://ghn.vn/blogs/trang-thai-don-hang?order_code=<?= $order['tracking_code'] ?>"
+                   target="_blank" class="btn btn-sm btn-primary">
+                   <i class="fas fa-search-location me-1"></i> Theo dõi lộ trình trên GHN
+                </a>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
