@@ -5,7 +5,7 @@ use App\Core\AuthMiddleware;
 use App\Models\BrandModel; 
 
 class ProductController extends Controller {
-   public function __construct() {
+    public function __construct() {
         // Cho phép cả nhân viên và admin quản lý kho/sản phẩm
         AuthMiddleware::isStaffArea(); 
     }
@@ -135,7 +135,7 @@ class ProductController extends Controller {
                 
                 // Xóa ảnh chính cũ nếu cần
                 if ($currentProduct['image'] && file_exists($targetDir . $currentProduct['image'])) {
-                     unlink($targetDir . $currentProduct['image']);
+                      unlink($targetDir . $currentProduct['image']);
                 }
             }
 
@@ -177,48 +177,45 @@ class ProductController extends Controller {
         }
     }
     
-
     // Xử lý xóa sản phẩm (Hàm đã hợp nhất phân quyền Staff)
-public function delete($id) {
-    // 1. [BẢO VỆ CẤP CAO] Kiểm tra xem đã đăng nhập chưa (Middleware)
-    // Nếu bạn dùng AuthMiddleware::isStaff() thì cả Admin và Staff đều vào được hàm này
-    // Nhưng chúng ta cần chặn Staff ở bước tiếp theo.
-    AuthMiddleware::isStaff(); 
+    public function delete($id) {
+        // 1. [BẢO VỆ CẤP CAO] Kiểm tra xem đã đăng nhập chưa (Middleware)
+        // SỬA: Đổi AuthMiddleware::isStaff() -> AuthMiddleware::isStaffArea() cho đúng tên hàm trong class Auth
+        AuthMiddleware::isStaffArea(); 
 
-    // 2. [PHÂN QUYỀN RIÊNG] Chỉ Admin mới có quyền xóa vĩnh viễn, Staff chỉ được xem/sửa
-    if ($_SESSION['user_role'] !== 'admin') {
-        echo "<script>
-                alert('Nhân viên (Staff) không có quyền xóa sản phẩm! Vui lòng liên hệ Admin.'); 
-                window.history.back();
-              </script>";
-        exit;
-    }
-
-    $model = $this->model('ProductModel');
-    
-    // 3. Kiểm tra sản phẩm tồn tại
-    $product = $model->getById($id);
-    if (!$product) {
-        die("Sản phẩm không tồn tại.");
-    }
-
-    // 4. Thực hiện xóa
-    if ($model->delete($id)) {
-        // [TÙY CHỌN] Xóa file ảnh vật lý trong thư mục uploads để tránh rác server
-        if (!empty($product['image'])) {
-            $imagePath = ROOT_PATH . '/public/uploads/' . $product['image'];
-            if (file_exists($imagePath)) {
-                unlink($imagePath);
-            }
+        // 2. [PHÂN QUYỀN RIÊNG] Chỉ Admin mới có quyền xóa vĩnh viễn, Staff chỉ được xem/sửa
+        if ($_SESSION['user_role'] !== 'admin') {
+            echo "<script>
+                    alert('Nhân viên (Staff) không có quyền xóa sản phẩm! Vui lòng liên hệ Admin.'); 
+                    window.history.back();
+                  </script>";
+            exit;
         }
 
-        header('Location: ' . BASE_URL . 'admin/product');
-        exit;
-    } else {
-        die("Lỗi xóa sản phẩm. Có thể do ràng buộc dữ liệu (đơn hàng).");
-    }
-  }
+        $model = $this->model('ProductModel');
+        
+        // 3. Kiểm tra sản phẩm tồn tại
+        $product = $model->getById($id);
+        if (!$product) {
+            die("Sản phẩm không tồn tại.");
+        }
 
+        // 4. Thực hiện xóa
+        if ($model->delete($id)) {
+            // [TÙY CHỌN] Xóa file ảnh vật lý trong thư mục uploads để tránh rác server
+            if (!empty($product['image'])) {
+                $imagePath = ROOT_PATH . '/public/uploads/' . $product['image'];
+                if (file_exists($imagePath)) {
+                    unlink($imagePath);
+                }
+            }
+
+            header('Location: ' . BASE_URL . 'admin/product');
+            exit;
+        } else {
+            die("Lỗi xóa sản phẩm. Có thể do ràng buộc dữ liệu (đơn hàng).");
+        }
+    }
 
     // [HÀM MỚI] Xử lý xóa ảnh phụ (Khi bấm nút Xóa ở View Edit)
     public function deleteGallery($imageId, $productId) {
@@ -259,16 +256,7 @@ public function delete($id) {
             }
         }
     }
-
-    // delete: GIỮ NGUYÊN
-    public function delete($id) {
-        AuthMiddleware::onlyAdmin(); 
-        $model = $this->model('ProductModel');
-        if ($model->delete($id)) {
-            header('Location: ' . BASE_URL . 'admin/product');
-            exit;
-        }
-    }
+    
+    // Đã xóa hàm delete() trùng lặp ở đây để sửa lỗi Cannot redeclare
 }
 ?>
-

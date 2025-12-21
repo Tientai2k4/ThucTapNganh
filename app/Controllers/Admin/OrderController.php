@@ -5,14 +5,13 @@ use App\Core\AuthMiddleware;
 
 class OrderController extends Controller {
     public function __construct() {
-        AuthMiddleware::hasRole(); 
+        // Đã xóa dòng AuthMiddleware::hasRole(); vì gây lỗi thiếu tham số (ArgumentCountError)
+        
         // Sử dụng phương thức đã định nghĩa ở Middleware mới để cho phép cả Admin và Staff
         AuthMiddleware::isStaffArea(); 
-
     }
 
-
-   public function index() {
+    public function index() {
         $model = $this->model('OrderModel');
         
         // Lấy tham số từ URL
@@ -80,3 +79,4 @@ class OrderController extends Controller {
         }
     }
 }
+?>
