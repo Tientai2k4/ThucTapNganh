@@ -20,6 +20,7 @@ class ProductController extends Controller {
             'category_id' => $_GET['cat'] ?? null,
             'brands'      => $_GET['brand'] ?? [],
             'sizes'       => $_GET['size'] ?? [],
+            'target'      => $_GET['target'] ?? null,
             'price_min'   => $_GET['min'] ?? 0,
             'price_max'   => $_GET['max'] ?? 5000000,
             'keyword'     => $_GET['keyword'] ?? '',

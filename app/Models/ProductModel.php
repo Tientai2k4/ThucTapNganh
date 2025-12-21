@@ -135,12 +135,18 @@ public function getAll() {
     }
 
    public function filterProducts($filters) {
-        $sql = "SELECT DISTINCT p.* FROM products p 
+       $sql = "SELECT p.*, SUM(pv.stock_quantity) as total_stock 
+                FROM products p 
                 LEFT JOIN product_variants pv ON p.id = pv.product_id 
                 WHERE p.is_active = 1";
         
         $types = "";
         $values = [];
+        if (!empty($filters['target'])) {
+        $sql .= " AND p.target_audience = ?";
+        $types .= "s"; 
+        $values[] = $filters['target'];
+    }
 
         // --- Logic Lọc (Giống cũ) ---
         if (!empty($filters['category_id'])) {
@@ -171,7 +177,7 @@ public function getAll() {
             $sql .= " AND p.name LIKE ?";
             $types .= "s"; $values[] = "%" . $filters['keyword'] . "%";
         }
-
+        $sql .= " GROUP BY p.id";
         $sql .= " ORDER BY p.created_at DESC";
 
         // --- [MỚI] THÊM LIMIT VÀ OFFSET CHO PHÂN TRANG ---
@@ -325,6 +331,11 @@ public function getVariantStock($variantId) {
         
         // (Copy lại logic lọc y hệt hàm trên, KHÔNG có Limit/Order By)
         $types = ""; $values = [];
+        if (!empty($filters['target'])) {
+            $sql .= " AND p.target_audience = ?";
+            $types .= "s"; 
+            $values[] = $filters['target'];
+        }
         
         if (!empty($filters['category_id'])) { $sql .= " AND p.category_id = ?"; $types .= "i"; $values[] = $filters['category_id']; }
         if (!empty($filters['brands']) && is_array($filters['brands'])) {

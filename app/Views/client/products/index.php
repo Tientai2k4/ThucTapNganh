@@ -2,18 +2,39 @@
     <div class="row">
         <div class="col-md-3" style="position: sticky; top: 90px; height: fit-content; z-index: 100;">
             <form action="<?= BASE_URL ?>product" method="GET" class="card shadow-sm border-0 p-3">
+                
+                <input type="hidden" name="keyword" value="<?= htmlspecialchars($data['filters']['keyword'] ?? '') ?>">
+
                 <h5 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fas fa-filter"></i> BỘ LỌC TÌM KIẾM</h5>
                 
                 <div class="mb-4">
-                    <h6 class="fw-bold">Đối tượng</h6>
+                    <h6 class="fw-bold">Danh mục sản phẩm</h6>
                     <?php foreach($data['categories'] as $cat): ?>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="cat" value="<?= $cat['id'] ?>"
+                            <input class="form-check-input" type="radio" name="cat" value="<?= $cat['id'] ?>" id="cat_<?= $cat['id'] ?>"
                                 <?= ($data['filters']['category_id'] == $cat['id']) ? 'checked' : '' ?>
                                 onchange="this.form.submit()">
-                            <label class="form-check-label"><?= $cat['name'] ?></label>
+                            <label class="form-check-label" for="cat_<?= $cat['id'] ?>"><?= $cat['name'] ?></label>
                         </div>
                     <?php endforeach; ?>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="fw-bold">Đối tượng sử dụng</h6>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="target" value="adult" id="target_adult"
+                            <?= ($data['filters']['target'] == 'adult') ? 'checked' : '' ?>
+                            onchange="this.form.submit()">
+                        <label class="form-check-label" for="target_adult">Người lớn</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="target" value="kid" id="target_kid"
+                            <?= ($data['filters']['target'] == 'kid') ? 'checked' : '' ?>
+                            onchange="this.form.submit()">
+                        <label class="form-check-label" for="target_kid">Trẻ em</label>
+                    </div>
                 </div>
 
                 <div class="mb-4">
@@ -73,20 +94,35 @@
             <?php else: ?>
                 <div class="row">
                     <?php foreach($data['products'] as $prod): ?>
+                        <?php 
+                            // Logic tính tồn kho
+                            $stock = isset($prod['total_stock']) ? (int)$prod['total_stock'] : ((int)$prod['product_qty'] ?? 0);
+                            $isOutOfStock = ($stock <= 0);
+                        ?>
+
                         <div class="col-6 col-md-4 mb-4">
                             <div class="card product-card h-100 border-0 shadow-sm position-relative">
                                 
-                                <?php if($prod['sale_price'] > 0): ?>
+                                <?php if(!$isOutOfStock && $prod['sale_price'] > 0): ?>
                                     <div class="position-absolute top-0 end-0 bg-danger text-white px-2 py-1 m-2 rounded small fw-bold shadow-sm" style="z-index: 10;">
                                         -<?= round((($prod['price'] - $prod['sale_price']) / $prod['price']) * 100) ?>%
                                     </div>
                                 <?php endif; ?>
 
                                 <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>">
-                                    <img src="<?= BASE_URL ?>public/uploads/<?= $prod['image'] ?>" class="card-img-top p-3" style="height: 200px; object-fit: contain;">
+                                    <img src="<?= BASE_URL ?>public/uploads/<?= $prod['image'] ?>" 
+                                         class="card-img-top p-3" 
+                                         style="height: 200px; object-fit: contain;">
                                 </a>
                                 
                                 <div class="card-body text-center d-flex flex-column">
+                                    
+                                    <?php if($isOutOfStock): ?>
+                                        <div class="mb-2">
+                                            <span class="badge bg-danger py-2 px-3">HẾT HÀNG</span>
+                                        </div>
+                                    <?php endif; ?>
+
                                     <h6 class="card-title text-truncate">
                                         <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="text-decoration-none text-dark">
                                             <?= htmlspecialchars($prod['name']) ?>
@@ -104,7 +140,11 @@
                                         <?php endif; ?>
                                     </div>
 
-                                    <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="btn btn-sm btn-primary mt-2">Xem chi tiết</a>
+                                    <?php if($isOutOfStock): ?>
+                                        <button class="btn btn-sm btn-secondary mt-2" disabled>Tạm hết hàng</button>
+                                    <?php else: ?>
+                                        <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="btn btn-sm btn-primary mt-2">Xem chi tiết</a>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
