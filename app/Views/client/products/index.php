@@ -1,3 +1,46 @@
+<style>
+    /* 1. Thiết lập thẻ Card mặc định */
+    .product-card {
+        border: 1px solid #dee2e6; /* Viền xám mờ mặc định */
+        transition: all 0.3s ease-in-out; /* Hiệu ứng chuyển mượt */
+    }
+
+    /* 2. Khi RÊ CHUỘT vào Card: Hiện viền xanh đậm */
+    .product-card:hover {
+        border: 1px solid #0056b3; /* Màu xanh đậm giống ảnh mẫu */
+        box-shadow: 0 4px 12px rgba(0, 86, 179, 0.15); /* Đổ bóng nhẹ cho đẹp */
+    }
+
+    /* 3. Thiết lập Nút bấm mặc định (Nền trắng, chữ đen, viền xám) */
+    .btn-hover-effect {
+        background-color: #fff;
+        color: #333;
+        border: 1px solid #ced4da;
+        text-transform: uppercase; /* Chữ in hoa: XEM CHI TIẾT */
+        font-size: 0.9rem;
+        font-weight: 600;
+        border-radius: 0; /* Vuông vức giống ảnh mẫu (hoặc bỏ dòng này nếu thích bo tròn) */
+        transition: all 0.3s;
+        width: 100%; /* Nút rộng full card */
+    }
+
+    /* 4. Khi RÊ CHUỘT vào Card: Nút biến thành màu xanh */
+    .product-card:hover .btn-hover-effect {
+        background-color: #0056b3;
+        color: #fff;
+        border-color: #0056b3;
+    }
+
+    /* 5. Nút khi hết hàng (Không đổi màu) */
+    .btn-hover-effect:disabled {
+        background-color: #e9ecef !important; /* Xám */
+        color: #6c757d !important;
+        border-color: #dee2e6 !important;
+        cursor: not-allowed;
+    }
+</style>
+
+
 <div class="container py-4">
     <div class="row">
         <div class="col-md-3" style="position: sticky; top: 90px; height: fit-content; z-index: 100;">
@@ -93,63 +136,66 @@
                 </div>
             <?php else: ?>
                 <div class="row">
-                    <?php foreach($data['products'] as $prod): ?>
-                        <?php 
-                            // Logic tính tồn kho
-                            $stock = isset($prod['total_stock']) ? (int)$prod['total_stock'] : ((int)$prod['product_qty'] ?? 0);
-                            $isOutOfStock = ($stock <= 0);
-                        ?>
+    <?php foreach($data['products'] as $prod): ?>
+        <?php 
+            // Logic tính tồn kho
+            $stock = isset($prod['total_stock']) ? (int)$prod['total_stock'] : ((int)$prod['product_qty'] ?? 0);
+            $isOutOfStock = ($stock <= 0);
+        ?>
 
-                        <div class="col-6 col-md-4 mb-4">
-                            <div class="card product-card h-100 border-0 shadow-sm position-relative">
-                                
-                                <?php if(!$isOutOfStock && $prod['sale_price'] > 0): ?>
-                                    <div class="position-absolute top-0 end-0 bg-danger text-white px-2 py-1 m-2 rounded small fw-bold shadow-sm" style="z-index: 10;">
-                                        -<?= round((($prod['price'] - $prod['sale_price']) / $prod['price']) * 100) ?>%
-                                    </div>
-                                <?php endif; ?>
+        <div class="col-6 col-md-4 mb-4">
+            <div class="card product-card h-100 position-relative bg-white">
+                
+                <?php if(!$isOutOfStock && $prod['sale_price'] > 0): ?>
+                    <div class="position-absolute top-0 end-0 bg-danger text-white px-2 py-1 m-2 fw-bold shadow-sm" style="font-size: 0.8rem; z-index: 10;">
+                        -<?= round((($prod['price'] - $prod['sale_price']) / $prod['price']) * 100) ?>%
+                    </div>
+                <?php endif; ?>
 
-                                <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>">
-                                    <img src="<?= BASE_URL ?>public/uploads/<?= $prod['image'] ?>" 
-                                         class="card-img-top p-3" 
-                                         style="height: 200px; object-fit: contain;">
-                                </a>
-                                
-                                <div class="card-body text-center d-flex flex-column">
-                                    
-                                    <?php if($isOutOfStock): ?>
-                                        <div class="mb-2">
-                                            <span class="badge bg-danger py-2 px-3">HẾT HÀNG</span>
-                                        </div>
-                                    <?php endif; ?>
-
-                                    <h6 class="card-title text-truncate">
-                                        <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="text-decoration-none text-dark">
-                                            <?= htmlspecialchars($prod['name']) ?>
-                                        </a>
-                                    </h6>
-                                    
-                                    <div class="mt-auto">
-                                        <?php if($prod['sale_price'] > 0): ?>
-                                            <div class="d-flex justify-content-center align-items-center gap-2">
-                                                <span class="text-danger fw-bold fs-5"><?= number_format($prod['sale_price']) ?>đ</span>
-                                                <small class="text-muted text-decoration-line-through"><?= number_format($prod['price']) ?>đ</small>
-                                            </div>
-                                        <?php else: ?>
-                                            <span class="text-danger fw-bold fs-5"><?= number_format($prod['price']) ?>đ</span>
-                                        <?php endif; ?>
-                                    </div>
-
-                                    <?php if($isOutOfStock): ?>
-                                        <button class="btn btn-sm btn-secondary mt-2" disabled>Tạm hết hàng</button>
-                                    <?php else: ?>
-                                        <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="btn btn-sm btn-primary mt-2">Xem chi tiết</a>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
+                <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="position-relative d-block overflow-hidden">
+                    <img src="<?= BASE_URL ?>public/uploads/<?= $prod['image'] ?>" 
+                         class="card-img-top p-4" 
+                         style="height: 220px; object-fit: contain; transition: transform 0.5s; <?= $isOutOfStock ? 'opacity: 0.4;' : '' ?>">
+                    
+                    <?php if($isOutOfStock): ?>
+                        <div class="position-absolute top-50 start-50 translate-middle text-center w-100">
+                             <span class="badge bg-danger fs-6 py-2 px-3 shadow">HẾT HÀNG</span>
                         </div>
-                    <?php endforeach; ?>
+                    <?php endif; ?>
+                </a>
+                
+                <div class="card-body text-center d-flex flex-column pt-0">
+                    <h6 class="card-title text-truncate mb-2">
+                        <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="text-decoration-none text-dark fw-bold">
+                            <?= htmlspecialchars($prod['name']) ?>
+                        </a>
+                    </h6>
+                    
+                    <div class="mb-3">
+                        <?php if($prod['sale_price'] > 0): ?>
+                            <div class="d-flex justify-content-center align-items-center gap-2">
+                                <span class="text-danger fw-bold fs-5"><?= number_format($prod['sale_price']) ?>đ</span>
+                                <small class="text-muted text-decoration-line-through"><?= number_format($prod['price']) ?>đ</small>
+                            </div>
+                        <?php else: ?>
+                            <span class="text-danger fw-bold fs-5"><?= number_format($prod['price']) ?>đ</span>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="mt-auto">
+                        <?php if($isOutOfStock): ?>
+                            <button class="btn btn-hover-effect py-2" disabled>TẠM HẾT HÀNG</button>
+                        <?php else: ?>
+                            <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="btn btn-hover-effect py-2">
+                                XEM CHI TIẾT
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
+</div>
 
                 <?php if ($data['pagination']['total_pages'] > 1): ?>
                     <nav aria-label="Page navigation" class="mt-4">
