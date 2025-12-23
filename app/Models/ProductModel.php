@@ -166,12 +166,15 @@ public function getAll() {
             $values = array_merge($values, $filters['sizes']);
         }
         if (!empty($filters['price_min'])) {
-            $sql .= " AND (p.price >= ? OR p.sale_price >= ?)";
-            $types .= "dd"; $values[] = $filters['price_min']; $values[] = $filters['price_min'];
+            $sql .= " AND (IF(p.sale_price > 0, p.sale_price, p.price) >= ?)";
+            $types .= "d"; 
+            $values[] = $filters['price_min'];
         }
+
         if (!empty($filters['price_max'])) {
-            $sql .= " AND (p.price <= ? OR p.sale_price <= ?)";
-            $types .= "dd"; $values[] = $filters['price_max']; $values[] = $filters['price_max'];
+            $sql .= " AND (IF(p.sale_price > 0, p.sale_price, p.price) <= ?)";
+            $types .= "d"; 
+            $values[] = $filters['price_max'];
         }
         if (!empty($filters['keyword'])) {
             $sql .= " AND p.name LIKE ?";
