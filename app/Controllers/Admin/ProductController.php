@@ -6,31 +6,26 @@ use App\Models\BrandModel;
 
 class ProductController extends Controller {
     public function __construct() {
-        // Cho phép cả nhân viên và admin quản lý kho/sản phẩm
         AuthMiddleware::isStaffArea(); 
     }
 
-    // [CẬP NHẬT] index: Thêm xử lý bộ lọc
     public function index() {
         $productModel = $this->model('ProductModel');
-        $categoryModel = $this->model('CategoryModel'); // Cần để hiện dropdown lọc danh mục
+        $categoryModel = $this->model('CategoryModel');
 
-        // Lấy tham số từ URL (VD: ?keyword=abc&sort=price_desc)
         $filters = [
             'keyword'     => $_GET['keyword'] ?? '',
             'category_id' => $_GET['category_id'] ?? '',
             'sort'        => $_GET['sort'] ?? 'newest'
         ];
 
-        // Gọi hàm getAdminList vừa viết ở Model
         $products = $productModel->getAdminList($filters);
         $categories = $categoryModel->getAll();
 
-        // Truyền data sang View
         $data = [
             'products'   => $products,
-            'categories' => $categories, // Để hiện trong <select>
-            'filters'    => $filters     // Để giữ lại giá trị đã chọn trên form
+            'categories' => $categories,
+            'filters'    => $filters
         ];
 
         $this->view('admin/products/index', $data);
@@ -46,7 +41,6 @@ class ProductController extends Controller {
         $this->view('admin/products/create', $data);
     }
 
-    // store: GIỮ NGUYÊN (Code bạn đã ổn)
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $model = $this->model('ProductModel');
@@ -74,8 +68,8 @@ class ProductController extends Controller {
             $productId = $model->add($data);
 
             if ($productId) {
-                // 3. Upload Ảnh Phụ (Gallery)
-                $this->processGalleryUpload($productId, $model); // Tách hàm riêng để tái sử dụng
+                // 3. Upload Ảnh Phụ
+                $this->processGalleryUpload($productId, $model);
 
                 // 4. Lưu Biến thể
                 if (isset($_POST['variants']) && is_array($_POST['variants'])) {
@@ -87,20 +81,29 @@ class ProductController extends Controller {
                     }
                 }
                 
+                // [THÔNG BÁO] Set session thông báo
+                $_SESSION['alert'] = ['type' => 'success', 'message' => 'Thêm sản phẩm mới thành công!'];
+
+                // [THOÁT] Chuyển về trang danh sách
                 header('Location: ' . BASE_URL . 'admin/product');
                 exit;
             } else {
-                echo "Lỗi: Không thể thêm sản phẩm.";
+                $_SESSION['alert'] = ['type' => 'danger', 'message' => 'Lỗi hệ thống: Không thể thêm sản phẩm.'];
+                header('Location: ' . BASE_URL . 'admin/product/create');
+                exit;
             }
         }
     }
 
-    // edit: GIỮ NGUYÊN
     public function edit($id) {
         $model = $this->model('ProductModel');
         $product = $model->getById($id);
         
-        if (!$product) { die("Sản phẩm không tồn tại"); }
+        if (!$product) { 
+            $_SESSION['alert'] = ['type' => 'danger', 'message' => 'Sản phẩm không tồn tại!'];
+            header('Location: ' . BASE_URL . 'admin/product');
+            exit;
+        }
 
         $variants = $model->getVariants($id);
         $gallery = $model->getGalleryImages($id); 
@@ -117,7 +120,6 @@ class ProductController extends Controller {
         $this->view('admin/products/edit', $data);
     }
 
-    // update: CẦN SỬA ĐỂ UPLOAD THÊM ẢNH PHỤ
     public function update($id) {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $model = $this->model('ProductModel');
@@ -127,15 +129,14 @@ class ProductController extends Controller {
             
             $imageName = $currentProduct['image'];
 
-            // 1. Xử lý ảnh chính (Nếu có thay đổi)
+            // 1. Xử lý ảnh chính
             if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
                 $targetDir = ROOT_PATH . "/public/uploads/";
                 $imageName = time() . '_main_' . basename($_FILES["image"]["name"]);
                 move_uploaded_file($_FILES["image"]["tmp_name"], $targetDir . $imageName);
                 
-                // Xóa ảnh chính cũ nếu cần
                 if ($currentProduct['image'] && file_exists($targetDir . $currentProduct['image'])) {
-                      unlink($targetDir . $currentProduct['image']);
+                     unlink($targetDir . $currentProduct['image']);
                 }
             }
 
@@ -152,95 +153,78 @@ class ProductController extends Controller {
             ];
 
             if ($model->update($id, $data)) {
-                // [MỚI] 3. Xử lý Upload thêm Ảnh Phụ (Quan trọng: Code cũ thiếu phần này)
+                // 3. Xử lý Upload thêm Ảnh Phụ
                 $this->processGalleryUpload($id, $model);
                 
-                // [MỚI] 4. Xử lý thêm biến thể mới (Nếu muốn đơn giản)
+                // 4. Xử lý thêm biến thể mới
                 if (isset($_POST['variants']) && is_array($_POST['variants'])) {
-                    // Logic này chỉ thêm mới, không sửa/xóa biến thể cũ trong form edit này
-                    // Bạn có thể cần custom thêm nếu muốn sửa từng biến thể
                     foreach ($_POST['variants'] as $variant) {
                         if (!empty($variant['size']) && !empty($variant['color'])) {
-                            // Chỉ add nếu có đủ dữ liệu
                             $stock = !empty($variant['stock']) ? (int)$variant['stock'] : 0;
-                            // Gọi hàm addVariant (lưu ý: hàm này insert mới)
                             $model->addVariant($id, $variant['size'], $variant['color'], $stock);
                         }
                     }
                 }
 
-                header('Location: ' . BASE_URL . 'admin/product/edit/' . $id);
+                // [THÔNG BÁO] Đã cập nhật xong
+                $_SESSION['alert'] = ['type' => 'success', 'message' => 'Đã cập nhật sản phẩm: ' . $data['name']];
+
+                // [THOÁT] QUAY VỀ TRANG DANH SÁCH (Theo yêu cầu)
+                header('Location: ' . BASE_URL . 'admin/product');
                 exit;
             } else {
-                echo "Lỗi cập nhật sản phẩm.";
+                $_SESSION['alert'] = ['type' => 'danger', 'message' => 'Có lỗi xảy ra khi cập nhật.'];
+                header('Location: ' . BASE_URL . 'admin/product/edit/' . $id);
+                exit;
             }
         }
     }
     
-    // Xử lý xóa sản phẩm (Hàm đã hợp nhất phân quyền Staff)
     public function delete($id) {
-        // 1. [BẢO VỆ CẤP CAO] Kiểm tra xem đã đăng nhập chưa (Middleware)
-        // SỬA: Đổi AuthMiddleware::isStaff() -> AuthMiddleware::isStaffArea() cho đúng tên hàm trong class Auth
         AuthMiddleware::isStaffArea(); 
 
-        // 2. [PHÂN QUYỀN RIÊNG] Chỉ Admin mới có quyền xóa vĩnh viễn, Staff chỉ được xem/sửa
         if ($_SESSION['user_role'] !== 'admin') {
-            echo "<script>
-                    alert('Nhân viên (Staff) không có quyền xóa sản phẩm! Vui lòng liên hệ Admin.'); 
-                    window.history.back();
-                  </script>";
-            exit;
-        }
-
-        $model = $this->model('ProductModel');
-        
-        // 3. Kiểm tra sản phẩm tồn tại
-        $product = $model->getById($id);
-        if (!$product) {
-            die("Sản phẩm không tồn tại.");
-        }
-
-        // 4. Thực hiện xóa
-        if ($model->delete($id)) {
-            // [TÙY CHỌN] Xóa file ảnh vật lý trong thư mục uploads để tránh rác server
-            if (!empty($product['image'])) {
-                $imagePath = ROOT_PATH . '/public/uploads/' . $product['image'];
-                if (file_exists($imagePath)) {
-                    unlink($imagePath);
-                }
-            }
-
+            $_SESSION['alert'] = ['type' => 'warning', 'message' => 'Nhân viên không có quyền xóa sản phẩm.'];
             header('Location: ' . BASE_URL . 'admin/product');
             exit;
-        } else {
-            die("Lỗi xóa sản phẩm. Có thể do ràng buộc dữ liệu (đơn hàng).");
         }
+
+        $model = $this->model('ProductModel');
+        $product = $model->getById($id);
+        
+        if ($product && $model->delete($id)) {
+            if (!empty($product['image'])) {
+                $imagePath = ROOT_PATH . '/public/uploads/' . $product['image'];
+                if (file_exists($imagePath)) unlink($imagePath);
+            }
+            $_SESSION['alert'] = ['type' => 'success', 'message' => 'Đã xóa sản phẩm thành công.'];
+        } else {
+            $_SESSION['alert'] = ['type' => 'danger', 'message' => 'Lỗi: Không thể xóa sản phẩm.'];
+        }
+
+        header('Location: ' . BASE_URL . 'admin/product');
+        exit;
     }
 
-    // [HÀM MỚI] Xử lý xóa ảnh phụ (Khi bấm nút Xóa ở View Edit)
     public function deleteGallery($imageId, $productId) {
         $model = $this->model('ProductModel');
-        
-        // 1. Lấy thông tin ảnh để lấy tên file
         $image = $model->getGalleryImageById($imageId);
         
         if ($image) {
-            // 2. Xóa file vật lý
             $filePath = ROOT_PATH . "/public/uploads/" . $image['image_url'];
-            if (file_exists($filePath)) {
-                unlink($filePath);
-            }
+            if (file_exists($filePath)) unlink($filePath);
             
-            // 3. Xóa trong database
             $model->deleteGalleryImage($imageId);
+            
+            // Thông báo nhỏ khi xóa ảnh
+            $_SESSION['alert'] = ['type' => 'success', 'message' => 'Đã xóa ảnh phụ.'];
         }
         
-        // 4. Quay lại trang sửa
+        // Riêng xóa ảnh gallery thì nên ở lại trang Edit để người dùng thấy kết quả ngay
         header('Location: ' . BASE_URL . 'admin/product/edit/' . $productId);
         exit;
     }
 
-    // [HÀM PHỤ] Giúp code gọn hơn, dùng cho cả store và update
     private function processGalleryUpload($productId, $model) {
         if (isset($_FILES['gallery'])) {
             $totalFiles = count($_FILES['gallery']['name']);
@@ -256,7 +240,5 @@ class ProductController extends Controller {
             }
         }
     }
-    
-    // Đã xóa hàm delete() trùng lặp ở đây để sửa lỗi Cannot redeclare
 }
 ?>
