@@ -62,19 +62,19 @@ $orderModel = $this->model('OrderModel');
     </div>
 </div>
 
-<div class="card mb-4">
-    <div class="card-header bg-success text-white">
-        <h5 class="m-0">Danh sách sản phẩm</h5>
+<div class="card mb-4 shadow-sm border-0">
+    <div class="card-header bg-white py-3">
+        <h5 class="m-0 fw-bold text-primary"><i class="fas fa-box-open me-2"></i>Danh sách sản phẩm</h5>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-striped m-0">
-                <thead>
+            <table class="table table-hover align-middle m-0">
+                <thead class="table-light">
                     <tr>
-                        <th>Sản phẩm</th>
-                        <th class="text-center">Số lượng</th>
-                        <th class="text-end">Đơn giá</th>
-                        <th class="text-end">Thành tiền</th>
+                        <th class="py-3 ps-4">Sản phẩm</th>
+                        <th class="text-center py-3">Số lượng</th>
+                        <th class="text-end py-3">Đơn giá</th>
+                        <th class="text-end py-3 pe-4">Thành tiền</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -84,30 +84,41 @@ $orderModel = $this->model('OrderModel');
                         $subtotal += $item['total_price'];
                     ?>
                     <tr>
-                        <td>
-                            <?= htmlspecialchars($item['product_name']) ?> 
-                            <small class="text-muted">(<?= $item['size'] ?>/<?= $item['color'] ?>)</small>
+                        <td class="ps-4">
+                            <span class="fw-bold text-dark"><?= htmlspecialchars($item['product_name']) ?></span>
+                            <div class="text-muted small mt-1">
+                                <span class="badge bg-light text-dark border">Size: <?= $item['size'] ?></span>
+                                <span class="badge bg-light text-dark border ms-1">Màu: <?= $item['color'] ?></span>
+                            </div>
                         </td>
                         <td class="text-center"><?= $item['quantity'] ?></td>
-                        <td class="text-end"><?= number_format($item['price']) ?>đ</td>
-                        <td class="text-end"><?= number_format($item['total_price']) ?>đ</td>
+                        <td class="text-end text-muted"><?= number_format($item['price']) ?>đ</td>
+                        <td class="text-end fw-bold text-dark pe-4"><?= number_format($item['total_price']) ?>đ</td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
-                <tfoot>
+                <tfoot class="bg-light">
                     <tr>
-                        <th colspan="3" class="text-end">Tổng tiền hàng (Tạm tính):</th>
-                        <th class="text-end"><?= number_format($subtotal) ?>đ</th>
+                        <td colspan="3" class="text-end text-muted pt-3">Tổng tiền hàng (Tạm tính):</td>
+                        <td class="text-end pe-4 pt-3 fw-bold"><?= number_format($subtotal) ?>đ</td>
                     </tr>
+                    
                     <?php if ($order['discount_amount'] > 0): ?>
                     <tr>
-                        <th colspan="3" class="text-end text-success">Giảm giá (<?= $order['coupon_code'] ?? 'Mã' ?>):</th>
-                        <th class="text-end text-success">- <?= number_format($order['discount_amount']) ?>đ</th>
+                        <td colspan="3" class="text-end text-success">
+                            <i class="fas fa-ticket-alt me-1"></i> Giảm giá (<?= $order['coupon_code'] ?? 'Mã' ?>):
+                        </td>
+                        <td class="text-end text-success pe-4">- <?= number_format($order['discount_amount']) ?>đ</td>
                     </tr>
                     <?php endif; ?>
-                    <tr class="table-dark">
-                        <th colspan="3" class="text-end h5">TỔNG CỘNG (Thanh toán):</th>
-                        <th class="text-end h5"><?= number_format($order['total_money']) ?>đ</th>
+
+                    <tr>
+                        <td colspan="3" class="text-end align-middle pb-4">
+                            <span class="fs-5 fw-bold text-dark">TỔNG CỘNG THANH TOÁN:</span>
+                        </td>
+                        <td class="text-end pe-4 pb-4">
+                            <span class="fs-4 fw-bold text-danger"><?= number_format($order['total_money']) ?>đ</span>
+                        </td>
                     </tr>
                 </tfoot>
             </table>
