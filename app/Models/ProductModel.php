@@ -134,56 +134,71 @@ public function getAll() {
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-   public function filterProducts($filters) {
-       $sql = "SELECT p.*, SUM(pv.stock_quantity) as total_stock 
-                FROM products p 
+   // --- CẬP NHẬT HÀM LỌC SẢN PHẨM (QUAN TRỌNG) ---
+    public function filterProducts($filters) {
+        // Sử dụng DISTINCT để tránh trùng lặp khi 1 sản phẩm có nhiều biến thể thỏa mãn điều kiện
+        $sql = "SELECT DISTINCT p.* FROM products p 
                 LEFT JOIN product_variants pv ON p.id = pv.product_id 
                 WHERE p.is_active = 1";
         
         $types = "";
         $values = [];
-        if (!empty($filters['target'])) {
-        $sql .= " AND p.target_audience = ?";
-        $types .= "s"; 
-        $values[] = $filters['target'];
-    }
 
-        // --- Logic Lọc (Giống cũ) ---
+        // 1. Lọc theo Danh mục (Bao gồm cả danh mục cha và con)
+        // Lưu ý: Nếu muốn chọn cha ra cả con, bạn cần logic lấy danh sách ID con trước ở Controller
         if (!empty($filters['category_id'])) {
             $sql .= " AND p.category_id = ?";
-            $types .= "i"; $values[] = $filters['category_id'];
+            $types .= "i"; 
+            $values[] = $filters['category_id'];
         }
+
+        // 2. Lọc theo Thương hiệu
         if (!empty($filters['brands']) && is_array($filters['brands'])) {
             $placeholders = implode(',', array_fill(0, count($filters['brands']), '?'));
             $sql .= " AND p.brand_id IN ($placeholders)";
             $types .= str_repeat('i', count($filters['brands']));
             $values = array_merge($values, $filters['brands']);
         }
+
+        // 3. Lọc theo Size (Cần join bảng variant)
         if (!empty($filters['sizes']) && is_array($filters['sizes'])) {
             $placeholders = implode(',', array_fill(0, count($filters['sizes']), '?'));
             $sql .= " AND pv.size IN ($placeholders)";
             $types .= str_repeat('s', count($filters['sizes']));
             $values = array_merge($values, $filters['sizes']);
         }
-        if (!empty($filters['price_min'])) {
+
+        // 4. Lọc theo Giá (Ưu tiên giá Sale nếu có)
+        if (isset($filters['price_min'])) {
             $sql .= " AND (IF(p.sale_price > 0, p.sale_price, p.price) >= ?)";
-            $types .= "d"; 
+            $types .= "d";
             $values[] = $filters['price_min'];
         }
 
-        if (!empty($filters['price_max'])) {
+        if (isset($filters['price_max'])) {
             $sql .= " AND (IF(p.sale_price > 0, p.sale_price, p.price) <= ?)";
-            $types .= "d"; 
+            $types .= "d";
             $values[] = $filters['price_max'];
         }
-        if (!empty($filters['keyword'])) {
-            $sql .= " AND p.name LIKE ?";
-            $types .= "s"; $values[] = "%" . $filters['keyword'] . "%";
-        }
-        $sql .= " GROUP BY p.id";
-        $sql .= " ORDER BY p.created_at DESC";
 
-        // --- [MỚI] THÊM LIMIT VÀ OFFSET CHO PHÂN TRANG ---
+        // 5. Tìm kiếm từ khóa
+        if (!empty($filters['keyword'])) {
+            $sql .= " AND (p.name LIKE ? OR p.sku_code LIKE ?)";
+            $types .= "ss";
+            $values[] = "%" . $filters['keyword'] . "%";
+            $values[] = "%" . $filters['keyword'] . "%";
+        }
+
+        // 6. Sắp xếp
+        $sort = $filters['sort'] ?? 'newest';
+        switch ($sort) {
+            case 'price_asc': $sql .= " ORDER BY IF(p.sale_price > 0, p.sale_price, p.price) ASC"; break;
+            case 'price_desc': $sql .= " ORDER BY IF(p.sale_price > 0, p.sale_price, p.price) DESC"; break;
+            case 'name_asc': $sql .= " ORDER BY p.name ASC"; break;
+            default: $sql .= " ORDER BY p.created_at DESC"; break;
+        }
+
+        // 7. Phân trang
         if (isset($filters['limit']) && isset($filters['offset'])) {
             $sql .= " LIMIT ? OFFSET ?";
             $types .= "ii";
@@ -191,13 +206,9 @@ public function getAll() {
             $values[] = $filters['offset'];
         }
 
-        // Thực thi
         $stmt = $this->conn->prepare($sql);
         if (!empty($values)) {
-            $bind_params = [];
-            $params_ref = array_merge([$types], $values);
-            foreach ($params_ref as $key => $value) $bind_params[$key] = &$params_ref[$key];
-            call_user_func_array([$stmt, 'bind_param'], $bind_params);
+            $stmt->bind_param($types, ...$values);
         }
         
         $stmt->execute();
@@ -326,20 +337,17 @@ public function getVariantStock($variantId) {
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
-   // [MỚI] Hàm đếm tổng số sản phẩm (để tính số trang)
+  // --- CẬP NHẬT HÀM ĐẾM TỔNG (QUAN TRỌNG ĐỂ PHÂN TRANG ĐÚNG) ---
     public function countFilterProducts($filters) {
-        $sql = "SELECT COUNT(DISTINCT p.id) as total FROM products p 
+        $sql = "SELECT COUNT(DISTINCT p.id) as total 
+                FROM products p 
                 LEFT JOIN product_variants pv ON p.id = pv.product_id 
                 WHERE p.is_active = 1";
         
-        // (Copy lại logic lọc y hệt hàm trên, KHÔNG có Limit/Order By)
-        $types = ""; $values = [];
-        if (!empty($filters['target'])) {
-            $sql .= " AND p.target_audience = ?";
-            $types .= "s"; 
-            $values[] = $filters['target'];
-        }
-        
+        $types = "";
+        $values = [];
+
+        // (Copy lại toàn bộ logic WHERE giống hàm filterProducts ở trên, TRỪ phần ORDER BY và LIMIT)
         if (!empty($filters['category_id'])) { $sql .= " AND p.category_id = ?"; $types .= "i"; $values[] = $filters['category_id']; }
         if (!empty($filters['brands']) && is_array($filters['brands'])) {
             $placeholders = implode(',', array_fill(0, count($filters['brands']), '?'));
@@ -353,16 +361,13 @@ public function getVariantStock($variantId) {
             $types .= str_repeat('s', count($filters['sizes']));
             $values = array_merge($values, $filters['sizes']);
         }
-        if (!empty($filters['price_min'])) { $sql .= " AND (p.price >= ? OR p.sale_price >= ?)"; $types .= "dd"; $values[] = $filters['price_min']; $values[] = $filters['price_min']; }
-        if (!empty($filters['price_max'])) { $sql .= " AND (p.price <= ? OR p.sale_price <= ?)"; $types .= "dd"; $values[] = $filters['price_max']; $values[] = $filters['price_max']; }
-        if (!empty($filters['keyword'])) { $sql .= " AND p.name LIKE ?"; $types .= "s"; $values[] = "%" . $filters['keyword'] . "%"; }
+        if (isset($filters['price_min'])) { $sql .= " AND (IF(p.sale_price > 0, p.sale_price, p.price) >= ?)"; $types .= "d"; $values[] = $filters['price_min']; }
+        if (isset($filters['price_max'])) { $sql .= " AND (IF(p.sale_price > 0, p.sale_price, p.price) <= ?)"; $types .= "d"; $values[] = $filters['price_max']; }
+        if (!empty($filters['keyword'])) { $sql .= " AND (p.name LIKE ? OR p.sku_code LIKE ?)"; $types .= "ss"; $values[] = "%".$filters['keyword']."%"; $values[] = "%".$filters['keyword']."%"; }
 
         $stmt = $this->conn->prepare($sql);
         if (!empty($values)) {
-            $bind_params = [];
-            $params_ref = array_merge([$types], $values);
-            foreach ($params_ref as $key => $value) $bind_params[$key] = &$params_ref[$key];
-            call_user_func_array([$stmt, 'bind_param'], $bind_params);
+            $stmt->bind_param($types, ...$values);
         }
         
         $stmt->execute();

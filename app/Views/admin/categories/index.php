@@ -7,7 +7,7 @@
 
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-header bg-white py-3">
-        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-list me-2"></i>Danh sách danh mục hiện có</h6>
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-list me-2"></i>Danh sách danh mục</h6>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -16,6 +16,7 @@
                     <tr>
                         <th class="text-center" style="width: 60px;">ID</th>
                         <th style="width: 25%;">Tên danh mục</th>
+                        <th style="width: 20%;">Cấp độ (Cha)</th>
                         <th>Mô tả</th>
                         <th class="text-center" style="width: 120px;">Hành động</th>
                     </tr>
@@ -26,35 +27,40 @@
                         <tr>
                             <td class="text-center text-muted">#<?= $cat['id'] ?></td>
                             
-                            <td class="fw-bold text-dark"><?= htmlspecialchars($cat['name']) ?></td>
+                            <td class="fw-bold text-dark">
+                                <?php if(empty($cat['parent_id'])): ?>
+                                    <i class="fas fa-folder text-warning me-1"></i> 
+                                <?php else: ?>
+                                    <i class="fas fa-level-up-alt fa-rotate-90 ms-3 text-secondary me-1"></i> 
+                                <?php endif; ?>
+                                <?= htmlspecialchars($cat['name']) ?>
+                            </td>
                             
-                            <td class="text-secondary small"><?= htmlspecialchars($cat['description']) ?></td>
+                            <td>
+                                <?php if(!empty($cat['parent_name'])): ?>
+                                    <span class="badge bg-light text-dark border">
+                                        Con của: <strong><?= htmlspecialchars($cat['parent_name']) ?></strong>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge bg-primary">Gốc (Root)</span>
+                                <?php endif; ?>
+                            </td>
+
+                            <td class="text-secondary small">
+                                <?= htmlspecialchars($cat['description'] ?? '') ?>
+                            </td>
                             
                             <td class="text-center">
                                 <div class="btn-group" role="group">
-                                    <a href="<?= BASE_URL ?>admin/category/edit/<?= $cat['id'] ?>" 
-                                       class="btn btn-sm btn-outline-warning" 
-                                       title="Sửa">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-
-                                    <a href="<?= BASE_URL ?>admin/category/delete/<?= $cat['id'] ?>" 
-                                       class="btn btn-sm btn-outline-danger" 
-                                       onclick="return confirm('Bạn có chắc chắn muốn xóa danh mục: <?= htmlspecialchars($cat['name']) ?>?')"
-                                       title="Xóa">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </a>
+                                    <a href="<?= BASE_URL ?>admin/category/edit/<?= $cat['id'] ?>" class="btn btn-sm btn-outline-warning" title="Sửa"><i class="fas fa-edit"></i></a>
+                                    <a href="<?= BASE_URL ?>admin/category/delete/<?= $cat['id'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa?')" title="Xóa"><i class="fas fa-trash-alt"></i></a>
                                 </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="4" class="text-center py-5 text-muted">
-                                <i class="fas fa-folder-open fa-3x mb-3 text-gray-300"></i><br>
-                                <span class="h6">Chưa có danh mục nào</span><br>
-                                <small>Hãy bấm nút "Thêm mới" ở góc trên để bắt đầu.</small>
-                            </td>
+                            <td colspan="5" class="text-center py-5 text-muted">Chưa có dữ liệu</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>

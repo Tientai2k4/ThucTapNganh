@@ -8,7 +8,7 @@
 
             <h5 class="fw-bold mt-4">2. Thời gian giao hàng dự kiến</h5>
             <ul>
-                <li><strong>Khu vực nội thành (Hà Nội):</strong> 1 - 2 ngày làm việc.</li>
+                <li><strong>Khu vực nội thành (Nha Trang):</strong> 1 - 2 ngày làm việc.</li>
                 <li><strong>Khu vực tỉnh/thành phố khác:</strong> 3 - 5 ngày làm việc.</li>
             </ul>
             <p><small>* Lưu ý: Thời gian có thể chậm hơn vào các dịp lễ hoặc điều kiện thời tiết bất lợi.</small></p>

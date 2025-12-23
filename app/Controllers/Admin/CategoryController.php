@@ -2,10 +2,10 @@
 namespace App\Controllers\Admin;
 use App\Core\Controller;
 use App\Core\AuthMiddleware;
+
 class CategoryController extends Controller {
     public function __construct() {
-        // [QUAN TRỌNG] Chỉ Admin tối cao mới được quản lý Danh mục
-        // Content Staff KHÔNG ĐƯỢC PHÉP vào đây
+        // Kiểm tra quyền Admin
         AuthMiddleware::onlyAdmin(); 
     }
 
@@ -16,44 +16,58 @@ class CategoryController extends Controller {
     }
 
     public function create() {
+        $model = $this->model('CategoryModel');
+
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $name = $_POST['name'];
-            $desc = $_POST['description'];
+            $name = trim($_POST['name']);
+            $desc = trim($_POST['description']);
+            // Nếu chọn "Là danh mục gốc" (value rỗng) thì set là NULL
+            $parent_id = !empty($_POST['parent_id']) ? $_POST['parent_id'] : null;
             
-            $model = $this->model('CategoryModel');
-            $model->create($name, $desc);
+            $model->create($name, $desc, $parent_id);
             header('Location: ' . BASE_URL . 'admin/category');
+            exit;
         } else {
-            $this->view('admin/categories/create');
+            // Lấy toàn bộ danh mục để lọc ở View
+            $categories = $model->getAll();
+            $this->view('admin/categories/create', ['categories' => $categories]);
         }
     }
     
-    // Phương thức mới: Hiển thị form chỉnh sửa
     public function edit($id) {
         $model = $this->model('CategoryModel');
-        $category = $model->getById($id); // Lấy dữ liệu danh mục
+        $category = $model->getById($id); 
+        $categories = $model->getAll(); 
 
         if (!$category) {
-            // Xử lý khi không tìm thấy danh mục (ví dụ: chuyển hướng về trang index)
             header('Location: ' . BASE_URL . 'admin/category');
-            return;
+            exit;
         }
 
-        $this->view('admin/categories/edit', ['category' => $category]);
+        $this->view('admin/categories/edit', [
+            'category' => $category,
+            'categories' => $categories
+        ]);
     }
 
-    // Phương thức mới: Xử lý cập nhật dữ liệu
     public function update($id) {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $name = $_POST['name'];
-            $desc = $_POST['description'];
+            $name = trim($_POST['name']);
+            $desc = trim($_POST['description']);
+            $parent_id = !empty($_POST['parent_id']) ? $_POST['parent_id'] : null;
             
+            // Validate: Không được chọn chính nó làm cha
+            if ($parent_id == $id) {
+                $parent_id = null; 
+            }
+
             $model = $this->model('CategoryModel');
-            $model->update($id, $name, $desc);
+            $model->update($id, $name, $desc, $parent_id);
             header('Location: ' . BASE_URL . 'admin/category');
+            exit;
         } else {
-             // Nếu không phải POST, chuyển hướng về trang edit hoặc index
              header('Location: ' . BASE_URL . 'admin/category/edit/' . $id);
+             exit;
         }
     }
 
@@ -61,6 +75,7 @@ class CategoryController extends Controller {
         $model = $this->model('CategoryModel');
         $model->delete($id);
         header('Location: ' . BASE_URL . 'admin/category');
+        exit;
     }
 }
 ?>

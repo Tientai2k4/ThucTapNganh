@@ -6,7 +6,7 @@
             
             <div class="d-flex align-items-center mb-3">
                 <i class="fas fa-map-marker-alt fa-lg me-3"></i>
-                <span>123 Đường Bơi Lội, Quận Cầu Giấy, Hà Nội</span>
+                <span>Nha Trang ,Khanh Hoa</span>
             </div>
             <div class="d-flex align-items-center mb-3">
                 <i class="fas fa-phone-alt fa-lg me-3"></i>

@@ -1,18 +1,31 @@
 <?php
 // =================================================================
-// XỬ LÝ LẤY DANH MỤC TỪ DATABASE (Thay thế dữ liệu giả lập)
+// XỬ LÝ LẤY DANH MỤC TỪ DATABASE VÀ PHÂN CẤP CHA - CON
 // =================================================================
 
 if (isset($data['categories'])) {
-    // Trường hợp Controller đã truyền danh mục xuống
     $categories = $data['categories'];
 } else {
-    // Trường hợp Controller không truyền, ta tự gọi Model để lấy
-    // Khởi tạo CategoryModel
     $cateModel = new \App\Models\CategoryModel();
-    // Gọi hàm getAll() đã có trong Model bạn cung cấp
     $categories = $cateModel->getAll();
 }
+
+// --- LOGIC MỚI: Sắp xếp danh mục thành cây (Tree) ---
+$menuTree = [];
+// Bước 1: Lấy tất cả danh mục Cha (Root) trước
+foreach ($categories as $cat) {
+    if (empty($cat['parent_id'])) {
+        $menuTree[$cat['id']] = $cat;
+        $menuTree[$cat['id']]['children'] = []; // Tạo mảng rỗng để chứa con
+    }
+}
+// Bước 2: Duyệt lại lần nữa để gán Con vào Cha tương ứng
+foreach ($categories as $cat) {
+    if (!empty($cat['parent_id']) && isset($menuTree[$cat['parent_id']])) {
+        $menuTree[$cat['parent_id']]['children'][] = $cat;
+    }
+}
+// ---------------------------------------------------
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -23,6 +36,33 @@ if (isset($data['categories'])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>css/client.css">
+    
+    <style>
+        /* Hiển thị menu con khi hover trên Desktop */
+        @media (min-width: 992px) {
+            .dropend:hover > .dropdown-menu {
+                display: block;
+                margin-top: -10px;
+                margin-left: 0;
+            }
+            .dropend .dropdown-toggle::after {
+                float: right;
+                margin-top: 7px;
+            }
+        }
+        /* Style cho thanh tìm kiếm */
+        .search-item {
+            display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #f1f1f1;
+            text-decoration: none; color: #333; transition: background 0.2s;
+        }
+        .search-item:hover { background-color: #f8f9fa; color: #0d6efd; }
+        .search-item img { width: 40px; height: 40px; object-fit: cover; margin-right: 10px; border-radius: 4px; }
+        .search-info h6 { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.2; }
+        .search-info span { font-size: 12px; color: #dc3545; font-weight: bold; }
+        .search-item:last-child { border-bottom: none; }
+        #searchResults::-webkit-scrollbar { width: 6px; }
+        #searchResults::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 3px; }
+    </style>
 </head>
 <body>
     <div class="bg-primary text-white py-1 small">
@@ -39,7 +79,7 @@ if (isset($data['categories'])) {
         <nav class="navbar navbar-expand-lg navbar-light bg-white py-2">
             <div class="container">
                 <a class="navbar-brand fw-bold text-primary fs-3" href="<?= BASE_URL ?>">
-                    <i class="fas fa-swimmer"></i> SWIM STORE
+                    <i class="fas fa-swimmer"></i> SWIMMING STORE
                 </a>
                 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
@@ -53,22 +93,45 @@ if (isset($data['categories'])) {
 
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle px-3" href="#" data-bs-toggle="dropdown">Danh mục</a>
-                            <div class="dropdown-menu shadow-sm border-0 mt-2 rounded-3">
-                                <?php if (!empty($categories)): ?>
-                                    <?php foreach ($categories as $cat): ?>
-                                        <a class="dropdown-item py-2" href="<?= BASE_URL ?>product/category/<?= $cat['id'] ?>">
-                                            <?= htmlspecialchars($cat['name']) ?>
-                                        </a>
+                            <ul class="dropdown-menu shadow-sm border-0 mt-2 rounded-3">
+                                <?php if (!empty($menuTree)): ?>
+                                    <?php foreach ($menuTree as $parent): ?>
+                                        
+                                        <?php if (!empty($parent['children'])): ?>
+                                            <li class="dropend">
+                                                <a class="dropdown-item dropdown-toggle py-2" href="<?= BASE_URL ?>product/category/<?= $parent['id'] ?>" data-bs-toggle="dropdown">
+                                                    <?= htmlspecialchars($parent['name']) ?>
+                                                </a>
+                                                <ul class="dropdown-menu shadow-sm border-0">
+                                                    <li><a class="dropdown-item fw-bold text-primary" href="<?= BASE_URL ?>product/category/<?= $parent['id'] ?>">Xem tất cả <?= htmlspecialchars($parent['name']) ?></a></li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    
+                                                    <?php foreach ($parent['children'] as $child): ?>
+                                                        <li>
+                                                            <a class="dropdown-item py-2" href="<?= BASE_URL ?>product/category/<?= $child['id'] ?>">
+                                                                <?= htmlspecialchars($child['name']) ?>
+                                                            </a>
+                                                        </li>
+                                                    <?php endforeach; ?>
+                                                </ul>
+                                            </li>
+                                        <?php else: ?>
+                                            <li>
+                                                <a class="dropdown-item py-2" href="<?= BASE_URL ?>product/category/<?= $parent['id'] ?>">
+                                                    <?= htmlspecialchars($parent['name']) ?>
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <span class="dropdown-item py-2 text-muted">Chưa có danh mục</span>
+                                    <li><span class="dropdown-item py-2 text-muted">Chưa có danh mục</span></li>
                                 <?php endif; ?>
                                 
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item py-2 text-primary" href="<?= BASE_URL ?>product">Xem tất cả</a>
-                            </div>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item py-2 text-primary" href="<?= BASE_URL ?>product">Xem tất cả sản phẩm</a></li>
+                            </ul>
                         </li>
-                        
                         <li class="nav-item"><a class="nav-link px-3" href="<?= BASE_URL ?>blog">Blog</a></li>
                         <li class="nav-item"><a class="nav-link px-3" href="<?= BASE_URL ?>contact">Liên hệ</a></li>
                     </ul>
@@ -179,21 +242,6 @@ if (isset($data['categories'])) {
 
     <main class="py-4 bg-light" style="min-height: 80vh;">
         <div class="container">
-
-<style>
-    .search-item {
-        display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #f1f1f1;
-        text-decoration: none; color: #333; transition: background 0.2s;
-    }
-    .search-item:hover { background-color: #f8f9fa; color: #0d6efd; }
-    .search-item img { width: 40px; height: 40px; object-fit: cover; margin-right: 10px; border-radius: 4px; }
-    .search-info h6 { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.2; }
-    .search-info span { font-size: 12px; color: #dc3545; font-weight: bold; }
-    .search-item:last-child { border-bottom: none; }
-    /* Tùy chỉnh thanh cuộn cho đẹp */
-    #searchResults::-webkit-scrollbar { width: 6px; }
-    #searchResults::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 3px; }
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
