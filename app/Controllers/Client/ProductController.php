@@ -4,7 +4,7 @@ use App\Core\Controller;
 
 class ProductController extends Controller {
     
-   public function index() {
+ public function index() {
         $prodModel = $this->model('ProductModel');
         $catModel = $this->model('CategoryModel');
         $brandModel = $this->model('BrandModel'); 
@@ -12,35 +12,44 @@ class ProductController extends Controller {
         // 1. CẤU HÌNH PHÂN TRANG
         $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
         if ($page < 1) $page = 1;
-        $limit = 12; // Hiển thị 12 sản phẩm/trang
+        $limit = 12; 
         $offset = ($page - 1) * $limit;
 
-      // Trong method index()
-$filters = [
-    'category_id' => $_GET['cat'] ?? null,
-    'brands'      => $_GET['brand'] ?? [],
-    'sizes'       => $_GET['size'] ?? [],
-    'price_min'   => $_GET['min'] ?? 0,
-    'price_max'   => $_GET['max'] ?? 5000000,
-    'keyword'     => $_GET['keyword'] ?? '',
-    'sort'        => $_GET['sort'] ?? 'newest', // Thêm dòng này
-    'limit'       => $limit,
-    'offset'      => $offset
-];
+        // 2. NHẬN DỮ LIỆU TỪ GET (Đồng bộ tên biến với View)
+        $filters = [
+            // Thay đổi quan trọng: dùng 'category_id' thay vì 'cat' để khớp với form
+            'category_id' => $_GET['category_id'] ?? null, 
+            'brands'      => $_GET['brand'] ?? [],
+            'sizes'       => $_GET['size'] ?? [],
+            'price_min'   => $_GET['min'] ?? 0,
+            'price_max'   => $_GET['max'] ?? 5000000,
+            'keyword'     => $_GET['keyword'] ?? '',
+            'sort'        => $_GET['sort'] ?? 'newest',
+            'limit'       => $limit,
+            'offset'      => $offset
+        ];
 
         if (!is_array($filters['brands'])) $filters['brands'] = [];
         if (!is_array($filters['sizes'])) $filters['sizes'] = [];
 
         // 3. LẤY DỮ LIỆU
         $products = $prodModel->filterProducts($filters);
-        $totalProducts = $prodModel->countFilterProducts($filters); // Hàm đếm tổng để tính số trang
+        $totalProducts = $prodModel->countFilterProducts($filters);
         $totalPages = ceil($totalProducts / $limit);
+
+        // Giữ lại URL query string hiện tại để dùng cho phân trang
+        // Loại bỏ page cũ để tạo link page mới
+        $queryParams = $_GET;
+        unset($queryParams['url']); // Loại bỏ tham số route của MVC nếu có
+        unset($queryParams['page']);
+        $queryString = http_build_query($queryParams);
 
         $data = [
             'products' => $products,
             'categories' => $catModel->getAll(),
             'brands' => $brandModel->getAll(),
             'filters' => $filters,
+            'query_string' => $queryString, // Truyền chuỗi query sang view
             'pagination' => [
                 'current_page' => $page,
                 'total_pages' => $totalPages,

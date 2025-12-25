@@ -3,7 +3,7 @@
         <div class="col-md-10 bg-white p-5 shadow-sm rounded">
             <h2 class="fw-bold text-primary mb-4 border-bottom pb-2">CHÍNH SÁCH BẢO MẬT THÔNG TIN</h2>
             
-            <p>Swimming Store cam kết bảo vệ quyền riêng tư của khách hàng. Vui lòng đọc kỹ các điều khoản dưới đây:</p>
+            <p>Thế Giới Bơi Lội cam kết bảo vệ quyền riêng tư của khách hàng. Vui lòng đọc kỹ các điều khoản dưới đây:</p>
 
             <h5 class="fw-bold mt-4">1. Mục đích thu thập thông tin</h5>
             <p>Chúng tôi thu thập Email, SĐT, Địa chỉ của quý khách nhằm mục đích: Xử lý đơn hàng, Giao hàng và hỗ trợ hậu mãi tốt nhất.</p>

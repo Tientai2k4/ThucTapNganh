@@ -219,7 +219,7 @@ public function sendResetLink() {
             $content = "<p>Chào bạn,</p><p>Vui lòng click vào link sau để đặt lại mật khẩu:</p><a href='$link'>Đặt lại mật khẩu</a><p>Hoặc truy cập link: $link</p>";
             
             // Gửi mail thật (với API SendGrid đã cấu hình)
-            $isSent = \App\Core\MailHelper::send($email, 'Khôi phục mật khẩu tài khoản Swimming Store', $content);
+            $isSent = \App\Core\MailHelper::send($email, 'Khôi phục mật khẩu tài khoản Thế Giới Bơi Lội', $content);
             
             if ($isSent) {
                  $this->view('client/auth/forgot_password', ['success' => 'Link khôi phục đã được gửi vào email của bạn.']);

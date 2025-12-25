@@ -133,10 +133,25 @@ public function getAll() {
         $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
-
-   // --- CẬP NHẬT HÀM LỌC SẢN PHẨM (QUAN TRỌNG) ---
+private function getCategoryIdsIncludingChildren($categoryId) {
+        // Lấy chính nó
+        $ids = [(int)$categoryId];
+        
+        // Lấy các con trực tiếp (Cấp 2)
+        $sql = "SELECT id FROM categories WHERE parent_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $categoryId);
+        if ($stmt->execute()) {
+            $result = $stmt->get_result();
+            while ($row = $result->fetch_assoc()) {
+                $ids[] = (int)$row['id'];
+            }
+        }
+        return $ids;
+    }
+  // --- CẬP NHẬT HÀM LỌC SẢN PHẨM ---
     public function filterProducts($filters) {
-        // Sử dụng DISTINCT để tránh trùng lặp khi 1 sản phẩm có nhiều biến thể thỏa mãn điều kiện
+        // Sử dụng DISTINCT để tránh trùng lặp
         $sql = "SELECT DISTINCT p.* FROM products p 
                 LEFT JOIN product_variants pv ON p.id = pv.product_id 
                 WHERE p.is_active = 1";
@@ -144,12 +159,17 @@ public function getAll() {
         $types = "";
         $values = [];
 
-        // 1. Lọc theo Danh mục (Bao gồm cả danh mục cha và con)
-        // Lưu ý: Nếu muốn chọn cha ra cả con, bạn cần logic lấy danh sách ID con trước ở Controller
+        // 1. Lọc theo Danh mục (Xử lý thông minh: Cha + Con)
         if (!empty($filters['category_id'])) {
-            $sql .= " AND p.category_id = ?";
-            $types .= "i"; 
-            $values[] = $filters['category_id'];
+            // Lấy mảng ID bao gồm cha và con
+            $catIds = $this->getCategoryIdsIncludingChildren($filters['category_id']);
+            
+            // Tạo chuỗi placeholder (?,?,?) tương ứng số lượng ID
+            $placeholders = implode(',', array_fill(0, count($catIds), '?'));
+            
+            $sql .= " AND p.category_id IN ($placeholders)";
+            $types .= str_repeat('i', count($catIds));
+            $values = array_merge($values, $catIds);
         }
 
         // 2. Lọc theo Thương hiệu
@@ -160,7 +180,7 @@ public function getAll() {
             $values = array_merge($values, $filters['brands']);
         }
 
-        // 3. Lọc theo Size (Cần join bảng variant)
+        // 3. Lọc theo Size
         if (!empty($filters['sizes']) && is_array($filters['sizes'])) {
             $placeholders = implode(',', array_fill(0, count($filters['sizes']), '?'));
             $sql .= " AND pv.size IN ($placeholders)";
@@ -168,7 +188,7 @@ public function getAll() {
             $values = array_merge($values, $filters['sizes']);
         }
 
-        // 4. Lọc theo Giá (Ưu tiên giá Sale nếu có)
+        // 4. Lọc theo Giá
         if (isset($filters['price_min'])) {
             $sql .= " AND (IF(p.sale_price > 0, p.sale_price, p.price) >= ?)";
             $types .= "d";
@@ -181,12 +201,13 @@ public function getAll() {
             $values[] = $filters['price_max'];
         }
 
-        // 5. Tìm kiếm từ khóa
+        // 5. Từ khóa
         if (!empty($filters['keyword'])) {
             $sql .= " AND (p.name LIKE ? OR p.sku_code LIKE ?)";
             $types .= "ss";
-            $values[] = "%" . $filters['keyword'] . "%";
-            $values[] = "%" . $filters['keyword'] . "%";
+            $val = "%" . $filters['keyword'] . "%";
+            $values[] = $val;
+            $values[] = $val;
         }
 
         // 6. Sắp xếp
@@ -337,7 +358,7 @@ public function getVariantStock($variantId) {
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
-  // --- CẬP NHẬT HÀM ĐẾM TỔNG (QUAN TRỌNG ĐỂ PHÂN TRANG ĐÚNG) ---
+ // --- CẬP NHẬT HÀM ĐẾM TỔNG (ĐỂ PHÂN TRANG ĐÚNG VỚI LOGIC MỚI) ---
     public function countFilterProducts($filters) {
         $sql = "SELECT COUNT(DISTINCT p.id) as total 
                 FROM products p 
@@ -347,8 +368,14 @@ public function getVariantStock($variantId) {
         $types = "";
         $values = [];
 
-        // (Copy lại toàn bộ logic WHERE giống hàm filterProducts ở trên, TRỪ phần ORDER BY và LIMIT)
-        if (!empty($filters['category_id'])) { $sql .= " AND p.category_id = ?"; $types .= "i"; $values[] = $filters['category_id']; }
+        // Copy logic WHERE y hệt hàm filterProducts (trừ ORDER BY và LIMIT)
+        if (!empty($filters['category_id'])) {
+            $catIds = $this->getCategoryIdsIncludingChildren($filters['category_id']);
+            $placeholders = implode(',', array_fill(0, count($catIds), '?'));
+            $sql .= " AND p.category_id IN ($placeholders)";
+            $types .= str_repeat('i', count($catIds));
+            $values = array_merge($values, $catIds);
+        }
         if (!empty($filters['brands']) && is_array($filters['brands'])) {
             $placeholders = implode(',', array_fill(0, count($filters['brands']), '?'));
             $sql .= " AND p.brand_id IN ($placeholders)";
@@ -363,7 +390,7 @@ public function getVariantStock($variantId) {
         }
         if (isset($filters['price_min'])) { $sql .= " AND (IF(p.sale_price > 0, p.sale_price, p.price) >= ?)"; $types .= "d"; $values[] = $filters['price_min']; }
         if (isset($filters['price_max'])) { $sql .= " AND (IF(p.sale_price > 0, p.sale_price, p.price) <= ?)"; $types .= "d"; $values[] = $filters['price_max']; }
-        if (!empty($filters['keyword'])) { $sql .= " AND (p.name LIKE ? OR p.sku_code LIKE ?)"; $types .= "ss"; $values[] = "%".$filters['keyword']."%"; $values[] = "%".$filters['keyword']."%"; }
+        if (!empty($filters['keyword'])) { $sql .= " AND (p.name LIKE ? OR p.sku_code LIKE ?)"; $types .= "ss"; $val = "%".$filters['keyword']."%"; $values[] = $val; $values[] = $val; }
 
         $stmt = $this->conn->prepare($sql);
         if (!empty($values)) {
@@ -374,7 +401,6 @@ public function getVariantStock($variantId) {
         $row = $stmt->get_result()->fetch_assoc();
         return $row['total'];
     }
-    // [THÊM MỚI] Hàm lấy danh sách cho Admin có lọc và sắp xếp
     public function getAdminList($filters = []) {
         // Select cơ bản kèm tên danh mục
         $sql = "SELECT p.*, c.name as cat_name, b.name as brand_name 

@@ -5,14 +5,27 @@ use App\Core\AuthMiddleware;
 
 class CategoryController extends Controller {
     public function __construct() {
-        // Kiểm tra quyền Admin
         AuthMiddleware::onlyAdmin(); 
     }
 
     public function index() {
         $model = $this->model('CategoryModel');
-        $categories = $model->getAll();
-        $this->view('admin/categories/index', ['categories' => $categories]);
+
+        // Lấy tham số tìm kiếm từ URL
+        $keyword = isset($_GET['keyword']) ? trim($_GET['keyword']) : null;
+        $parentId = isset($_GET['parent_id']) ? $_GET['parent_id'] : null;
+
+        // Lấy danh sách đã lọc
+        $categories = $model->getAll($keyword, $parentId);
+        
+        // Lấy danh sách danh mục gốc để hiển thị vào Select Option lọc
+        $rootCategories = $model->getRootCategories();
+
+        $this->view('admin/categories/index', [
+            'categories' => $categories,
+            'root_categories' => $rootCategories, // Truyền thêm biến này
+            'filters' => ['keyword' => $keyword, 'parent_id' => $parentId] // Giữ lại trạng thái lọc
+        ]);
     }
 
     public function create() {
@@ -21,15 +34,14 @@ class CategoryController extends Controller {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $name = trim($_POST['name']);
             $desc = trim($_POST['description']);
-            // Nếu chọn "Là danh mục gốc" (value rỗng) thì set là NULL
             $parent_id = !empty($_POST['parent_id']) ? $_POST['parent_id'] : null;
             
             $model->create($name, $desc, $parent_id);
             header('Location: ' . BASE_URL . 'admin/category');
             exit;
         } else {
-            // Lấy toàn bộ danh mục để lọc ở View
-            $categories = $model->getAll();
+            // Lấy toàn bộ danh mục để chọn cha
+            $categories = $model->getAll(); 
             $this->view('admin/categories/create', ['categories' => $categories]);
         }
     }
@@ -56,7 +68,6 @@ class CategoryController extends Controller {
             $desc = trim($_POST['description']);
             $parent_id = !empty($_POST['parent_id']) ? $_POST['parent_id'] : null;
             
-            // Validate: Không được chọn chính nó làm cha
             if ($parent_id == $id) {
                 $parent_id = null; 
             }
