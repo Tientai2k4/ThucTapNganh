@@ -5,8 +5,6 @@ use App\Core\AuthMiddleware;
 
 class OrderController extends Controller {
     public function __construct() {
-        // Đã xóa dòng AuthMiddleware::hasRole(); vì gây lỗi thiếu tham số (ArgumentCountError)
-        
         // Sử dụng phương thức đã định nghĩa ở Middleware mới để cho phép cả Admin và Staff
         AuthMiddleware::isStaffArea(); 
     }
@@ -67,7 +65,15 @@ class OrderController extends Controller {
                     echo "Lỗi hủy đơn: " . $result; return;
                 }
             } else {
+                // Cập nhật trạng thái đơn hàng (ví dụ: đang giao hàng, hoàn thành...)
                 $model->updateStatus($id, $status);
+
+                // [SỬA LỖI QUAN TRỌNG TẠI ĐÂY]
+                // Nếu trạng thái là 'completed' (Hoàn thành), bắt buộc phải cập nhật payment_status = 1
+                // Để User có thể đánh giá được sản phẩm (vì ReviewModel yêu cầu payment_status = 1)
+                if ($status == 'completed') {
+                    $model->updatePaymentStatusByCode($code, 1);
+                }
             }
 
             // 2. Cập nhật Mã vận đơn (Nếu admin có nhập)

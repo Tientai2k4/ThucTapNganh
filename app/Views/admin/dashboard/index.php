@@ -89,22 +89,46 @@
                                 <?php if(empty($data['recent_orders'])): ?>
                                     <tr><td colspan="5" class="text-center py-3 text-muted">Chưa có đơn hàng nào.</td></tr>
                                 <?php else: ?>
+                                    <?php 
+                                    // Mảng dịch trạng thái sang tiếng Việt
+                                    $statusMap = [
+                                        'pending_payment' => 'Chờ thanh toán',
+                                        'pending'         => 'Chờ xử lý',
+                                        'processing'      => 'Đang chuẩn bị',
+                                        'shipping'        => 'Đang giao hàng',
+                                        'shipped'         => 'Đang giao hàng',
+                                        'completed'       => 'Hoàn thành',
+                                        'cancelled'       => 'Đã hủy'
+                                    ];
+                                    ?>
                                     <?php foreach($data['recent_orders'] as $order): ?>
                                     <tr>
-                                        <td class="ps-3 fw-bold text-primary">#<?= $order['order_code'] ?></td>
+                                        <td class="ps-3">
+                                            <a href="/ThucTapNganh/admin/order/detail/<?= $order['order_code'] ?>" 
+                                               class="fw-bold text-primary text-decoration-none">
+                                                #<?= $order['order_code'] ?>
+                                            </a>
+                                        </td>
+                                        
                                         <td><?= htmlspecialchars($order['customer_name']) ?></td>
                                         <td class="fw-bold text-danger"><?= number_format($order['total_money']) ?>đ</td>
+                                        
                                         <td>
                                             <?php 
                                             $statusColor = 'secondary';
                                             if($order['status'] == 'pending') $statusColor = 'warning text-dark';
                                             elseif($order['status'] == 'processing') $statusColor = 'info text-dark';
-                                            elseif($order['status'] == 'shipping') $statusColor = 'primary';
+                                            elseif($order['status'] == 'shipping' || $order['status'] == 'shipped') $statusColor = 'primary';
                                             elseif($order['status'] == 'completed') $statusColor = 'success';
                                             elseif($order['status'] == 'cancelled') $statusColor = 'danger';
+                                            elseif($order['status'] == 'pending_payment') $statusColor = 'secondary';
+                                            
+                                            // Lấy tên tiếng Việt từ mảng map, nếu không có thì lấy tên gốc
+                                            $statusText = $statusMap[$order['status']] ?? ucfirst($order['status']);
                                             ?>
-                                            <span class="badge bg-<?= $statusColor ?>"><?= ucfirst($order['status']) ?></span>
+                                            <span class="badge bg-<?= $statusColor ?>"><?= $statusText ?></span>
                                         </td>
+                                        
                                         <td class="small text-muted"><?= date('d/m H:i', strtotime($order['created_at'])) ?></td>
                                     </tr>
                                     <?php endforeach; ?>

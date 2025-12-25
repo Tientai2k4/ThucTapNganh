@@ -105,55 +105,155 @@
         </div>
     </div>
 
-    <div class="row mt-5">
+    <div class="row mt-5" id="reviews-section">
         <div class="col-12">
             <ul class="nav nav-tabs" id="productTab" role="tablist">
                 <li class="nav-item">
                     <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#desc">MÔ TẢ SẢN PHẨM</button>
                 </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#review">
+                        ĐÁNH GIÁ (<?= $data['rating_summary']['total_review'] ?? 0 ?>)
+                    </button>
+                </li>
             </ul>
+            
             <div class="tab-content border border-top-0 p-4 bg-white shadow-sm">
                 <div class="tab-pane fade show active" id="desc">
                     <?= $data['product']['description'] ?>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="row mt-5">
-        <div class="col-md-7">
-            <h4 class="mb-4">Khách hàng nhận xét</h4>
-            <?php if(!empty($data['reviews'])): ?>
-                <?php foreach($data['reviews'] as $rev): ?>
-                    <div class="card mb-3 border-0 bg-light shadow-sm">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <strong><?= htmlspecialchars($rev['full_name'] ?? 'Người dùng') ?></strong>
-                                <span class="text-warning">
-                                    <?= str_repeat('★', $rev['rating']) . str_repeat('☆', 5-$rev['rating']) ?>
-                                </span>
+                <div class="tab-pane fade" id="review">
+                    <div class="row">
+                        <div class="col-md-4 mb-4 border-end">
+                            <div class="text-center">
+                                <h1 class="display-3 fw-bold text-warning mb-0"><?= $data['rating_summary']['average'] ?? 0 ?></h1>
+                                <div class="text-warning mb-2 fs-5">
+                                    <?php 
+                                        $avg = $data['rating_summary']['average'] ?? 0;
+                                        for($i=1; $i<=5; $i++) {
+                                            if($i <= $avg) echo '<i class="fas fa-star"></i>';
+                                            else if($i - 0.5 <= $avg) echo '<i class="fas fa-star-half-alt"></i>';
+                                            else echo '<i class="far fa-star"></i>';
+                                        }
+                                    ?>
+                                </div>
+                                <p class="text-muted">Dựa trên <?= $data['rating_summary']['total_review'] ?? 0 ?> đánh giá</p>
                             </div>
-                            <p class="mb-0 mt-2 small text-muted"><?= $rev['comment'] ?></p>
+
+                            <div class="mt-4 px-3">
+                                <?php 
+                                    $total = $data['rating_summary']['total_review'] ?? 0;
+                                    // Loop ngược từ 5 về 1
+                                    for($star=5; $star>=1; $star--): 
+                                        $count = $data['rating_summary']['star_count'][$star] ?? 0;
+                                        $percent = $total > 0 ? ($count / $total) * 100 : 0;
+                                ?>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="text-muted small me-2"><?= $star ?> <i class="fas fa-star text-secondary"></i></span>
+                                    <div class="progress flex-grow-1" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: <?= $percent ?>%"></div>
+                                    </div>
+                                    <span class="text-muted small ms-2" style="min-width: 30px; text-align: right;"><?= $count ?></span>
+                                </div>
+                                <?php endfor; ?>
+                            </div>
                         </div>
+
+                        <div class="col-md-8">
+                            <div class="card bg-light border-0 mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3 fw-bold text-uppercase">Viết đánh giá của bạn</h5>
+                                    
+                                    <?php if(isset($data['can_review']) && $data['can_review'] === true): ?>
+                                        <form action="<?= BASE_URL ?>product/postReview" method="POST">
+                                            <input type="hidden" name="product_id" value="<?= $data['product']['id'] ?>">
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">1. Bạn cảm thấy thế nào về sản phẩm?</label>
+                                                <div class="star-rating-input">
+                                                    <input type="radio" id="star5" name="rating" value="5" checked /><label for="star5" title="Tuyệt vời">★</label>
+                                                    <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="Tốt">★</label>
+                                                    <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="Bình thường">★</label>
+                                                    <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="Tệ">★</label>
+                                                    <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="Rất tệ">★</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">2. Viết nhận xét chi tiết:</label>
+                                                <textarea name="comment" class="form-control" rows="3" placeholder="Chia sẻ cảm nhận về chất liệu, kiểu dáng..." required></textarea>
+                                            </div>
+                                            
+                                            <div class="text-end">
+                                                <button class="btn btn-warning text-white fw-bold px-4">
+                                                    <i class="fas fa-paper-plane me-2"></i>GỬI ĐÁNH GIÁ
+                                                </button>
+                                            </div>
+                                        </form>
+                                    <?php else: ?>
+                                        <div class="alert alert-secondary d-flex align-items-center" role="alert">
+                                            <i class="fas fa-info-circle fa-2x me-3 text-secondary"></i>
+                                            <div>
+                                                <h6 class="alert-heading fw-bold mb-1">Thông báo</h6>
+                                                <p class="mb-0">
+                                                    <?= $data['review_message'] ?>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+                            <h5 class="fw-bold mb-4">Các đánh giá từ khách hàng</h5>
+
+                            <?php if(!empty($data['reviews'])): ?>
+                                <?php foreach($data['reviews'] as $review): ?>
+                                    <div class="d-flex mb-4 border-bottom pb-3">
+                                        <div class="flex-shrink-0">
+                                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white fw-bold" style="width: 50px; height: 50px; font-size: 20px;">
+                                                <?= substr($review['full_name'] ?? 'K', 0, 1) ?>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <h6 class="fw-bold mb-0"><?= htmlspecialchars($review['full_name'] ?? 'Khách hàng') ?></h6>
+                                                <span class="text-muted small"><i class="far fa-clock me-1"></i><?= date('d/m/Y', strtotime($review['created_at'])) ?></span>
+                                            </div>
+                                            
+                                            <div class="text-warning small mb-2">
+                                                <?php for($k=1; $k<=5; $k++): ?>
+                                                    <i class="<?= $k <= $review['rating'] ? 'fas' : 'far' ?> fa-star"></i>
+                                                <?php endfor; ?>
+                                            </div>
+                                            
+                                            <p class="mb-2 text-dark">
+                                                <?= htmlspecialchars($review['comment']) ?>
+                                            </p>
+
+                                            <?php if(!empty($review['reply_content'])): ?>
+                                                <div class="bg-light p-3 mt-2 rounded border-start border-4 border-primary">
+                                                    <div class="fw-bold text-primary mb-1">
+                                                        <i class="fas fa-store me-1"></i> Phản hồi từ Shop:
+                                                    </div>
+                                                    <p class="mb-0 text-muted small fst-italic">
+                                                        <?= htmlspecialchars($review['reply_content']) ?>
+                                                    </p>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="text-center py-4 text-muted">
+                                    <i class="far fa-comment-dots fa-3x mb-3"></i>
+                                    <p>Chưa có đánh giá nào cho sản phẩm này.</p>
+                                </div>
+                            <?php endif; ?>
+                            </div>
                     </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p class="text-muted">Chưa có đánh giá nào cho sản phẩm này.</p>
-            <?php endif; ?>
-        </div>
-        <div class="col-md-5">
-            <div class="card p-4">
-                <h5>Gửi đánh giá</h5>
-                <form action="<?= BASE_URL ?>product/postReview" method="POST">
-                    <input type="hidden" name="product_id" value="<?= $data['product']['id'] ?>">
-                    <select name="rating" class="form-select mb-3">
-                        <option value="5">5 Sao (Tuyệt vời)</option>
-                        <option value="4">4 Sao</option>
-                        <option value="3">3 Sao</option>
-                    </select>
-                    <textarea name="comment" class="form-control mb-3" rows="3" placeholder="Chia sẻ trải nghiệm..." required></textarea>
-                    <button class="btn btn-dark w-100">GỬI NGAY</button>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -170,6 +270,27 @@
     </div>
 </div>
 
+<style>
+.star-rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+.star-rating-input input { display: none; }
+.star-rating-input label {
+    font-size: 2rem;
+    color: #ddd;
+    cursor: pointer;
+    padding: 0 5px;
+    transition: color 0.2s;
+}
+.star-rating-input label:hover,
+.star-rating-input label:hover ~ label,
+.star-rating-input input:checked ~ label {
+    color: #ffc107;
+}
+</style>
+
 <script>
 function changeImage(src, el) {
     document.getElementById('mainImage').src = src;
@@ -182,9 +303,7 @@ function openLightbox(src) {
     document.getElementById('lightboxImg').src = src;
     lbModal.show();
 }
-</script>
 
-<script>
 // 1. Hàm kiểm tra kho khi đổi biến thể
 function updateStockStatus() {
     const variantId = document.getElementById('variantSelect').value;
@@ -220,12 +339,10 @@ function updateStockStatus() {
     .catch(() => { statusDiv.innerHTML = '<span class="text-danger">Lỗi kết nối!</span>'; });
 }
 
-// 2. HÀM XỬ LÝ AJAX THÊM VÀO GIỎ (CHẶN TUYỆT ĐỐI LOAD TRANG)
+// 2. HÀM XỬ LÝ AJAX THÊM VÀO GIỎ
 function handleAddToCart(event) {
-    // NGĂN CHẶN LOAD TRANG (RẤT QUAN TRỌNG)
     event.preventDefault(); 
 
-    const form = document.getElementById('addToCartForm');
     const btn = document.getElementById('btnBuy');
     const originalText = btn.innerHTML;
     
@@ -238,13 +355,12 @@ function handleAddToCart(event) {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang thêm...';
     btn.disabled = true;
 
-    // Gửi yêu cầu AJAX bằng Fetch API
+    // Gửi yêu cầu AJAX
     fetch('<?= BASE_URL ?>cart/add', {
         method: 'POST',
         body: formData
     })
     .then(response => {
-        // Kiểm tra xem server có trả về JSON không
         if (!response.ok) throw new Error('Network response was not ok');
         return response.json();
     })
@@ -253,9 +369,7 @@ function handleAddToCart(event) {
         btn.disabled = false;
 
         if (data.status) {
-            // Thông báo thành công
             alert(data.message); 
-            
             // Cập nhật số lượng trên icon giỏ hàng (Header)
             const cartCountEl = document.getElementById('cart-count');
             if (cartCountEl) {
@@ -272,7 +386,6 @@ function handleAddToCart(event) {
         alert('Đã có lỗi xảy ra. Vui lòng kiểm tra lại!');
     });
 
-    // Trả về false để Form HTML không tự submit
     return false;
 }
 </script>
