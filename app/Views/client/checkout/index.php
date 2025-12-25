@@ -104,6 +104,53 @@
             <div class="card p-4 bg-light">
                 <h5 class="mb-3">Đơn hàng của bạn</h5>
 
+                <div class="cart-list mb-3" style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
+            <?php if (!empty($data['cart_items'])): ?>
+                <?php foreach ($data['cart_items'] as $item): ?>
+                    <div class="d-flex align-items-center mb-3 border-bottom pb-2 item-row" data-variant="<?= $item['variant_id'] ?>" data-price="<?= ($item['sale_price'] > 0) ? $item['sale_price'] : $item['price'] ?>">
+                        <div class="me-3" style="width: 60px;">
+                        <?php 
+                           $imgName = $item['thumbnail'] ?? ($item['image'] ?? '');
+        
+                                    // Tạo đường dẫn ảnh
+                                    if (!empty($imgName)) {
+                                        $imgUrl = BASE_URL . 'public/uploads/' . $imgName;
+                                    } else {
+                                        // Nếu không có tên ảnh thì dùng ảnh giữ chỗ
+                                        $imgUrl = 'https://placehold.co/60x60?text=No+Img';
+                                    }
+        
+                        ?>
+        
+                            <img src="<?= $imgUrl ?>" 
+                                class="img-fluid rounded border" 
+                                style="width: 100%; height: 100%; object-fit: cover;"
+                                alt="<?= htmlspecialchars($item['name']) ?>"
+                                onerror="this.onerror=null; this.src='https://placehold.co/60x60?text=No+Img';">
+                        </div>
+                        
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 small fw-bold"><?= htmlspecialchars($item['name']) ?></h6>
+                            <div class="text-muted" style="font-size: 0.85rem;">
+                                Size: <?= $item['size'] ?> | Màu: <?= $item['color'] ?>
+                            </div>
+                            <div class="text-primary fw-bold small">
+                                <?= number_format(($item['sale_price'] > 0) ? $item['sale_price'] : $item['price']) ?>đ
+                            </div>
+                        </div>
+
+                        <div style="width: 70px;">
+                            <input type="number" 
+                                   class="form-control form-control-sm text-center input-qty" 
+                                   value="<?= $item['qty'] ?>" 
+                                   min="1" 
+                                   onchange="updateCartItem(this, <?= $item['variant_id'] ?>)">
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
                 <div class="d-flex justify-content-between mb-2">
                     <span>Tạm tính:</span>
                     <span class="fw-bold" id="tempTotal"><?= number_format($data['totalMoney'] ?? 0) ?>đ</span>
@@ -149,9 +196,18 @@
     </div>
 </form>
 <script>
-function applyCoupon() {
+// Hàm áp dụng coupon (đã sửa để nhận tham số totalDynamic)
+function applyCoupon(totalDynamic = null) {
     let code = document.getElementById('couponCode').value;
-    let total = <?= $data['totalMoney'] ?? 0 ?>; 
+    
+    // Nếu không truyền tham số (lần đầu bấm nút), lấy giá trị gốc từ PHP
+    // Nếu có truyền (khi chỉnh số lượng), dùng giá trị mới
+    let total = (totalDynamic !== null) ? totalDynamic : <?= $data['totalMoney'] ?? 0 ?>; 
+
+    if(code.trim() === "") {
+         // Nếu không có mã thì không làm gì hoặc reset
+         return; 
+    }
 
     // Gọi AjaxController
     fetch('<?= BASE_URL ?>ajax/checkCoupon', {
@@ -162,27 +218,35 @@ function applyCoupon() {
     .then(res => res.json())
     .then(data => {
         let msg = document.getElementById('couponMessage');
+        
         if(data.status) {
+            // ÁP DỤNG MÃ THÀNH CÔNG
             msg.className = 'small mb-2 text-success';
             msg.innerText = data.message;
             
-            // Hiển thị giảm giá
+            // Hiển thị dòng giảm giá
             document.getElementById('discountRow').style.setProperty('display', 'flex', 'important');
-            document.getElementById('discountAmount').innerText = '-' + new Intl.NumberFormat().format(data.discount) + 'đ';
-            document.getElementById('finalTotal').innerText = new Intl.NumberFormat().format(total - data.discount) + 'đ';
+            document.getElementById('discountAmount').innerText = '-' + new Intl.NumberFormat('vi-VN').format(data.discount) + 'đ';
             
-            // Cập nhật input ẩn
+            // Cập nhật Tổng Cộng (Total - Discount)
+            let final = total - data.discount;
+            if(final < 0) final = 0;
+            document.getElementById('finalTotal').innerText = new Intl.NumberFormat('vi-VN').format(final) + 'đ';
+            
+            // Cập nhật input ẩn để gửi form
             document.getElementById('inputDiscount').value = data.discount;
             document.getElementById('inputCouponCode').value = data.code;
         } else {
+            // MÃ KHÔNG HỢP LỆ (hoặc không đủ điều kiện đơn hàng tối thiểu sau khi chỉnh sửa số lượng)
             msg.className = 'small mb-2 text-danger';
             msg.innerText = data.message;
             
-            // Reset nếu sai
-            document.getElementById('discountRow').style.display = 'none';
-            document.getElementById('finalTotal').innerText = new Intl.NumberFormat().format(total) + 'đ';
+            // Reset về trạng thái chưa giảm
+            document.getElementById('discountRow').style.setProperty('display', 'none', 'important');
+            document.getElementById('finalTotal').innerText = new Intl.NumberFormat('vi-VN').format(total) + 'đ';
+            
             document.getElementById('inputDiscount').value = 0;
-            document.getElementById('inputCouponCode').value = '';
+            document.getElementById('inputCouponCode').value = ''; // Xóa mã nếu muốn, hoặc giữ lại để khách biết
         }
     });
 }
@@ -302,6 +366,62 @@ function fillDeliveryInfo(addressData = null) {
         provinceSelect.value = '';
         document.getElementById('district').innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
         document.getElementById('ward').innerHTML = '<option value="">-- Chọn Phường/Xã --</option>';
+    }
+}
+
+
+// Hàm xử lý cập nhật số lượng ngay tại trang Checkout
+function updateCartItem(input, variantId) {
+    let newQty = parseInt(input.value);
+    if (newQty < 1) {
+        input.value = 1;
+        newQty = 1;
+    }
+
+    // 1. Gọi AJAX để cập nhật Session Giỏ hàng (Backend)
+    fetch('<?= BASE_URL ?>ajax/updateCart', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ variant_id: variantId, qty: newQty })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status) {
+            // 2. Nếu update Session thành công, tính lại tổng tiền trên giao diện (Frontend)
+            recalculateTotal();
+        } else {
+            alert('Lỗi cập nhật giỏ hàng!');
+        }
+    })
+    .catch(err => console.error(err));
+}
+
+// Hàm tính lại tổng tiền hiển thị
+function recalculateTotal() {
+    let tempTotal = 0;
+    
+    // 1. Tính tổng tiền hàng mới
+    document.querySelectorAll('.item-row').forEach(row => {
+        let price = parseFloat(row.getAttribute('data-price'));
+        let qty = parseInt(row.querySelector('.input-qty').value);
+        tempTotal += price * qty;
+    });
+
+    // 2. Hiển thị Tạm tính mới
+    document.getElementById('tempTotal').innerText = new Intl.NumberFormat('vi-VN').format(tempTotal) + 'đ';
+
+    // 3. Kiểm tra xem đang có mã giảm giá nào trong ô input không
+    let currentCoupon = document.getElementById('couponCode').value;
+
+    if (currentCoupon.trim() !== "") {
+        // [QUAN TRỌNG] Nếu đang nhập mã, gọi check lại mã với tổng tiền MỚI
+        applyCoupon(tempTotal);
+    } else {
+        // Nếu không có mã, Tổng cộng = Tạm tính
+        document.getElementById('finalTotal').innerText = new Intl.NumberFormat('vi-VN').format(tempTotal) + 'đ';
+        // Đảm bảo reset số tiền giảm về 0
+        document.getElementById('inputDiscount').value = 0;
+        document.getElementById('discountRow').style.setProperty('display', 'none', 'important');
     }
 }
 </script>

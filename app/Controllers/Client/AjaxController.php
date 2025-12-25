@@ -40,5 +40,23 @@ class AjaxController extends Controller {
             }
         }
     }
+    // API Cập nhật giỏ hàng
+    public function updateCart() {
+        // Nhận dữ liệu JSON
+        $input = json_decode(file_get_contents('php://input'), true);
+        $variantId = $input['variant_id'] ?? 0;
+        $qty = $input['qty'] ?? 1;
+
+        // Kiểm tra xem sản phẩm có trong giỏ hàng (Session) không
+        if ($variantId && isset($_SESSION['cart'][$variantId])) {
+            // Cập nhật số lượng mới vào session
+            $_SESSION['cart'][$variantId] = $qty;
+            
+            // Trả về kết quả thành công
+            echo json_encode(['status' => true, 'message' => 'Cập nhật thành công']);
+        } else {
+            echo json_encode(['status' => false, 'message' => 'Sản phẩm không tồn tại trong giỏ hàng']);
+        }
+    }
 }
 ?>

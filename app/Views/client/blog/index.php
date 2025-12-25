@@ -20,7 +20,8 @@
                              class="card-img-top" 
                              style="height: 200px; object-fit: cover;" 
                              alt="<?= htmlspecialchars($p['title']) ?>"
-                             onerror="this.src='<?= BASE_URL ?>public/assets/images/default_blog.jpg'"> </a>
+                             onerror="this.src='<?= BASE_URL ?>public/assets/images/default_blog.jpg'"> 
+                    </a>
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title fw-bold">
                             <a href="<?= BASE_URL ?>blog/detail/<?= $p['slug'] ? $p['slug'] : $p['id'] ?>" class="text-decoration-none text-dark">
@@ -38,6 +39,26 @@
                 </div>
             </div>
             <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+        </div> <?php if(isset($data['total_pages']) && $data['total_pages'] > 1): ?>
+        <nav aria-label="Page navigation" class="mt-5">
+            <ul class="pagination justify-content-center">
+                
+                <li class="page-item <?= ($data['current_page'] <= 1) ? 'disabled' : '' ?>">
+                    <a class="page-link" href="<?= BASE_URL ?>blog?page=<?= $data['current_page'] - 1 ?>">Trước</a>
+                </li>
+
+                <?php for($i = 1; $i <= $data['total_pages']; $i++): ?>
+                    <li class="page-item <?= ($i == $data['current_page']) ? 'active' : '' ?>">
+                        <a class="page-link" href="<?= BASE_URL ?>blog?page=<?= $i ?>"><?= $i ?></a>
+                    </li>
+                <?php endfor; ?>
+
+                <li class="page-item <?= ($data['current_page'] >= $data['total_pages']) ? 'disabled' : '' ?>">
+                    <a class="page-link" href="<?= BASE_URL ?>blog?page=<?= $data['current_page'] + 1 ?>">Sau</a>
+                </li>
+                
+            </ul>
+        </nav>
+        <?php endif; ?>
+        <?php endif; ?>
 </div>

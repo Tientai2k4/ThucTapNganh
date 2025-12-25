@@ -30,13 +30,18 @@ class CheckoutController extends Controller {
         $products = $prodModel->getVariantsDetail($variantIds);
         
         $totalMoney = 0;
+        $cartItems = [];
         foreach ($products as $p) {
             $qty = $_SESSION['cart'][$p['variant_id']];
             $price = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price'];
             $totalMoney += $price * $qty;
+
+            $p['qty'] = $qty;
+            $p['line_total'] = $price * $qty;
+            $cartItems[] = $p;
         }
 
-        $data = ['totalMoney' => $totalMoney, 'provinces' => []]; // Khởi tạo provinces rỗng
+        $data = ['totalMoney' => $totalMoney, 'provinces' => [],'cart_items' => $cartItems]; // Khởi tạo provinces rỗng
         
         if (isset($_SESSION['user_id'])) {
             $userId = $_SESSION['user_id'];

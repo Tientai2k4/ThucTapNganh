@@ -16,8 +16,11 @@
                 <span><i class="far fa-calendar-alt"></i> <?= date('d/m/Y H:i', strtotime($data['post']['created_at'])) ?></span>
             </div>
 
-            <?php if($data['post']['thumbnail']): ?>
-                <img src="<?= BASE_URL ?>public/uploads/<?= $data['post']['thumbnail'] ?>" class="img-fluid rounded mb-4 w-100" style="max-height: 500px; object-fit: cover;">
+           <?php if(!empty($data['post']['thumbnail'])): ?>
+                <img src="<?= BASE_URL ?>public/uploads/posts/<?= $data['post']['thumbnail'] ?>" 
+                    class="img-fluid rounded mb-4 w-100 shadow-sm" 
+                    style="max-height: 500px; object-fit: cover;"
+                    onerror="this.onerror=null; this.src='https://placehold.co/800x450?text=Image+Not+Found';">
             <?php endif; ?>
 
             <div class="article-content fs-5 lh-lg">
@@ -25,8 +28,11 @@
             </div>
 
             <hr class="my-5">
+            
             <div class="text-center">
-                <a href="<?= BASE_URL ?>blog" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Quay lại danh sách tin</a>
+                <a href="<?= BASE_URL ?>blog" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách tin
+                </a>
             </div>
         </div>
     </div>

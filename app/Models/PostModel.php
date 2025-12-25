@@ -100,5 +100,22 @@ class PostModel extends Model {
         $stmt->execute();
         return $stmt->get_result()->fetch_assoc();
     }
+
+    // 1. Đếm tổng số bài viết active để tính số trang
+public function countActivePosts() {
+    $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE status = 1";
+    $result = $this->conn->query($sql);
+    $row = $result->fetch_assoc();
+    return $row['total'];
+}
+
+// 2. Lấy danh sách bài viết theo phân trang
+public function getPostsPagination($limit, $offset) {
+    $sql = "SELECT * FROM {$this->table} WHERE status = 1 ORDER BY created_at DESC LIMIT ? OFFSET ?";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bind_param("ii", $limit, $offset);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
 }
 ?>
