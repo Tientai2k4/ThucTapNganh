@@ -1,6 +1,6 @@
 <div class="bg-primary text-white text-center py-5 mb-5" style="background: linear-gradient(45deg, #007bff, #00d2ff);">
     <div class="container">
-        <h1 class="fw-bold display-4">Về Swimming Store</h1>
+        <h1 class="fw-bold display-4">Về Thế Giới Bơi Lội</h1>
         <p class="lead">Đam mê bơi lội - Chất lượng hàng đầu - Đồng hành cùng bạn</p>
     </div>
 </div>
@@ -12,7 +12,7 @@
             <h6 class="text-primary fw-bold text-uppercase">Câu chuyện của chúng tôi</h6>
             <h2 class="fw-bold mb-3">Mang trải nghiệm bơi lội đỉnh cao đến người Việt</h2>
             <p class="text-muted">
-                Thành lập từ năm 2024, Swimming Store xuất phát từ niềm đam mê mãnh liệt với bộ môn bơi lội. Chúng tôi nhận thấy thị trường thiếu những sản phẩm chính hãng, chuyên sâu cho cả người mới bắt đầu và vận động viên chuyên nghiệp.
+                Thành lập từ năm 2024, Thế Giới Bơi Lội xuất phát từ niềm đam mê mãnh liệt với bộ môn bơi lội. Chúng tôi nhận thấy thị trường thiếu những sản phẩm chính hãng, chuyên sâu cho cả người mới bắt đầu và vận động viên chuyên nghiệp.
             </p>
             <p class="text-muted">
                 Chúng tôi không chỉ bán dụng cụ, chúng tôi bán sự an tâm và trải nghiệm thoải mái nhất dưới nước.
@@ -33,7 +33,7 @@
 
     <div class="row text-center mt-5 pt-5 border-top">
         <div class="col-12 mb-5">
-            <h2 class="fw-bold">Tại sao chọn Swimming Store?</h2>
+            <h2 class="fw-bold">Tại sao chọn Thế Giới Bơi Lội?</h2>
             <p class="text-muted">Cam kết vàng từ đội ngũ sáng lập</p>
         </div>
         

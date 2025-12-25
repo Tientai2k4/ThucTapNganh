@@ -4,7 +4,7 @@
             <h2 class="fw-bold text-primary mb-4 border-bottom pb-2">CHÍNH SÁCH VẬN CHUYỂN</h2>
             
             <h5 class="fw-bold mt-4">1. Phạm vi giao hàng</h5>
-            <p>Swimming Store giao hàng trên toàn quốc (63 tỉnh thành). Chúng tôi liên kết với các đơn vị vận chuyển uy tín như Giao Hàng Nhanh (GHN), Viettel Post.</p>
+            <p>Thế Giới Bơi Lội giao hàng trên toàn quốc (63 tỉnh thành). Chúng tôi liên kết với các đơn vị vận chuyển uy tín như Giao Hàng Nhanh (GHN), Viettel Post.</p>
 
             <h5 class="fw-bold mt-4">2. Thời gian giao hàng dự kiến</h5>
             <ul>

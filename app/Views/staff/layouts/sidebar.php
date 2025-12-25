@@ -72,7 +72,7 @@
 
 <nav id="sidebar-staff">
     <div class="sidebar-header p-4 text-center mb-2">
-        <h4 class="fw-bold sidebar-brand m-0">SWIM STORE</h4>
+        <h4 class="fw-bold sidebar-brand m-0">Thế Giới Bơi Lội</h4>
         <div class="mt-2">
             <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill fw-normal shadow-sm">
                 <i class="fas fa-user-circle me-1 text-primary"></i>

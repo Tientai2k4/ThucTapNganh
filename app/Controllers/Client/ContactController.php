@@ -30,7 +30,7 @@ class ContactController extends Controller {
                 $adminEmail = 'dat09269@gmail.com'; // Email Admin nhận thông báo
                 $subject = "Liên hệ mới từ: " . $data['name'];
                 $content = "
-                    <h3>Bạn nhận được liên hệ mới từ Website Swimming Store</h3>
+                    <h3>Bạn nhận được liên hệ mới từ Website Thế Giới Bơi Lội</h3>
                     <p><strong>Họ tên:</strong> {$data['name']}</p>
                     <p><strong>Email:</strong> {$data['email']}</p>
                     <p><strong>SĐT:</strong> {$data['phone']}</p>

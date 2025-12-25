@@ -34,7 +34,7 @@ class HomeController extends Controller {
         $coupons = $couponModel->getAvailableCoupons(6);
 
         $data = [
-            'title'      => 'Trang chủ - Swimming Store',
+            'title'      => 'Trang chủ - Thế Giới Bơi Lội',
             'categories' => $categories, 
             'products'   => $products,
             'sliders'    => $activeSliders,

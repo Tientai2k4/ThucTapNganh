@@ -4,7 +4,7 @@ namespace App\Core;
 class MailHelper {
     
     private static $senderEmail = 'dat09269@gmail.com'; 
-    private static $senderName = 'Swimming Store';
+    private static $senderName = 'Thế Giới Bơi Lội';
 
     public static function send($toEmail, $subject, $htmlContent) {
         // Lấy API Key từ hằng số toàn cục đã được load từ config.php

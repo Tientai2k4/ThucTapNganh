@@ -1,6 +1,6 @@
 <div class="container py-5">
     <button class="btn btn-primary d-lg-none mb-3 w-100 shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterSidebar">
-        <i class="fas fa-filter me-2"></i> Bộ lọc tìm kiếm
+        <i class="fas fa-filter me-2"></i> Bộ lọc & Tìm kiếm
     </button>
 
     <div class="row g-4">
@@ -12,7 +12,7 @@
                 </div>
                 
                 <div class="offcanvas-body p-0">
-                    <form id="filterForm" action="<?= BASE_URL ?>product" method="GET" class="card border-0 shadow-sm p-4 sticky-top" style="top: 80px; z-index: 99;">
+                    <form id="filterForm" action="<?= BASE_URL ?>product" method="GET" class="card border-0 shadow-sm p-4 sticky-filter">
                         
                         <input type="hidden" name="keyword" value="<?= htmlspecialchars($data['filters']['keyword'] ?? '') ?>">
                         <input type="hidden" name="sort" id="hiddenSort" value="<?= htmlspecialchars($data['filters']['sort'] ?? 'newest') ?>">
@@ -20,24 +20,24 @@
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h5 class="fw-bold m-0 text-uppercase"><i class="fas fa-filter me-2 text-primary"></i>Bộ lọc</h5>
                             <a href="<?= BASE_URL ?>product" class="text-decoration-none small text-danger fw-bold hover-opacity">
-                                <i class="fas fa-sync-alt me-1"></i>Làm mới
+                                <i class="fas fa-sync-alt me-1"></i> Làm mới
                             </a>
                         </div>
 
                         <div class="filter-group mb-4">
                             <h6 class="fw-bold text-uppercase mb-3 ps-2 border-start border-4 border-primary">Danh mục</h6>
                             
-                            <div class="category-list">
+                            <div class="category-list custom-scrollbar pe-2">
                                 <div class="cat-item mb-2">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="category_id" value="" id="cat_all" 
-                                            <?= empty($data['filters']['category_id']) ? 'checked' : '' ?> 
-                                            onchange="this.form.submit()"> <label class="form-check-label fw-bold cursor-pointer w-100" for="cat_all">Tất cả sản phẩm</label>
+                                            <?= empty($data['filters']['category_id']) ? 'checked' : '' ?>> 
+                                        <label class="form-check-label fw-bold cursor-pointer w-100" for="cat_all">Tất cả sản phẩm</label>
                                     </div>
                                 </div>
 
                                 <?php 
-                                    // Xử lý cây danh mục (Tách cha - con)
+                                    // Xử lý cây danh mục
                                     $tree = [];
                                     $currentCatId = $data['filters']['category_id'] ?? 0;
                                     
@@ -58,7 +58,7 @@
                                     <?php 
                                         $isParentActive = ($currentCatId == $parent['id']);
                                         $hasChildren = !empty($parent['children']);
-                                        // Mở accordion nếu đang chọn cha hoặc con
+                                        // Kiểm tra con active để mở accordion
                                         $isChildActive = false;
                                         if($hasChildren) {
                                             $isChildActive = in_array($currentCatId, array_column($parent['children'], 'id'));
@@ -71,8 +71,8 @@
                                             <div class="form-check flex-grow-1">
                                                 <input class="form-check-input" type="radio" name="category_id" 
                                                     value="<?= $parent['id'] ?>" id="cat_<?= $parent['id'] ?>"
-                                                    <?= $isParentActive ? 'checked' : '' ?> 
-                                                    onchange="this.form.submit()"> <label class="form-check-label cursor-pointer w-100 <?= $isParentActive ? 'text-primary fw-bold' : '' ?>" for="cat_<?= $parent['id'] ?>">
+                                                    <?= $isParentActive ? 'checked' : '' ?>> 
+                                                <label class="form-check-label cursor-pointer w-100 <?= $isParentActive ? 'text-primary fw-bold' : '' ?>" for="cat_<?= $parent['id'] ?>">
                                                     <?= htmlspecialchars($parent['name']) ?>
                                                 </label>
                                             </div>
@@ -92,8 +92,8 @@
                                                     <div class="form-check py-1">
                                                         <input class="form-check-input" type="radio" name="category_id" 
                                                             value="<?= $child['id'] ?>" id="cat_<?= $child['id'] ?>"
-                                                            <?= $isThisChildActive ? 'checked' : '' ?> 
-                                                            onchange="this.form.submit()"> <label class="form-check-label small cursor-pointer w-100 <?= $isThisChildActive ? 'text-primary fw-bold' : 'text-muted' ?>" for="cat_<?= $child['id'] ?>">
+                                                            <?= $isThisChildActive ? 'checked' : '' ?>> 
+                                                        <label class="form-check-label small cursor-pointer w-100 <?= $isThisChildActive ? 'text-primary fw-bold' : 'text-muted' ?>" for="cat_<?= $child['id'] ?>">
                                                             <?= htmlspecialchars($child['name']) ?>
                                                         </label>
                                                     </div>
@@ -110,29 +110,30 @@
                         <div class="filter-group mb-4">
                             <h6 class="fw-bold text-uppercase mb-3 ps-2 border-start border-4 border-primary">Khoảng giá</h6>
                             
-                            <div class="price-slider-container mb-3">
-                                <div class="slider-track"></div>
-                                <div class="slider-progress" id="slider-progress"></div>
-                                <input type="range" class="range-input" id="rangeMin" min="0" max="5000000" step="50000" value="<?= $data['filters']['price_min'] ?? 0 ?>">
-                                <input type="range" class="range-input" id="rangeMax" min="0" max="5000000" step="50000" value="<?= $data['filters']['price_max'] ?? 5000000 ?>">
+                            <div class="price-slider-wrapper mb-4">
+                                <div class="price-slider">
+                                    <div class="progress"></div>
+                                </div>
+                                <div class="range-input">
+                                    <input type="range" class="range-min" min="0" max="5000000" value="<?= $data['filters']['price_min'] ?? 0 ?>" step="50000">
+                                    <input type="range" class="range-max" min="0" max="5000000" value="<?= $data['filters']['price_max'] ?? 5000000 ?>" step="50000">
+                                </div>
                             </div>
 
-                            <div class="price-inputs d-flex justify-content-between gap-2">
+                            <div class="price-inputs d-flex align-items-center gap-2">
                                 <div class="input-group input-group-sm">
-                                    <input type="number" name="min" id="inputMin" class="form-control text-center fw-bold text-primary" value="<?= $data['filters']['price_min'] ?? 0 ?>">
-                                    <span class="input-group-text bg-white small">đ</span>
+                                    <input type="number" name="min" class="form-control text-center input-min" value="<?= $data['filters']['price_min'] ?? 0 ?>">
                                 </div>
-                                <span class="align-self-center text-muted">-</span>
+                                <div class="separator">-</div>
                                 <div class="input-group input-group-sm">
-                                    <input type="number" name="max" id="inputMax" class="form-control text-center fw-bold text-primary" value="<?= $data['filters']['price_max'] ?? 5000000 ?>">
-                                    <span class="input-group-text bg-white small">đ</span>
+                                    <input type="number" name="max" class="form-control text-center input-max" value="<?= $data['filters']['price_max'] ?? 5000000 ?>">
                                 </div>
                             </div>
                         </div>
 
                         <div class="filter-group mb-4">
                             <h6 class="fw-bold text-uppercase mb-3 ps-2 border-start border-4 border-primary">Thương hiệu</h6>
-                            <div class="brand-list custom-scrollbar pe-2" style="max-height: 180px; overflow-y: auto;">
+                            <div class="brand-list custom-scrollbar pe-2">
                                 <?php foreach($data['brands'] as $brand): ?>
                                     <div class="form-check mb-2">
                                         <input class="form-check-input" type="checkbox" name="brand[]" value="<?= $brand['id'] ?>" id="brand_<?= $brand['id'] ?>"
@@ -212,25 +213,36 @@
                 <div class="row row-cols-2 row-cols-md-3 g-3 g-md-4">
                     <?php foreach($data['products'] as $prod): ?>
                         <?php 
+                            // --- LOGIC XỬ LÝ TRẠNG THÁI ---
+                            
+                            // 1. Tính tồn kho (Ưu tiên biến total_stock nếu Model trả về, nếu không dùng product_qty)
                             $stock = isset($prod['total_stock']) ? (int)$prod['total_stock'] : ((int)$prod['product_qty'] ?? 0);
                             $isOutOfStock = ($stock <= 0);
+
+                            // 2. Tính giảm giá
                             $hasSale = ($prod['sale_price'] > 0 && $prod['sale_price'] < $prod['price']);
                             $percent = $hasSale ? round((($prod['price'] - $prod['sale_price']) / $prod['price']) * 100) : 0;
+                            
+                            // 3. Class CSS cho sản phẩm hết hàng
+                            $cardClass = $isOutOfStock ? 'out-of-stock-card' : '';
                         ?>
                         <div class="col">
-                            <div class="card h-100 border-0 shadow-sm product-card overflow-hidden">
+                            <div class="card h-100 border-0 shadow-sm product-card overflow-hidden <?= $cardClass ?>">
+                                
+                                <?php if($isOutOfStock): ?>
+                                    <div class="out-of-stock-overlay d-flex justify-content-center align-items-center">
+                                        <span class="badge bg-black text-white px-3 py-2 text-uppercase fw-bold shadow">Hết Hàng</span>
+                                    </div>
+                                <?php endif; ?>
+
                                 <div class="position-absolute top-0 start-0 p-2 w-100 d-flex justify-content-between pointer-events-none z-2">
                                     <?php if($hasSale && !$isOutOfStock): ?>
-                                        <span class="badge bg-danger rounded-pill shadow-sm">-<?= $percent ?>%</span>
+                                        <span class="badge bg-danger rounded-pill shadow-sm animate-pulse">SALE -<?= $percent ?>%</span>
                                     <?php else: ?> <span></span> <?php endif; ?>
-                                    
-                                    <?php if($isOutOfStock): ?>
-                                        <span class="badge bg-dark shadow-sm">Hết hàng</span>
-                                    <?php endif; ?>
                                 </div>
 
                                 <div class="card-img-wrapper position-relative bg-light" style="padding-top: 100%;">
-                                    <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>">
+                                    <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="<?= $isOutOfStock ? 'disabled-link' : '' ?>">
                                         <img src="<?= BASE_URL ?>public/uploads/<?= $prod['image'] ?>" 
                                              class="position-absolute top-0 start-0 w-100 h-100 object-fit-contain p-3 transition-transform" 
                                              alt="<?= htmlspecialchars($prod['name']) ?>">
@@ -238,10 +250,6 @@
                                 </div>
 
                                 <div class="card-body p-3 d-flex flex-column">
-                                    <div class="text-uppercase text-muted extra-small fw-bold mb-1">
-                                        <?= htmlspecialchars($prod['brand_name'] ?? 'No Brand') ?>
-                                    </div>
-                                    
                                     <h6 class="card-title text-dark lh-sm mb-2 text-truncate-2" style="min-height: 40px;">
                                         <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="text-decoration-none text-dark hover-primary product-name-link">
                                             <?= htmlspecialchars($prod['name']) ?>
@@ -260,9 +268,13 @@
                                     </div>
 
                                     <div class="mt-3">
-                                        <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="btn btn-outline-primary w-100 rounded-pill btn-view-more fw-bold">
-                                            Xem chi tiết
-                                        </a>
+                                        <?php if($isOutOfStock): ?>
+                                            <button class="btn btn-secondary w-100 rounded-pill fw-bold" disabled>Tạm hết hàng</button>
+                                        <?php else: ?>
+                                            <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="btn btn-outline-primary w-100 rounded-pill btn-view-more fw-bold">
+                                                Xem chi tiết
+                                            </a>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -276,9 +288,8 @@
                             <?php 
                                 $cur = $data['pagination']['current_page'];
                                 $total = $data['pagination']['total_pages'];
-                                // Xóa tham số page cũ để tạo link mới
-                                $queryParams = array_diff_key($data['filters'], ['limit'=>1, 'offset'=>1]);
-                                $url = BASE_URL . "product?" . http_build_query($queryParams) . "&page=";
+                                // Sử dụng query string đã được xử lý trong Controller
+                                $url = BASE_URL . "product?" . $data['query_string'] . "&page=";
                             ?>
                             
                             <li class="page-item <?= ($cur <= 1) ? 'disabled' : '' ?>">
@@ -304,27 +315,75 @@
 </div>
 
 <style>
-    /* Slider Giá */
-    .price-slider-container { position: relative; height: 6px; margin-top: 15px; }
-    .slider-track { width: 100%; height: 6px; background: #dee2e6; position: absolute; border-radius: 3px; top: 0; }
-    .slider-progress { height: 6px; background: #0d6efd; position: absolute; border-radius: 3px; top: 0; }
-    .range-input {
-        position: absolute; width: 100%; height: 6px; top: 0; background: none; pointer-events: none;
-        -webkit-appearance: none; appearance: none;
+    /* 1. STICKY SIDEBAR (Bộ lọc cố định) */
+    @media (min-width: 992px) {
+        .sticky-filter {
+            position: -webkit-sticky; /* Cho Safari */
+            position: sticky;
+            top: 90px; /* Cách đỉnh màn hình 90px (để chừa chỗ cho Header) */
+            height: calc(100vh - 110px); /* Chiều cao tối đa bằng màn hình trừ header */
+            overflow-y: auto; /* Nếu bộ lọc quá dài thì cuộn bên trong */
+            z-index: 100;
+        }
+        /* Tùy chỉnh thanh cuộn cho sidebar đẹp hơn */
+        .sticky-filter::-webkit-scrollbar { width: 6px; }
+        .sticky-filter::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 4px; }
     }
-    .range-input::-webkit-slider-thumb {
-        height: 20px; width: 20px; border-radius: 50%; border: 3px solid #0d6efd;
-        background: #fff; pointer-events: auto; -webkit-appearance: none; cursor: pointer;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: transform 0.2s;
-    }
-    .range-input::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
-    /* Hiệu ứng Mũi tên Accordion */
+    /* 2. STYLE SẢN PHẨM HẾT HÀNG */
+    .out-of-stock-card {
+        filter: grayscale(100%); /* Chuyển sang trắng đen */
+        opacity: 0.7; /* Làm mờ đi */
+        position: relative;
+    }
+    .out-of-stock-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255, 255, 255, 0.3); /* Lớp phủ mờ */
+        z-index: 10;
+        pointer-events: none; /* Vẫn cho phép click vào nút bên dưới nếu cần */
+    }
+    .out-of-stock-overlay .badge {
+        font-size: 1.2rem;
+        opacity: 1;
+        z-index: 11;
+        border: 2px solid #fff;
+    }
+    /* Chặn click vào ảnh nếu hết hàng (tùy chọn) */
+    .disabled-link { pointer-events: none; cursor: default; }
+
+    /* 3. SLIDER GIÁ (CSS MỚI) */
+    .price-slider-wrapper { width: 100%; }
+    .price-slider { height: 5px; position: relative; background: #ddd; border-radius: 5px; }
+    .price-slider .progress {
+        height: 100%; left: 0%; right: 0%; position: absolute;
+        border-radius: 5px; background: #0d6efd;
+    }
+    .range-input { position: relative; }
+    .range-input input {
+        position: absolute; width: 100%; height: 5px; top: -5px; background: none;
+        pointer-events: none; -webkit-appearance: none; appearance: none;
+    }
+    /* Nút kéo (Thumb) */
+    .range-input input::-webkit-slider-thumb {
+        height: 20px; width: 20px; border-radius: 50%;
+        background: #fff; border: 3px solid #0d6efd;
+        pointer-events: auto; -webkit-appearance: none; cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 2; /* Đảm bảo nút nằm trên */
+    }
+    .range-input input::-moz-range-thumb {
+        height: 20px; width: 20px; border: none; border-radius: 50%;
+        background: #fff; border: 3px solid #0d6efd;
+        pointer-events: auto; -moz-appearance: none; cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    /* Các hiệu ứng khác */
     .toggle-cat-btn .transition-icon { transition: transform 0.3s ease; }
     .toggle-cat-btn.collapsed .transition-icon { transform: rotate(-90deg); }
     .toggle-cat-btn:not(.collapsed) .transition-icon { transform: rotate(0deg); }
 
-    /* Product Card */
     .product-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
     .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important; }
     .transition-transform { transition: transform 0.5s ease; }
@@ -340,67 +399,79 @@
     .btn-check:checked + .size-btn { background-color: #0d6efd; color: white; border-color: #0d6efd; }
     .hover-opacity:hover { opacity: 0.7; }
     .product-name-link:hover { color: #0d6efd !important; }
-    .extra-small { font-size: 0.75rem; }
     
-    /* Scrollbar */
+    .custom-scrollbar { max-height: 300px; overflow-y: auto; }
     .custom-scrollbar::-webkit-scrollbar { width: 5px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #adb5bd; border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+    
+    .animate-pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. XỬ LÝ THANH TRƯỢT GIÁ (MƯỢT MÀ)
-    const rangeMin = document.getElementById('rangeMin');
-    const rangeMax = document.getElementById('rangeMax');
-    const inputMin = document.getElementById('inputMin');
-    const inputMax = document.getElementById('inputMax');
-    const progress = document.getElementById('slider-progress');
-    const minGap = 100000;
+    // Các phần tử DOM
+    const rangeInput = document.querySelectorAll(".range-input input");
+    const priceInput = document.querySelectorAll(".price-inputs input");
+    const progress = document.querySelector(".slider-progress .progress");
+    
+    let priceGap = 100000; // Khoảng cách tối thiểu giữa Min và Max
 
+    // Hàm cập nhật thanh màu xanh (Progress)
     function updateProgress() {
-        let minVal = parseInt(rangeMin.value);
-        let maxVal = parseInt(rangeMax.value);
-        const maxLimit = parseInt(rangeMax.max);
+        let minVal = parseInt(rangeInput[0].value);
+        let maxVal = parseInt(rangeInput[1].value);
+        let maxRange = parseInt(rangeInput[0].max);
 
-        // Ngăn kéo qua nhau
-        if (maxVal - minVal < minGap) {
-            if (event.target === rangeMin) {
-                rangeMin.value = maxVal - minGap;
-            } else {
-                rangeMax.value = minVal + minGap;
-            }
-        } else {
-            inputMin.value = minVal;
-            inputMax.value = maxVal;
-            progress.style.left = (minVal / maxLimit) * 100 + "%";
-            progress.style.width = ((maxVal - minVal) / maxLimit) * 100 + "%";
-        }
+        // Tính toán phần trăm để tô màu thanh trượt
+        progress.style.left = (minVal / maxRange) * 100 + "%";
+        progress.style.right = 100 - (maxVal / maxRange) * 100 + "%";
+        // Cần set right chứ không phải width để đảm bảo thanh chạy từ 2 đầu
     }
 
-    rangeMin.addEventListener('input', updateProgress);
-    rangeMax.addEventListener('input', updateProgress);
+    // 1. Xử lý khi kéo thanh trượt (Range Input)
+    rangeInput.forEach(input => {
+        input.addEventListener("input", e => {
+            let minVal = parseInt(rangeInput[0].value);
+            let maxVal = parseInt(rangeInput[1].value);
 
-    // Đồng bộ input nhập tay
-    inputMin.addEventListener('change', function() {
-        let val = parseInt(this.value);
-        if(val < 0) val = 0;
-        if(val >= parseInt(rangeMax.value)) val = parseInt(rangeMax.value) - minGap;
-        this.value = val;
-        rangeMin.value = val;
-        updateProgress();
+            if ((maxVal - minVal) < priceGap) {
+                // Nếu kéo sát quá thì chặn lại
+                if (e.target.className === "range-min") {
+                    rangeInput[0].value = maxVal - priceGap;
+                } else {
+                    rangeInput[1].value = minVal + priceGap;
+                }
+            } else {
+                // Cập nhật giá trị vào ô nhập liệu
+                priceInput[0].value = minVal;
+                priceInput[1].value = maxVal;
+                updateProgress();
+            }
+        });
     });
 
-    inputMax.addEventListener('change', function() {
-        let val = parseInt(this.value);
-        if(val > parseInt(rangeMax.max)) val = parseInt(rangeMax.max);
-        if(val <= parseInt(rangeMin.value)) val = parseInt(rangeMin.value) + minGap;
-        this.value = val;
-        rangeMax.value = val;
-        updateProgress();
+    // 2. Xử lý khi nhập số trực tiếp (Number Input)
+    priceInput.forEach(input => {
+        input.addEventListener("change", e => { // Dùng change để khi enter hoặc blur mới chạy
+            let minPrice = parseInt(priceInput[0].value);
+            let maxPrice = parseInt(priceInput[1].value);
+            let maxRange = parseInt(rangeInput[0].max);
+
+            if ((maxPrice - minPrice >= priceGap) && maxPrice <= maxRange && minPrice >= 0) {
+                if (e.target.classList.contains("input-min")) {
+                    rangeInput[0].value = minPrice;
+                    updateProgress();
+                } else {
+                    rangeInput[1].value = maxPrice;
+                    updateProgress();
+                }
+            }
+        });
     });
 
-    // Chạy lần đầu
+    // Chạy lần đầu để set vị trí đúng
     updateProgress();
 });
 </script>
