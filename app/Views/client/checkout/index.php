@@ -196,20 +196,32 @@
     </div>
 </form>
 <script>
+    function getCurrentTotal() {
+    let tempTotal = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        let price = parseFloat(row.getAttribute('data-price'));
+        let qty = parseInt(row.querySelector('.input-qty').value);
+        tempTotal += price * qty;
+    });
+    return tempTotal;
+}
 // Hàm áp dụng coupon (đã sửa để nhận tham số totalDynamic)
+
 function applyCoupon(totalDynamic = null) {
     let code = document.getElementById('couponCode').value;
     
-    // Nếu không truyền tham số (lần đầu bấm nút), lấy giá trị gốc từ PHP
-    // Nếu có truyền (khi chỉnh số lượng), dùng giá trị mới
-    let total = (totalDynamic !== null) ? totalDynamic : <?= $data['totalMoney'] ?? 0 ?>; 
+    // SỬA LỖI: 
+    // Nếu hàm được gọi từ việc sửa số lượng (có totalDynamic) -> dùng totalDynamic
+    // Nếu hàm được gọi từ nút Bấm (totalDynamic là null) -> Tự tính lại bằng getCurrentTotal()
+    let total = (totalDynamic !== null) ? totalDynamic : getCurrentTotal();
 
     if(code.trim() === "") {
-         // Nếu không có mã thì không làm gì hoặc reset
-         return; 
+        // Nếu xóa mã thì tính lại tiền bình thường (không giảm giá)
+        recalculateTotal();
+        return; 
     }
 
-    // Gọi AjaxController
+    // Gọi Ajax check mã
     fetch('<?= BASE_URL ?>ajax/checkCoupon', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -220,7 +232,7 @@ function applyCoupon(totalDynamic = null) {
         let msg = document.getElementById('couponMessage');
         
         if(data.status) {
-            // ÁP DỤNG MÃ THÀNH CÔNG
+            // --- TRƯỜNG HỢP THÀNH CÔNG ---
             msg.className = 'small mb-2 text-success';
             msg.innerText = data.message;
             
@@ -228,25 +240,28 @@ function applyCoupon(totalDynamic = null) {
             document.getElementById('discountRow').style.setProperty('display', 'flex', 'important');
             document.getElementById('discountAmount').innerText = '-' + new Intl.NumberFormat('vi-VN').format(data.discount) + 'đ';
             
-            // Cập nhật Tổng Cộng (Total - Discount)
+            // Tính lại Tổng cộng cuối cùng
             let final = total - data.discount;
             if(final < 0) final = 0;
+            
             document.getElementById('finalTotal').innerText = new Intl.NumberFormat('vi-VN').format(final) + 'đ';
             
-            // Cập nhật input ẩn để gửi form
+            // Cập nhật input ẩn để gửi form đi
             document.getElementById('inputDiscount').value = data.discount;
             document.getElementById('inputCouponCode').value = data.code;
         } else {
-            // MÃ KHÔNG HỢP LỆ (hoặc không đủ điều kiện đơn hàng tối thiểu sau khi chỉnh sửa số lượng)
+            // --- TRƯỜNG HỢP LỖI (Mã sai hoặc chưa đủ tiền) ---
             msg.className = 'small mb-2 text-danger';
             msg.innerText = data.message;
             
-            // Reset về trạng thái chưa giảm
+            // Ẩn dòng giảm giá
             document.getElementById('discountRow').style.setProperty('display', 'none', 'important');
+            // Reset tổng cộng về bằng tạm tính
             document.getElementById('finalTotal').innerText = new Intl.NumberFormat('vi-VN').format(total) + 'đ';
             
+            // Reset input ẩn
             document.getElementById('inputDiscount').value = 0;
-            document.getElementById('inputCouponCode').value = ''; // Xóa mã nếu muốn, hoặc giữ lại để khách biết
+            document.getElementById('inputCouponCode').value = '';
         }
     });
 }
@@ -398,30 +413,26 @@ function updateCartItem(input, variantId) {
 
 // Hàm tính lại tổng tiền hiển thị
 function recalculateTotal() {
-    let tempTotal = 0;
-    
-    // 1. Tính tổng tiền hàng mới
-    document.querySelectorAll('.item-row').forEach(row => {
-        let price = parseFloat(row.getAttribute('data-price'));
-        let qty = parseInt(row.querySelector('.input-qty').value);
-        tempTotal += price * qty;
-    });
+    // Sử dụng hàm getCurrentTotal để tránh lặp code
+    let tempTotal = getCurrentTotal();
 
-    // 2. Hiển thị Tạm tính mới
+    // Cập nhật text Tạm tính
     document.getElementById('tempTotal').innerText = new Intl.NumberFormat('vi-VN').format(tempTotal) + 'đ';
 
-    // 3. Kiểm tra xem đang có mã giảm giá nào trong ô input không
+    // Kiểm tra xem có đang nhập mã không để tính lại giảm giá
     let currentCoupon = document.getElementById('couponCode').value;
-
+    
+    // Nếu có mã, gọi check lại mã với giá tiền MỚI
     if (currentCoupon.trim() !== "") {
-        // [QUAN TRỌNG] Nếu đang nhập mã, gọi check lại mã với tổng tiền MỚI
         applyCoupon(tempTotal);
     } else {
-        // Nếu không có mã, Tổng cộng = Tạm tính
+        // Không có mã -> Tổng = Tạm tính
         document.getElementById('finalTotal').innerText = new Intl.NumberFormat('vi-VN').format(tempTotal) + 'đ';
-        // Đảm bảo reset số tiền giảm về 0
+        // Reset giảm giá
         document.getElementById('inputDiscount').value = 0;
         document.getElementById('discountRow').style.setProperty('display', 'none', 'important');
+        // Xóa thông báo lỗi nếu có
+        document.getElementById('couponMessage').innerText = '';
     }
 }
 </script>

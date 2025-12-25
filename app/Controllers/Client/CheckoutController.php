@@ -210,5 +210,23 @@ class CheckoutController extends Controller {
             $this->view('client/checkout/failure', $data); 
         }
     }
+    // TRANG THÔNG BÁO THÀNH CÔNG
+    public function success() {
+        // Lấy mã đơn hàng từ URL (ví dụ: ?code=DH123456)
+        $orderCode = $_GET['code'] ?? '';
+
+        if (empty($orderCode)) {
+            header('Location: ' . BASE_URL); // Nếu không có mã thì về trang chủ
+            exit;
+        }
+
+        $data = [
+            'title' => 'Đặt hàng thành công',
+            'order_code' => $orderCode
+        ];
+
+        // Gọi view hiển thị
+        $this->view('client/checkout/success', $data);
+    }
 }
 ?>
