@@ -143,28 +143,130 @@
                 </div>
 
                 <div class="tab-pane fade" id="review">
-                    <?php if(!empty($data['reviews'])): ?>
-                        <?php foreach($data['reviews'] as $review): ?>
-                            <div class="d-flex mb-4 border-bottom pb-3">
-                                <div class="flex-shrink-0">
-                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white fw-bold" style="width: 50px; height: 50px; font-size: 20px;">
-                                        <?= substr($review['full_name'] ?? 'K', 0, 1) ?>
-                                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-4 border-end">
+                            <div class="text-center">
+                                <h1 class="display-3 fw-bold text-warning mb-0"><?= $data['rating_summary']['average'] ?? 0 ?></h1>
+                                <div class="text-warning mb-2 fs-5">
+                                    <?php 
+                                        $avg = $data['rating_summary']['average'] ?? 0;
+                                        for($i=1; $i<=5; $i++) {
+                                            if($i <= $avg) echo '<i class="fas fa-star"></i>';
+                                            else if($i - 0.5 <= $avg) echo '<i class="fas fa-star-half-alt"></i>';
+                                            else echo '<i class="far fa-star"></i>';
+                                        }
+                                    ?>
                                 </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="fw-bold mb-0"><?= htmlspecialchars($review['full_name'] ?? 'Khách hàng') ?></h6>
-                                    <div class="text-warning small mb-2">
-                                        <?php for($k=1; $k<=5; $k++): ?>
-                                            <i class="<?= $k <= $review['rating'] ? 'fas' : 'far' ?> fa-star"></i>
-                                        <?php endfor; ?>
+                                <p class="text-muted">Dựa trên <?= $data['rating_summary']['total_review'] ?? 0 ?> đánh giá</p>
+                            </div>
+
+                            <div class="mt-4 px-3">
+                                <?php 
+                                    $total = $data['rating_summary']['total_review'] ?? 0;
+                                    for($star=5; $star>=1; $star--): 
+                                        $count = $data['rating_summary']['star_count'][$star] ?? 0;
+                                        $percent = $total > 0 ? ($count / $total) * 100 : 0;
+                                ?>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="text-muted small me-2"><?= $star ?> <i class="fas fa-star text-secondary"></i></span>
+                                    <div class="progress flex-grow-1" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: <?= $percent ?>%"></div>
                                     </div>
-                                    <p class="mb-2 text-dark"><?= htmlspecialchars($review['comment']) ?></p>
+                                    <span class="text-muted small ms-2" style="min-width: 30px; text-align: right;"><?= $count ?></span>
+                                </div>
+                                <?php endfor; ?>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <div class="card bg-light border-0 mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3 fw-bold text-uppercase">Viết đánh giá của bạn</h5>
+                                    
+                                    <?php if(isset($data['can_review']) && $data['can_review'] === true): ?>
+                                        <form action="<?= BASE_URL ?>product/postReview" method="POST">
+                                            <input type="hidden" name="product_id" value="<?= $data['product']['id'] ?>">
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">1. Bạn cảm thấy thế nào về sản phẩm?</label>
+                                                <div class="star-rating-input">
+                                                    <input type="radio" id="star5" name="rating" value="5" checked /><label for="star5" title="Tuyệt vời">★</label>
+                                                    <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="Tốt">★</label>
+                                                    <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="Bình thường">★</label>
+                                                    <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="Tệ">★</label>
+                                                    <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="Rất tệ">★</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">2. Viết nhận xét chi tiết:</label>
+                                                <textarea name="comment" class="form-control" rows="3" placeholder="Chia sẻ cảm nhận về chất liệu, kiểu dáng..." required></textarea>
+                                            </div>
+                                            
+                                            <div class="text-end">
+                                                <button class="btn btn-warning text-white fw-bold px-4">
+                                                    <i class="fas fa-paper-plane me-2"></i>GỬI ĐÁNH GIÁ
+                                                </button>
+                                            </div>
+                                        </form>
+                                    <?php else: ?>
+                                        <div class="alert alert-secondary d-flex align-items-center" role="alert">
+                                            <i class="fas fa-info-circle fa-2x me-3 text-secondary"></i>
+                                            <div>
+                                                <h6 class="alert-heading fw-bold mb-1">Thông báo</h6>
+                                                <p class="mb-0"><?= $data['review_message'] ?></p>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p class="text-center text-muted">Chưa có đánh giá nào.</p>
-                    <?php endif; ?>
+
+                            <hr class="my-4">
+                            <h5 class="fw-bold mb-4">Các đánh giá từ khách hàng</h5>
+
+                            <?php if(!empty($data['reviews'])): ?>
+                                <?php foreach($data['reviews'] as $review): ?>
+                                    <div class="d-flex mb-4 border-bottom pb-3">
+                                        <div class="flex-shrink-0">
+                                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white fw-bold" style="width: 50px; height: 50px; font-size: 20px;">
+                                                <?= substr($review['full_name'] ?? 'K', 0, 1) ?>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <h6 class="fw-bold mb-0"><?= htmlspecialchars($review['full_name'] ?? 'Khách hàng') ?></h6>
+                                                <span class="text-muted small"><i class="far fa-clock me-1"></i><?= date('d/m/Y', strtotime($review['created_at'])) ?></span>
+                                            </div>
+                                            
+                                            <div class="text-warning small mb-2">
+                                                <?php for($k=1; $k<=5; $k++): ?>
+                                                    <i class="<?= $k <= $review['rating'] ? 'fas' : 'far' ?> fa-star"></i>
+                                                <?php endfor; ?>
+                                            </div>
+                                            
+                                            <p class="mb-2 text-dark"><?= htmlspecialchars($review['comment']) ?></p>
+
+                                            <?php if(!empty($review['reply_content'])): ?>
+                                                <div class="bg-light p-3 mt-2 rounded border-start border-4 border-primary">
+                                                    <div class="fw-bold text-primary mb-1">
+                                                        <i class="fas fa-store me-1"></i> Phản hồi từ Shop:
+                                                    </div>
+                                                    <p class="mb-0 text-muted small fst-italic">
+                                                        <?= htmlspecialchars($review['reply_content']) ?>
+                                                    </p>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="text-center py-4 text-muted">
+                                    <i class="far fa-comment-dots fa-3x mb-3"></i>
+                                    <p>Chưa có đánh giá nào cho sản phẩm này.</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -184,77 +286,121 @@
 
 <style>
 /* CSS cho nút chọn Size/Màu */
-.size-btn, .color-btn {
-    min-width: 60px;
-}
-.size-btn.active, .color-btn.active {
-    background-color: #0d6efd;
-    color: white;
-    border-color: #0d6efd;
-}
-.thumb-btn {
-    transition: all 0.2s;
-}
-.thumb-btn:hover {
-    transform: scale(1.05);
-}
+.size-btn, .color-btn { min-width: 60px; }
+.size-btn.active, .color-btn.active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
+.thumb-btn { transition: all 0.2s; }
+.thumb-btn:hover { transform: scale(1.05); }
+
+/* CSS cho Star Rating (Giữ nguyên) */
+.star-rating-input { display: flex; flex-direction: row-reverse; justify-content: flex-end; }
+.star-rating-input input { display: none; }
+.star-rating-input label { font-size: 2rem; color: #ddd; cursor: pointer; padding: 0 5px; transition: color 0.2s; }
+.star-rating-input label:hover, .star-rating-input label:hover ~ label, .star-rating-input input:checked ~ label { color: #ffc107; }
 </style>
 
 <script>
-    // Dữ liệu Variants từ PHP sang JS
+    // --- 1. DỮ LIỆU JSON TỪ PHP SANG JS ---
     const allVariants = <?= json_encode($data['variants'] ?? []) ?>;
     let currentSize = null;
     let currentColor = null;
 
-    // Chọn Size
+    // --- 2. XỬ LÝ CHỌN SIZE ---
     function selectSize(btn) {
-        document.querySelectorAll('.size-btn').forEach(b => {
-            b.classList.remove('active', 'btn-primary');
-            b.classList.add('btn-outline-secondary');
-        });
-        
-        btn.classList.remove('btn-outline-secondary');
-        btn.classList.add('active', 'btn-primary');
-        currentSize = btn.getAttribute('data-size');
+        const clickedSize = btn.getAttribute('data-size');
 
-        // Reset màu
-        currentColor = null;
-        document.querySelectorAll('.color-btn').forEach(b => {
-            b.classList.remove('active', 'btn-primary');
-            b.classList.add('btn-outline-secondary', 'disabled');
-            b.disabled = true; 
-        });
+        // Logic Toggle (Bấm lần 2 để bỏ chọn)
+        if (currentSize === clickedSize) {
+            currentSize = null;
+            btn.classList.remove('active', 'btn-primary');
+            btn.classList.add('btn-outline-secondary');
+            updateColorButtonsState(); // Reset màu
+        } else {
+            document.querySelectorAll('.size-btn').forEach(b => {
+                b.classList.remove('active', 'btn-primary');
+                b.classList.add('btn-outline-secondary');
+            });
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('active', 'btn-primary');
+            currentSize = clickedSize;
+            updateColorButtonsState();
+        }
+        checkSelection();
+    }
 
-        // Mở khóa màu phù hợp
-        const availableColors = allVariants
-            .filter(v => v.size == currentSize && v.stock_quantity > 0)
-            .map(v => v.color);
+    // --- 3. XỬ LÝ CHỌN MÀU ---
+    function selectColor(btn) {
+        const clickedColor = btn.getAttribute('data-color');
 
-        document.querySelectorAll('.color-btn').forEach(b => {
-            if (availableColors.includes(b.getAttribute('data-color'))) {
-                b.disabled = false;
-                b.classList.remove('disabled');
+        // Logic Toggle
+        if (currentColor === clickedColor) {
+            currentColor = null;
+            btn.classList.remove('active', 'btn-primary');
+            btn.classList.add('btn-outline-secondary');
+            updateSizeButtonsState(); // Reset size
+        } else {
+            document.querySelectorAll('.color-btn').forEach(b => {
+                b.classList.remove('active', 'btn-primary');
+                b.classList.add('btn-outline-secondary');
+            });
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('active', 'btn-primary');
+            currentColor = clickedColor;
+            updateSizeButtonsState();
+        }
+        checkSelection();
+    }
+
+    // --- 4. CẬP NHẬT TRẠNG THÁI MÀU ---
+    function updateColorButtonsState() {
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            const color = btn.getAttribute('data-color');
+            if (currentSize) {
+                const exists = allVariants.some(v => v.size == currentSize && v.color == color && v.stock_quantity > 0);
+                if (exists) {
+                    btn.disabled = false;
+                    btn.classList.remove('disabled');
+                } else {
+                    btn.disabled = true;
+                    btn.classList.add('disabled');
+                    if (currentColor == color) {
+                        currentColor = null;
+                        btn.classList.remove('active', 'btn-primary');
+                        btn.classList.add('btn-outline-secondary');
+                    }
+                }
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
             }
         });
-
-        checkSelection();
     }
 
-    // Chọn Màu
-    function selectColor(btn) {
-        document.querySelectorAll('.color-btn').forEach(b => {
-            b.classList.remove('active', 'btn-primary');
-            b.classList.add('btn-outline-secondary');
+    // --- 5. CẬP NHẬT TRẠNG THÁI SIZE ---
+    function updateSizeButtonsState() {
+        document.querySelectorAll('.size-btn').forEach(btn => {
+            const size = btn.getAttribute('data-size');
+            if (currentColor) {
+                const exists = allVariants.some(v => v.color == currentColor && v.size == size && v.stock_quantity > 0);
+                if (exists) {
+                    btn.disabled = false;
+                    btn.classList.remove('disabled');
+                } else {
+                    btn.disabled = true;
+                    btn.classList.add('disabled');
+                    if (currentSize == size) {
+                        currentSize = null;
+                        btn.classList.remove('active', 'btn-primary');
+                        btn.classList.add('btn-outline-secondary');
+                    }
+                }
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+            }
         });
-        
-        btn.classList.remove('btn-outline-secondary');
-        btn.classList.add('active', 'btn-primary');
-        currentColor = btn.getAttribute('data-color');
-
-        checkSelection();
     }
 
-    // Kiểm tra kho
+    // --- 6. KIỂM TRA KHO ---
     function checkSelection() {
         const statusDiv = document.getElementById('stockStatus');
         const btnBuy = document.getElementById('btnBuy');
@@ -262,7 +408,6 @@
 
         if (currentSize && currentColor) {
             const variant = allVariants.find(v => v.size == currentSize && v.color == currentColor);
-            
             if (variant) {
                 hiddenId.value = variant.id;
                 statusDiv.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-check"></i> Kho còn: ${variant.stock_quantity} sản phẩm</span>`;
@@ -272,12 +417,12 @@
                 btnBuy.disabled = true;
             }
         } else {
-            statusDiv.innerHTML = '<span class="text-muted small">Vui lòng chọn Size và Màu sắc</span>';
+            statusDiv.innerHTML = '<span class="text-muted small">Vui lòng chọn đủ Size và Màu sắc</span>';
             btnBuy.disabled = true;
         }
     }
 
-    // Tăng giảm số lượng
+    // --- 7. TĂNG GIẢM SỐ LƯỢNG ---
     function changeQty(delta) {
         const input = document.getElementById('inputQty');
         let val = parseInt(input.value) + delta;
@@ -286,7 +431,7 @@
         document.getElementById('selectedQuantity').value = val;
     }
 
-    // Xử lý giỏ hàng
+    // --- 8. SUBMIT GIỎ HÀNG ---
     function handleAddToCart(event) {
         event.preventDefault(); 
         const btn = document.getElementById('btnBuy');
@@ -319,7 +464,7 @@
         });
     }
 
-    // Lightbox & Change Image
+    // --- 9. HÀM HỖ TRỢ ẢNH ---
     function changeImage(src, el) {
         document.getElementById('mainImage').src = src;
         document.querySelectorAll('.thumb-btn').forEach(b => b.classList.remove('border-primary'));
@@ -330,4 +475,8 @@
         document.getElementById('lightboxImg').src = src;
         lbModal.show();
     }
+    
+    // Init state
+    updateColorButtonsState();
+    updateSizeButtonsState();
 </script>
