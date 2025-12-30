@@ -19,7 +19,8 @@ class DashboardController extends Controller {
             'recent_contacts' => $this->model->getRecentContacts(), // [MỚI]
             'low_stock'       => $this->model->getLowStockLimit(),
             'top_customers'   => $this->model->getTopCustomersLimit(),
-            'top_products'    => $this->model->getTopSellingProducts(5) 
+            'top_products'    => $this->model->getTopSellingProducts(5),
+            'cancelled_stats'  => $this->model->getCancelledOrderStats() 
         ];
         $this->view('admin/dashboard/index', $data);
     }

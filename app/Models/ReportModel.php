@@ -100,4 +100,13 @@ class ReportModel extends Model {
                         LIMIT $limit";
                 return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
         }
+
+        // Thống kê đơn hàng bị hủy
+        public function getCancelledOrderStats() {
+            $sql = "SELECT COUNT(id) as total_cancelled, 
+                        IFNULL(SUM(total_money), 0) as total_lost_revenue 
+                    FROM orders 
+                    WHERE status = 'cancelled'";
+            return $this->conn->query($sql)->fetch_assoc();
+        }
 }

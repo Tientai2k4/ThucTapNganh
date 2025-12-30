@@ -50,20 +50,33 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <a href="/ThucTapNganh/admin/contact" class="text-decoration-none">
-                <div class="card border-0 shadow-sm text-white p-3 h-100 bg-warning-gradient">
+           <div class="col-xl-3 col-md-6">
+                    <a href="/ThucTapNganh/admin/contact" class="text-decoration-none">
+                        <div class="card border-0 shadow-sm text-white p-3 h-100 bg-warning-gradient">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <div class="small opacity-75 fw-bold text-uppercase">Liên Hệ Mới</div>
+                                    <div class="h3 fw-bold mb-0"><?= $data['counters']['unread_contacts'] ?></div>
+                                </div>
+                                <i class="fas fa-comment-dots fa-2x opacity-50"></i>
+                            </div>
+                            <div class="mt-3 small">Xem phản hồi <i class="fas fa-chevron-right ms-1"></i></div>
+                        </div>
+                    </a>
+           </div>
+           <div class="col-xl-3 col-md-6">
+                <div class="card border-0 shadow-sm text-white p-3 h-100" style="background: linear-gradient(45deg, #e74a3b, #be2617);">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="small opacity-75 fw-bold text-uppercase">Liên Hệ Mới</div>
-                            <div class="h3 fw-bold mb-0"><?= $data['counters']['unread_contacts'] ?></div>
+                            <div class="small opacity-75 fw-bold text-uppercase">Đơn Đã Hủy</div>
+                            <div class="h3 fw-bold mb-0"><?= $data['cancelled_stats']['total_cancelled'] ?></div>
                         </div>
-                        <i class="fas fa-comment-dots fa-2x opacity-50"></i>
+                        <i class="fas fa-times-circle fa-2x opacity-50"></i>
                     </div>
-                    <div class="mt-3 small">Xem phản hồi <i class="fas fa-chevron-right ms-1"></i></div>
+                    <div class="mt-2 small opacity-75">Thất thoát: <?= number_format($data['cancelled_stats']['total_lost_revenue']) ?>đ</div>
                 </div>
-            </a>
-        </div>
+            </div>
+
     </div>
 
     <div class="row g-4 mb-4">
@@ -221,6 +234,44 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                                <h6 class="m-0 fw-bold text-danger"><i class="fas fa-ban me-2"></i>Đơn Hàng Bị Hủy Gần Đây</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th class="ps-3">Mã Đơn</th>
+                                                <th>Khách Hàng</th>
+                                                <th>Giá Trị</th>
+                                                <th>Ngày Hủy</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if(empty($data['recent_cancelled_orders'])): ?>
+                                                <tr><td colspan="4" class="text-center py-3 text-muted">Không có đơn hàng nào bị hủy gần đây.</td></tr>
+                                            <?php else: ?>
+                                                <?php foreach($data['recent_cancelled_orders'] as $order): ?>
+                                                <tr>
+                                                    <td class="ps-3 fw-bold text-danger">#<?= $order['order_code'] ?></td>
+                                                    <td><?= htmlspecialchars($order['customer_name']) ?></td>
+                                                    <td class="text-muted"><?= number_format($order['total_money']) ?>đ</td>
+                                                    <td class="small text-muted"><?= date('d/m/Y H:i', strtotime($order['created_at'])) ?></td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
         </div>
 
 
