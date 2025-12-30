@@ -174,6 +174,57 @@
         </div>
     </div>
 
+      <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 fw-bold text-primary"><i class="fas fa-fire me-2 text-danger"></i>Top 5 Sản Phẩm Bán Chạy Nhất</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-3" style="width: 50%">Sản phẩm</th>
+                                        <th class="text-center">Số lượng bán</th>
+                                        <th class="text-end pe-4">Tổng doanh thu</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if(empty($data['top_products'])): ?>
+                                        <tr><td colspan="3" class="text-center py-4 text-muted">Chưa có dữ liệu bán hàng.</td></tr>
+                                    <?php else: ?>
+                                        <?php foreach($data['top_products'] as $p): ?>
+                                        <tr>
+                                            <td class="ps-3">
+                                                <div class="d-flex align-items-center">
+                                                    <img src="<?= BASE_URL ?>public/uploads/<?= $p['image'] ?>" 
+                                                        alt="" class="rounded shadow-sm me-3" 
+                                                        style="width: 45px; height: 45px; object-fit: cover;">
+                                                    <span class="fw-bold text-dark"><?= htmlspecialchars($p['name']) ?></span>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-soft-primary text-primary rounded-pill px-3 py-2" style="background-color: #e7f1ff;">
+                                                    <?= number_format($p['total_sold']) ?> món
+                                                </span>
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <span class="fw-bold text-success"><?= number_format($p['total_revenue']) ?>đ</span>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
     <div class="row g-4">
         <div class="col-lg-7">
             <div class="card border-0 shadow-sm">

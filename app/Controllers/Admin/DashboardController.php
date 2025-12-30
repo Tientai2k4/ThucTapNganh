@@ -18,7 +18,8 @@ class DashboardController extends Controller {
             'recent_orders'   => $this->model->getRecentOrders(),   // [MỚI]
             'recent_contacts' => $this->model->getRecentContacts(), // [MỚI]
             'low_stock'       => $this->model->getLowStockLimit(),
-            'top_customers'   => $this->model->getTopCustomersLimit()
+            'top_customers'   => $this->model->getTopCustomersLimit(),
+            'top_products'    => $this->model->getTopSellingProducts(5) 
         ];
         $this->view('admin/dashboard/index', $data);
     }
@@ -35,7 +36,30 @@ class DashboardController extends Controller {
     }
 
     public function view_revenue() {
-        $data['revenue'] = $this->model->getRevenueDetail();
-        $this->view('admin/dashboard/detail_revenue', $data);
-    }
+    // 1. Gọi OrderModel thay vì ReportModel cho phần này
+    $orderModel = $this->model('OrderModel');
+
+    // 2. Lấy tham số lọc từ URL (Query String)
+    $type = $_GET['type'] ?? 'date'; // Mặc định xem theo ngày
+    $from = $_GET['from'] ?? null;   // Ngày bắt đầu
+    $to = $_GET['to'] ?? null;       // Ngày kết thúc
+
+    // 3. Tên tiêu đề tương ứng
+    $typeTexts = [
+        'date' => 'Từng Ngày',
+        'month' => 'Từng Tháng',
+        'year' => 'Từng Năm'
+    ];
+
+    // 4. Lấy dữ liệu linh hoạt từ hàm mới trong OrderModel
+    $data = [
+        'revenue'        => $orderModel->getRevenueReport($type, $from, $to),
+        'view_type'      => $type,
+        'view_type_text' => $typeTexts[$type] ?? 'Từng Ngày'
+    ];
+
+    // 5. Trả về View hiện tại của bạn
+    $this->view('admin/dashboard/detail_revenue', $data);
+  }
+    
 }

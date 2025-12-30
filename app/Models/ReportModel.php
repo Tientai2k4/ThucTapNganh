@@ -84,4 +84,20 @@ class ReportModel extends Model {
                 ORDER BY pv.stock_quantity ASC $limitSql";
         return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
     }
+    // Lấy Top 5 sản phẩm bán chạy nhất
+        public function getTopSellingProducts($limit = 5) {
+                // Sử dụng bảng order_details và các cột chính xác từ ảnh của bạn
+                $sql = "SELECT p.id, p.name, p.image, 
+                            SUM(od.quantity) as total_sold, 
+                            SUM(od.total_price) as total_revenue
+                        FROM order_details od
+                        JOIN product_variants pv ON od.product_variant_id = pv.id
+                        JOIN products p ON pv.product_id = p.id
+                        JOIN orders o ON od.order_id = o.id
+                        WHERE o.status = 'completed'
+                        GROUP BY p.id
+                        ORDER BY total_sold DESC
+                        LIMIT $limit";
+                return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+        }
 }

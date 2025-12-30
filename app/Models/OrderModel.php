@@ -1,6 +1,11 @@
 <?php
 namespace App\Models;
-
+/**
+ * Lấy báo cáo doanh thu linh hoạt theo Ngày/Tháng/Năm
+ * @param string $type: 'date', 'month', 'year'
+ * @param string $from: định dạng Y-m-d
+ * @param string $to: định dạng Y-m-d
+ */
 use App\Core\Model;
 use App\Services\ShippingService;
 
@@ -298,7 +303,34 @@ public function getOrderById($id) {
         $stmt->bind_param("si", $trackingCode, $orderId);
         return $stmt->execute();
     }
+    public function getRevenueReport($type = 'date', $from = null, $to = null) {
+    // 1. Xác định định dạng nhóm (Group By)
+    $dateFormat = "%Y-%m-%d"; // Mặc định theo ngày
+    if ($type == 'month') $dateFormat = "%Y-%m-01"; // Gộp về ngày đầu tháng
+    if ($type == 'year') $dateFormat = "%Y-01-01";  // Gộp về ngày đầu năm
 
+    // 2. Xây dựng câu SQL
+    $sql = "SELECT 
+                DATE_FORMAT(created_at, '$dateFormat') as date,
+                COUNT(id) as total_orders,
+                SUM(total_money) as total,
+                MIN(total_money) as min_order,
+                MAX(total_money) as max_order
+            FROM orders 
+            WHERE status = 'completed'"; // Chỉ tính đơn hoàn thành
+
+    // 3. Thêm điều kiện lọc thời gian nếu có
+    if ($from) {
+        $sql .= " AND created_at >= '" . $this->conn->real_escape_string($from) . " 00:00:00'";
+    }
+    if ($to) {
+        $sql .= " AND created_at <= '" . $this->conn->real_escape_string($to) . " 23:59:59'";
+    }
+
+    $sql .= " GROUP BY date ORDER BY date DESC";
+    
+    return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+}
 
 
 }

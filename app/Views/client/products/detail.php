@@ -271,14 +271,75 @@
             </div>
         </div>
     </div>
+
+
+    <div class="container my-5 pt-4 border-top">
+      <h3 class="fw-bold text-dark mb-4 text-uppercase">Sản phẩm liên quan</h3>
+    
+       <div class="row g-4">
+        <?php if (!empty($data['related'])): ?>
+            <?php foreach ($data['related'] as $item): ?>
+                <div class="col-6 col-md-3">
+                    <div class="card h-100 border-0 shadow-sm hover-lift product-card">
+                        <?php if ($item['sale_price'] > 0): ?>
+                            <span class="badge bg-danger position-absolute m-2" style="z-index: 10;">
+                                -<?= round((($item['price'] - $item['sale_price']) / $item['price']) * 100) ?>%
+                            </span>
+                        <?php endif; ?>
+
+                        <a href="<?= BASE_URL ?>product/detail/<?= $item['id'] ?>" class="text-decoration-none">
+                            <div class="text-center p-3">
+                                <img src="<?= BASE_URL ?>public/uploads/<?= $item['image'] ?>" 
+                                     class="card-img-top object-fit-contain" 
+                                     alt="<?= htmlspecialchars($item['name']) ?>"
+                                     style="height: 180px;">
+                            </div>
+                            <div class="card-body pt-0">
+                                <h6 class="card-title text-dark text-truncate mb-2"><?= htmlspecialchars($item['name']) ?></h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    <?php if ($item['sale_price'] > 0): ?>
+                                        <span class="text-danger fw-bold"><?= number_format($item['sale_price']) ?>đ</span>
+                                        <small class="text-muted text-decoration-line-through"><?= number_format($item['price']) ?>đ</small>
+                                    <?php else: ?>
+                                        <span class="text-primary fw-bold"><?= number_format($item['price']) ?>đ</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <div class="col-12">
+                <p class="text-muted fst-italic text-center">Chưa có sản phẩm liên quan nào.</p>
+            </div>
+        <?php endif; ?>
+      </div>
+   </div>
 </div>
 
 <div class="modal fade" id="lightboxModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
-        <div class="modal-content bg-transparent border-0">
-            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
-            <div class="modal-body p-0 text-center">
-                <img id="lightboxImg" src="" class="img-fluid rounded shadow">
+        <div class="modal-content bg-transparent border-0 position-relative" style="height: 90vh;">
+            
+            <div class="position-absolute top-0 end-0 m-3 d-flex gap-2" style="z-index: 2000;">
+                <button type="button" class="btn btn-light rounded-circle shadow-sm" onclick="zoomImage(0.2)">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <button type="button" class="btn btn-light rounded-circle shadow-sm" onclick="zoomImage(-0.2)">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button type="button" class="btn btn-danger rounded-circle shadow-sm" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body p-0 d-flex align-items-center justify-content-center overflow-hidden" 
+                 id="imageContainer" 
+                 style="height: 100%; width: 100%; cursor: grab;">
+                <img id="lightboxImg" src="" 
+                     class="rounded shadow" 
+                     style="transition: transform 0.1s ease-out; max-height: 90vh; max-width: 90vw; user-select: none; -webkit-user-drag: none;">
             </div>
         </div>
     </div>
@@ -296,6 +357,20 @@
 .star-rating-input input { display: none; }
 .star-rating-input label { font-size: 2rem; color: #ddd; cursor: pointer; padding: 0 5px; transition: color 0.2s; }
 .star-rating-input label:hover, .star-rating-input label:hover ~ label, .star-rating-input input:checked ~ label { color: #ffc107; }
+/* Hiệu ứng di chuột cho card sản phẩm liên quan */
+    .product-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .product-card img {
+        transition: transform 0.3s ease;
+    }
+    .product-card:hover img {
+        transform: scale(1.05);
+    }
 </style>
 
 <script>
@@ -470,13 +545,72 @@
         document.querySelectorAll('.thumb-btn').forEach(b => b.classList.remove('border-primary'));
         el.classList.add('border-primary');
     }
-    const lbModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
-    function openLightbox(src) {
-        document.getElementById('lightboxImg').src = src;
-        lbModal.show();
-    }
+    
     
     // Init state
     updateColorButtonsState();
     updateSizeButtonsState();
+
+    // --- 10. XỬ LÝ ZOOM ẢNH (MỚI) ---
+    // Khai báo biến
+    let currentScale = 1;
+    let isDragging = false;
+    let startX, startY;
+    let translateX = 0;
+    let translateY = 0;
+
+    const imgEl = document.getElementById('lightboxImg');
+    const containerEl = document.getElementById('imageContainer');
+
+    function openLightbox(src) {
+        imgEl.src = src;
+        currentScale = 1;
+        translateX = 0;
+        translateY = 0;
+        updateTransform();
+        const lbModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
+        lbModal.show();
+    }
+
+    function zoomImage(factor) {
+        currentScale += factor;
+        if (currentScale < 0.5) currentScale = 0.5;
+        if (currentScale > 5) currentScale = 5;
+        updateTransform();
+    }
+
+    function updateTransform() {
+        // Sử dụng translate3d để tận dụng tăng tốc phần cứng
+        imgEl.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${currentScale})`;
+    }
+
+    // Xử lý kéo thả
+    containerEl.addEventListener('mousedown', (e) => {
+        if (currentScale > 1) {
+            isDragging = true;
+            containerEl.style.cursor = 'grabbing';
+            startX = e.clientX - translateX;
+            startY = e.clientY - translateY;
+        }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+        containerEl.style.cursor = 'grab';
+    });
+
+    // Zoom bằng lăn chuột (Wheel)
+    containerEl.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.2 : 0.2;
+        zoomImage(delta);
+    }, { passive: false });
 </script>

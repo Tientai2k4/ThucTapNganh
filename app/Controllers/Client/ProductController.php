@@ -67,6 +67,8 @@ public function detail($id) {
             header('Location: ' . BASE_URL); 
             exit;
         }
+        // Lấy sản phẩm liên quan (cùng danh mục, loại trừ sản phẩm hiện tại, lấy 4 bản ghi)
+        $relatedProducts = $prodModel->getRelatedProducts($product['category_id'], $id, 4);
 
         // Lấy dữ liệu cơ bản
         $variants = $prodModel->getVariants($id);
@@ -121,7 +123,8 @@ public function detail($id) {
             'is_wished' => $isWished,
             // Truyền 2 biến quan trọng này sang View
             'can_review' => $canReview,       
-            'review_message' => $reviewMessage
+            'review_message' => $reviewMessage,
+            'related' => $relatedProducts,
         ];
         
         $this->view('client/products/detail', $data);
