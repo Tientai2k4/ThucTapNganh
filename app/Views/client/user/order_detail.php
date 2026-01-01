@@ -5,11 +5,27 @@
     // Logic thanh tiến trình đơn hàng
     $statusStep = 0;
     switch($order['status']) {
-        case 'pending': $statusStep = 1; break;
-        case 'processing': $statusStep = 2; break;
-        case 'shipping': $statusStep = 3; break;
-        case 'completed': $statusStep = 4; break;
-        case 'cancelled': $statusStep = 0; break; // Hủy
+        // Cả pending (chờ xử lý) và processing (đang chuẩn bị) đều tính là Bước 1
+        case 'pending': 
+        case 'pending_payment': // Thêm trạng thái chờ thanh toán nếu có
+        case 'processing': 
+            $statusStep = 1; 
+            break;
+            
+        // Khi nào sang 'shipped' (đang vận chuyển) mới nhảy sang Bước 2
+        case 'shipped': 
+        case 'shipping': // Đề phòng bạn dùng từ shipping
+            $statusStep = 2; 
+            break;
+            
+        // Hoàn thành là Bước 3
+        case 'completed': 
+            $statusStep = 4; // Số 4 để full thanh tiến trình (vì logic view ở dưới dùng số 4)
+            break;
+            
+        case 'cancelled': 
+            $statusStep = 0; 
+            break;
     }
 ?>
 
@@ -21,8 +37,7 @@
         </div>
         <div>
             <?php if($order['status'] != 'cancelled'): ?>
-                <a href="<?= BASE_URL ?>invoice/print/<?= $order['order_code'] ?>" target="_blank" class="btn btn-outline-secondary btn-sm me-2">
-                    <i class="fas fa-print"></i> In hóa đơn
+               
                 </a>
             <?php endif; ?>
             <a href="<?= BASE_URL ?>user/history" class="btn btn-secondary btn-sm">Quay lại</a>
@@ -31,21 +46,24 @@
 
     <?php if($order['status'] != 'cancelled'): ?>
     <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body p-4">
-            <div class="position-relative m-4">
-                <div class="progress" style="height: 2px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: <?= ($statusStep - 1) * 33 ?>%;"></div>
-                </div>
-                <div class="position-absolute top-0 start-0 translate-middle btn btn-sm btn-<?= $statusStep >= 1 ? 'success' : 'light border' ?> rounded-pill" style="width: 2rem; height:2rem;">1</div>
-                <div class="position-absolute top-0 start-50 translate-middle btn btn-sm btn-<?= $statusStep >= 2 ? 'success' : 'light border' ?> rounded-pill" style="width: 2rem; height:2rem;">2</div>
-                <div class="position-absolute top-0 start-100 translate-middle btn btn-sm btn-<?= $statusStep >= 4 ? 'success' : 'light border' ?> rounded-pill" style="width: 2rem; height:2rem;">3</div>
-                
-                <div class="position-absolute top-100 start-0 translate-middle-x mt-2 text-center small fw-bold">Đã đặt hàng</div>
-                <div class="position-absolute top-100 start-50 translate-middle-x mt-2 text-center small fw-bold">Đang giao hàng</div>
-                <div class="position-absolute top-100 start-100 translate-middle-x mt-2 text-center small fw-bold">Hoàn thành</div>
+    <div class="card-body p-4">
+        <div class="position-relative m-4">
+            <div class="progress" style="height: 2px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: <?= ($statusStep - 1) * 50 ?>%;"></div>
             </div>
+            
+            <div class="position-absolute top-0 start-0 translate-middle btn btn-sm btn-<?= $statusStep >= 1 ? 'success' : 'light border' ?> rounded-pill" style="width: 2rem; height:2rem;">1</div>
+            
+            <div class="position-absolute top-0 start-50 translate-middle btn btn-sm btn-<?= $statusStep >= 2 ? 'success' : 'light border' ?> rounded-pill" style="width: 2rem; height:2rem;">2</div>
+            
+            <div class="position-absolute top-0 start-100 translate-middle btn btn-sm btn-<?= $statusStep >= 3 ? 'success' : 'light border' ?> rounded-pill" style="width: 2rem; height:2rem;">3</div>
+            
+            <div class="position-absolute top-100 start-0 translate-middle-x mt-2 text-center small fw-bold">Đã đặt hàng</div>
+            <div class="position-absolute top-100 start-50 translate-middle-x mt-2 text-center small fw-bold">Đang giao hàng</div>
+            <div class="position-absolute top-100 start-100 translate-middle-x mt-2 text-center small fw-bold">Hoàn thành</div>
         </div>
     </div>
+</div>
     <?php else: ?>
         <div class="alert alert-danger d-flex align-items-center mb-4">
             <i class="fas fa-times-circle fa-2x me-3"></i>

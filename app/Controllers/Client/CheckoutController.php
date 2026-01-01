@@ -3,7 +3,7 @@ namespace App\Controllers\Client;
 use App\Core\Controller;
 use App\Models\UserModel;
 use App\Models\AddressModel;
-
+use App\Models\OrderModel;
 
 
 
@@ -11,12 +11,11 @@ class CheckoutController extends Controller {
 
     
     
-    // Config Sandbox ZaloPay (Key chuẩn Sandbox)
-    private $config = [
-        "app_id" => 2553,
-        "key1" => "PcY4iZIKFCIdgZvA6ueMcMHHUbRLYjPL", // Key tạo đơn hàng
-        "key2" => "kLtgPl8HHhfvMuDHPwKfgfsY4Ydm9eIz", // Key kiểm tra trạng thái
-        "endpoint" => "https://sb-openapi.zalopay.vn/v2/create"
+   // --- 1. CẤU HÌNH PAYOS 
+    private $payos_config = [
+        "client_id" => "51569971-2423-4c84-8239-a6cc3f4a94cb",
+        "api_key" => "9dfe8a71-1c01-4e95-ad68-db8b2856233d",
+        "checksum_key" => "e79303ffa96438e65bb837b3a4dc34752e8c1e1bd90bf7f0474efeab2eca7c69"
     ];
 
    public function index() {
@@ -118,96 +117,110 @@ class CheckoutController extends Controller {
                 // Thành công
                 unset($_SESSION['cart']); // Xóa giỏ hàng
 
-                // 3. PHÂN NHÁNH THANH TOÁN
+                // --- 3. PHÂN NHÁNH THANH TOÁN MỚI ---
                 if ($paymentMethod == 'COD') {
+                    // Thanh toán khi nhận hàng
                     header('Location: ' . BASE_URL . 'checkout/success?code=' . $orderCode);
                 } else {
-                    $this->processZaloPay($orderCode, $finalTotal);
+                    // Thanh toán VietQR qua PayOS (Cho mọi trường hợp còn lại)
+                    $this->processPayOS($orderCode, $finalTotal);
                 }
             } else {
-                // Nếu không phải mã đơn hàng (Tức là thông báo lỗi)
+                // Lỗi
                 $error_message = is_string($orderCode) ? $orderCode : 'Lỗi hệ thống không xác định.';
-               $this->view('client/checkout/index', ['error' => $error_message, 'totalMoney' => $tempTotal]);
+                $this->view('client/checkout/index', ['error' => $error_message, 'totalMoney' => $tempTotal]);
             }
         }
     }
+        // --- 4. HÀM TẠO LINK THANH TOÁN PAYOS (MỚI) ---
+    private function processPayOS($orderCode, $amount) {
+        $url = "https://api-merchant.payos.vn/v2/payment-requests";
+        
+        // PayOS yêu cầu mã đơn là SỐ NGUYÊN (Integer).
+        // Ta cắt bỏ chữ "DH" đi. Ví dụ: DH170456 -> 170456
+        $orderCodeInt = (int)preg_replace('/\D/', '', $orderCode);
 
-    // --- HÀM TẠO URL THANH TOÁN ZALOPAY (ĐÃ FIX LỖI CHỮ KÝ) ---
-    private function processZaloPay($orderCode, $amount) {
-        $transID = rand(0,1000000); 
-        $app_trans_id = date("ymd") . "_" . $transID;
-
-        // Chuẩn bị dữ liệu JSON chính xác
-        $embeddata = json_encode(['redirecturl' => BASE_URL . "checkout/zaloReturn?internal_code=" . $orderCode]);
-        $items = json_encode([]); // Item phải là chuỗi JSON rỗng "[]" nếu không gửi chi tiết
-
-        $order = [
-            "app_id" => $this->config["app_id"],
-            "app_user" => "user123",
-            "app_time" => round(microtime(true) * 1000), // miliseconds
-            "amount" => (int)$amount, // Phải ép kiểu về số nguyên (int)
-            "app_trans_id" => $app_trans_id, 
-            "embed_data" => $embeddata,
-            "item" => $items,
-            "description" => "Thanh toan don hang #$orderCode",
-            "bank_code" => "zalopayapp", // Mặc định mở ví ZaloPay hoặc QR
+        // Dữ liệu tạo link
+        $data = [
+            "orderCode" => $orderCodeInt,
+            //"amount" => (int)$amount,
+            "amount" => 10000,
+            "description" => "DH" . $orderCodeInt, 
+            "cancelUrl" => BASE_URL . "checkout", // Quay lại trang checkout nếu hủy
+            "returnUrl" => BASE_URL . "checkout/payosReturn" // Quay lại đây nếu thành công
         ];
 
-        // --- TẠO CHỮ KÝ (MAC) CHUẨN ---
-        // Công thức: appid|app_trans_id|appuser|amount|apptime|embeddata|item
-        $data = $order["app_id"] . "|" . $order["app_trans_id"] . "|" . $order["app_user"] . "|" . $order["amount"]
-            . "|" . $order["app_time"] . "|" . $order["embed_data"] . "|" . $order["item"];
+        // Tạo chữ ký (Signature)
+        ksort($data);
+        $signData = "";
+        foreach ($data as $key => $value) {
+            $signData .= $key . "=" . $value . "&";
+        }
+        $signData = rtrim($signData, "&");
         
-        $order["mac"] = hash_hmac("sha256", $data, $this->config["key1"]);
+        $data['signature'] = hash_hmac('sha256', $signData, $this->payos_config['checksum_key']);
 
-        // Gửi cURL
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->config["endpoint"]);
+        // Gửi API
+        $headers = [
+            "x-client-id: " . $this->payos_config['client_id'],
+            "x-api-key: " . $this->payos_config['api_key'],
+            "Content-Type: application/json"
+        ];
+
+        $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($order));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         
-        // Bỏ qua SSL (Fix localhost)
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); 
+        // Bỏ qua SSL (nếu chạy localhost/ngrok bị lỗi SSL)
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-
-        $result = curl_exec($ch);
+        
+        $response = curl_exec($ch);
         $error = curl_error($ch);
         curl_close($ch);
 
         if ($error) {
             $this->model('OrderModel')->cancelOrder($orderCode);
-            $this->view('client/checkout/index', ['error' => 'Lỗi cURL: ' . $error]);
+            $this->view('client/checkout/index', ['error' => 'cURL Error: ' . $error]);
             return;
         }
+        
+        $result = json_decode($response, true);
 
-        $result_json = json_decode($result, true);
-
-        if (isset($result_json['return_code']) && $result_json['return_code'] == 1) {
-            // Thành công -> Chuyển sang ZaloPay
-            header('Location: ' . $result_json['order_url']);
+        if (isset($result['code']) && $result['code'] == '00') {
+            // Thành công -> Chuyển hướng sang trang VietQR
+            header('Location: ' . $result['data']['checkoutUrl']);
             exit;
         } else {
-            // Thất bại
+            // Lỗi từ PayOS
             $this->model('OrderModel')->cancelOrder($orderCode);
-            $msg = $result_json['sub_return_message'] ?? $result_json['return_message'] ?? 'Lỗi không xác định';
-            $this->view('client/checkout/index', ['error' => 'ZaloPay Error: ' . $msg]);
+            $msg = $result['desc'] ?? 'Lỗi tạo link thanh toán';
+            $this->view('client/checkout/index', ['error' => "PayOS Error: " . $msg]);
         }
     }
+    
+   
+    // --- 5. HÀM XỬ LÝ KHI KHÁCH THANH TOÁN XONG (RETURN URL) ---
+    public function payosReturn() {
+        // Lấy thông tin từ URL
+        $status = $_GET['status'] ?? '';
+        $orderCodeNumber = $_GET['orderCode'] ?? '';
+        
+        // Tái tạo lại mã đơn hàng đầy đủ (Thêm chữ DH)
+        $originalOrderCode = "DH" . $orderCodeNumber; 
 
-    // --- XỬ LÝ RETURN ---
-    public function zaloReturn() {
-        $orderCode = $_GET['internal_code'] ?? null;
-        $status = $_GET['status'] ?? 0; 
-
-        if ($status == 1) {
-            header('Location: ' . BASE_URL . 'checkout/success?code=' . $orderCode);
+        if ($status == 'PAID') {
+            // Cập nhật trạng thái "Đã thanh toán"
+            $this->model('OrderModel')->updateOnlinePaymentSuccess($originalOrderCode, time(), 'VietQR');
+            
+            // Chuyển sang trang báo thành công
+            header('Location: ' . BASE_URL . 'checkout/success?code=' . $originalOrderCode);
         } else {
-            if ($orderCode) {
-                $this->model('OrderModel')->cancelOrder($orderCode);
-            }
-            $data = ['error' => 'Giao dịch thanh toán không thành công. Đơn hàng đã bị hủy.'];
-            $this->view('client/checkout/failure', $data); 
+            // Khách hủy hoặc lỗi -> Hủy đơn
+            $this->model('OrderModel')->cancelOrder($originalOrderCode);
+            $this->view('client/checkout/failure', ['error' => 'Thanh toán chưa hoàn tất hoặc đã bị hủy.']);
         }
     }
     // TRANG THÔNG BÁO THÀNH CÔNG

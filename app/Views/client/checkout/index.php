@@ -178,11 +178,12 @@
                         <input class="form-check-input" type="radio" name="payment_method" value="COD" id="cod" checked>
                         <label class="form-check-label" for="cod">Thanh toán khi nhận hàng (COD)</label>
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="payment_method" value="ZALOPAY" id="zalopay">
-                        <label class="form-check-label" for="zalopay">
-                            Thanh toán qua ví ZaloPay <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-ZaloPay-Square.png" height="20">
-                        </label>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="payment_method" value="VIETQR" id="vietqr">
+                        <label class="form-check-label d-flex align-items-center" for="vietqr">
+                            Chuyển khoản Ngân hàng (VietQR) 
+                            <span class="badge bg-success ms-2" style="font-size: 0.7rem;">Xác nhận tự động</span>
+                            </label>
                     </div>
                 </div>
                 

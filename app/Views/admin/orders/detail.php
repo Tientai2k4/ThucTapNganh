@@ -38,65 +38,61 @@
                            
                         </div>
 
-                        <div class="mb-3">
+    <div class="mb-3">
     <label class="form-label fw-bold">Trạng thái đơn hàng:</label>
     
     <?php 
         $currentStatus = $data['order']['status'];
-        
-        // Logic: Chỉ khóa hẳn (disabled) nếu đơn đã bị HỦY.
-        // Nếu đã HOÀN THÀNH, vẫn cho mở để chọn Hủy (nhưng không được quay lại bước trước).
-        $selectDisabled = ($currentStatus == 'cancelled') ? 'disabled' : '';
+
+        // LOGIC KHÓA: 
+        // Nếu đơn đã "Hoàn thành" hoặc "Đã hủy" -> Khóa luôn (Disabled), không cho sửa nữa.
+        // Chỉ cho sửa khi đơn đang chạy (Pending, Processing, Shipping).
+        $isTerminalState = ($currentStatus == 'completed' || $currentStatus == 'cancelled');
     ?>
 
-    <?php if ($currentStatus == 'cancelled'): ?>
+    <?php if ($isTerminalState): ?>
         <input type="hidden" name="status" value="<?= $currentStatus ?>">
     <?php endif; ?>
 
-    <select name="status" class="form-select" <?= $selectDisabled ?>>
+    <select name="status" class="form-select" <?= $isTerminalState ? 'disabled' : '' ?>>
         
-        <option value="pending" <?= $currentStatus=='pending'?'selected':'' ?> 
-                <?= ($currentStatus != 'pending') ? 'disabled class="bg-light text-muted"' : '' ?>>
+        <option value="pending" <?= $currentStatus=='pending'?'selected':'' ?>
+            <?= ($currentStatus == 'shipping') ? 'disabled class="bg-light text-muted"' : '' ?>>
             Chờ xử lý
         </option>
 
-        <option value="processing" <?= $currentStatus=='processing'?'selected':'' ?>
-                <?= ($currentStatus == 'shipping' || $currentStatus == 'completed' || $currentStatus == 'cancelled') ? 'disabled class="bg-light text-muted"' : '' ?>>
+        <option value="processing" <?= $currentStatus=='processing'?'selected':'' ?>>
             Đang chuẩn bị hàng
         </option>
 
-        <option value="shipping" <?= $currentStatus=='shipping'?'selected':'' ?>
-                <?= ($currentStatus == 'completed' || $currentStatus == 'cancelled') ? 'disabled class="bg-light text-muted"' : '' ?>>
+        <option value="shipping" <?= $currentStatus=='shipping'?'selected':'' ?>>
             Đang giao hàng
         </option>
         
-        <?php if($prefix == 'admin'): ?>
-            <option value="completed" <?= $currentStatus=='completed'?'selected':'' ?>
-                    <?= ($currentStatus == 'pending' || $currentStatus == 'processing') ? 'disabled class="bg-light text-muted"' : '' ?>>
-                Hoàn thành
-            </option>
+        <option value="completed" <?= $currentStatus=='completed'?'selected':'' ?>>
+            Hoàn thành
+        </option>
             
-            <option value="cancelled" <?= $currentStatus=='cancelled'?'selected':'' ?>>
-                Hủy đơn (Admin)
-            </option>
-        <?php else: ?>
-            <option value="completed" <?= $currentStatus=='completed'?'selected':'' ?>
-                    <?= ($currentStatus == 'pending' || $currentStatus == 'processing') ? 'disabled class="bg-light text-muted"' : '' ?>>
-                Hoàn thành
-            </option>
-        <?php endif; ?>
+        <option value="cancelled" <?= $currentStatus=='cancelled'?'selected':'' ?>>
+            Hủy đơn
+        </option>
+
     </select>
     
     <?php if ($currentStatus == 'completed'): ?>
-        <small class="text-success fw-bold mt-1 d-block"><i class="fas fa-check-circle"></i> Đơn hàng đã hoàn tất.</small>
+        <div class="alert alert-success mt-2 p-2 small">
+            <i class="fas fa-check-circle me-1"></i> Đơn hàng đã hoàn tất thành công. Không thể thay đổi trạng thái.
+        </div>
     <?php elseif ($currentStatus == 'cancelled'): ?>
-        <small class="text-danger fw-bold mt-1 d-block"><i class="fas fa-times-circle"></i> Đơn hàng đã bị hủy.</small>
+        <div class="alert alert-danger mt-2 p-2 small">
+            <i class="fas fa-lock me-1"></i> Đơn hàng đã bị hủy và hoàn kho. Không thể khôi phục.
+        </div>
     <?php endif; ?>
 </div>
 
-<?php if ($currentStatus != 'cancelled'): ?>
+<?php if (!$isTerminalState): ?>
     <button type="submit" class="btn btn-success w-100 fw-bold">
-        <i class="fas fa-save me-2"></i>Cập nhật Đơn hàng
+        <i class="fas fa-save me-2"></i>Cập nhật trạng thái đơn hàng
     </button>
 <?php endif; ?>
     </form>
