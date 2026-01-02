@@ -330,7 +330,29 @@ public function getOrderById($id) {
     $sql .= " GROUP BY date ORDER BY date DESC";
     
     return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
-}
+  }
+
+  //  Hủy tự động các đơn Online treo quá 15 phút
+    public function autoCancelExpiredOrders($minutes = 15) {
+        // 1. Tìm các đơn pending_payment quá hạn
+        $sql = "SELECT id, order_code FROM orders 
+                WHERE status = 'pending_payment' 
+                AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $minutes);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $count = 0;
+        while ($order = $result->fetch_assoc()) {
+            // Gọi lại hàm hủy đơn có sẵn (đã bao gồm hoàn kho)
+            if ($this->cancelOrderById($order['id'])) {
+                $count++;
+            }
+        }
+        return $count; // Trả về số đơn đã hủy
+    }
 
 
 }

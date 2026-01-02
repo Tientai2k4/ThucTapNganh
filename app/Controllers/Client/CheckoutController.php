@@ -19,6 +19,9 @@ class CheckoutController extends Controller {
     ];
 
    public function index() {
+        // Dọn dẹp đơn treo quá 15 phút trước khi khách mua hàng
+        // Để đảm bảo kho hàng hiển thị đúng nhất
+    $this->model('OrderModel')->autoCancelExpiredOrders(15);
         if (empty($_SESSION['cart'])) {
             header('Location: ' . BASE_URL . 'cart');
             exit;
