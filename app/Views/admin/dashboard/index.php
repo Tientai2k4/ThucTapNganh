@@ -1,7 +1,25 @@
 <div class="container-fluid py-4" style="background-color: #f8f9fa;">
-    <div class="mb-4">
-        <h2 class="text-primary fw-bold text-uppercase"><i class="fas fa-chart-line me-2"></i>Bảng Điều Khiển</h2>
-        <p class="text-muted">Tổng quan tình hình kinh doanh hôm nay</p>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="text-primary fw-bold text-uppercase mb-0">
+                <i class="fas fa-chart-line me-2"></i>Bảng Điều Khiển
+            </h2>
+            <p class="text-muted mb-0">Tổng quan tình hình kinh doanh hôm nay</p>
+        </div>
+        
+        <div class="card border-0 shadow-sm text-white" 
+             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-width: 320px;">
+            <div class="card-body p-2 px-3">
+                <form action="" method="GET" class="d-flex align-items-center gap-2">
+                    <span class="small fw-bold text-nowrap"><i class="fas fa-filter me-1"></i> Lọc ngày:</span>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text border-0 bg-white text-primary"><i class="fas fa-calendar-alt"></i></span>
+                        <input type="date" name="date" class="form-control border-0 fw-bold" value="<?= date('Y-m-d') ?>">
+                        <button type="submit" class="btn btn-light text-primary fw-bold">Xem</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <div class="row g-4 mb-4">
@@ -148,21 +166,6 @@
         </div>
 
         <div class="col-lg-4">
-            
-            <div class="card border-0 shadow-sm mb-4 text-white" 
-                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div class="card-body p-4">
-                    <h5 class="fw-bold mb-3"><i class="fas fa-filter me-2"></i>Bộ Lọc Thời Gian</h5>
-                    <form action="" method="GET">
-                        <div class="input-group">
-                            <span class="input-group-text border-0 bg-white text-primary"><i class="fas fa-calendar-alt"></i></span>
-                            <input type="date" name="date" class="form-control border-0 fw-bold" value="<?= date('Y-m-d') ?>">
-                            <button type="submit" class="btn btn-light text-primary fw-bold">Xem</button>
-                        </div>
-                    </form>
-                    <small class="d-block mt-2 opacity-75">* Chọn ngày để lọc dữ liệu báo cáo nhanh.</small>
-                </div>
-            </div>
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 fw-bold text-warning"><i class="fas fa-envelope me-2"></i>Phản Hồi Mới</h6>
@@ -238,7 +241,7 @@
         <div class="col-lg-7">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 fw-bold text-danger">Cảnh báo tồn kho (< 10)</h6>
+                    <h6 class="m-0 fw-bold text-danger">Cảnh báo tồn kho (&lt; 10)</h6>
                     <a href="/ThucTapNganh/admin/dashboard/view_low_stock" class="btn btn-sm btn-outline-danger rounded-pill px-3">Xem tất cả</a>
                 </div>
                 <div class="card-body p-0">
