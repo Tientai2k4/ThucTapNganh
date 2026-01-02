@@ -5,7 +5,7 @@
         'pending_payment' => 'Chờ thanh toán',
         'pending'         => 'Chờ xử lý',
         'processing'      => 'Đang xử lý',
-        'shipped'         => 'Đang giao hàng',
+        'shipping'         => 'Đang giao hàng',
         'completed'       => 'Hoàn thành',
         'cancelled'       => 'Đã hủy'
     ];
@@ -111,7 +111,7 @@
                                         'pending_payment' => 'warning', // Vàng
                                         'pending'         => 'secondary', // Xám
                                         'processing'      => 'info', // Xanh dương nhạt
-                                        'shipped'         => 'primary', // Xanh dương đậm
+                                        'shipping'         => 'primary', // Xanh dương đậm
                                         'completed'       => 'success', // Xanh lá
                                         'cancelled'       => 'danger' // Đỏ
                                     ];

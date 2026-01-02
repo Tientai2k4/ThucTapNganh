@@ -87,12 +87,46 @@ class UserModel extends Model {
     /**
      * Lấy tất cả người dùng từ database
      */
-    public function getAllUsers() {
+    public function getAllUsers($filters = []) {
+        // Khởi tạo câu SQL cơ bản với điều kiện WHERE 1=1 để dễ nối chuỗi
         $sql = "SELECT id, full_name, email, phone_number, role, status, created_at, avatar 
                 FROM {$this->table} 
-                ORDER BY created_at DESC";
-        $result = $this->conn->query($sql);
+                WHERE 1=1";
         
+        $types = "";
+        $params = [];
+
+        // Lọc theo từ khóa (Tên, Email, SĐT)
+        if (!empty($filters['keyword'])) {
+            $sql .= " AND (full_name LIKE ? OR email LIKE ? OR phone_number LIKE ?)";
+            $keyword = "%" . $filters['keyword'] . "%";
+            $types .= "sss";
+            $params[] = $keyword;
+            $params[] = $keyword;
+            $params[] = $keyword;
+        }
+
+        // Lọc theo Vai trò
+        if (!empty($filters['role'])) {
+            $sql .= " AND role = ?";
+            $types .= "s";
+            $params[] = $filters['role'];
+        }
+
+        // Sắp xếp mới nhất lên đầu
+        $sql .= " ORDER BY created_at DESC";
+
+        // Thực thi prepare
+        $stmt = $this->conn->prepare($sql);
+        
+        // Bind tham số động nếu có bộ lọc (tránh lỗi khi không lọc gì)
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+        
+        $stmt->execute();
+        $result = $stmt->get_result();
+
         $users = [];
         if ($result && $result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {

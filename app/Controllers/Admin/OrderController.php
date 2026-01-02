@@ -84,5 +84,33 @@ class OrderController extends Controller {
             header('Location: ' . BASE_URL . 'admin/order/detail/' . $code);
         }
     }
+        // In đơn hàng
+       public function print($orderCode) {
+        $orderModel = $this->model('OrderModel');
+        $order = $orderModel->getOrderByCode($orderCode);
+
+        if (!$order) {
+            echo "Đơn hàng không tồn tại!";
+            return;
+        }
+
+        $details = $orderModel->getOrderDetails($order['id']);
+
+        $data = [
+            'order' => $order,
+            'details' => $details
+        ];
+        if (!empty($data)) {
+            extract($data);
+        }
+
+        $viewPath = ROOT_PATH . "/app/Views/admin/orders/print_template.php";
+        
+        if (file_exists($viewPath)) {
+            require_once $viewPath;
+        } else {
+            echo "Lỗi: Không tìm thấy file mẫu hóa đơn tại: " . $viewPath;
+        }
+    }
 }
 ?>

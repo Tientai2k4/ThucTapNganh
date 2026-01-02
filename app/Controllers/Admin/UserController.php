@@ -13,8 +13,15 @@ class UserController extends Controller {
     // 1. Hiển thị danh sách
     public function index() {
         $model = $this->model('UserModel');
-        $users = $model->getAllUsers();
-        $this->view('admin/users/index', ['users' => $users]);
+        $filters = [
+            'keyword' => $_GET['keyword'] ?? '', // Tìm theo tên, email, sđt
+            'role'    => $_GET['role'] ?? ''     // Tìm theo vai trò
+        ];
+        $users = $model->getAllUsers($filters);
+        $this->view('admin/users/index', [
+            'users'   => $users,
+            'filters' => $filters 
+        ]);
     }
 
     // 2. Hiển thị form sửa (Edit)

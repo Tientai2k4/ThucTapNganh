@@ -2,11 +2,18 @@
 
 <div class="container-fluid p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="text-primary fw-bold">Đơn hàng #<?= $data['order']['order_code'] ?></h3>
-        
-        <a href="<?= BASE_URL . $prefix ?>/order" class="btn btn-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Quay lại
-        </a>
+            <h3 class="text-primary fw-bold">Đơn hàng #<?= $data['order']['order_code'] ?></h3>
+            
+            <div>
+                <a href="<?= BASE_URL . $prefix ?>/order/print/<?= $data['order']['order_code'] ?>" 
+                target="_blank" class="btn btn-warning me-2">
+                    <i class="fas fa-print me-2"></i>In hóa đơn
+                </a>
+
+                <a href="<?= BASE_URL . $prefix ?>/order" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Quay lại
+                </a>
+            </div>
     </div>
 
     <div class="row">

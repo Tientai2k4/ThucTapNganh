@@ -50,33 +50,33 @@
             </a>
         </div>
 
-           <div class="col-xl-3 col-md-6">
-                    <a href="/ThucTapNganh/admin/contact" class="text-decoration-none">
-                        <div class="card border-0 shadow-sm text-white p-3 h-100 bg-warning-gradient">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <div class="small opacity-75 fw-bold text-uppercase">Liên Hệ Mới</div>
-                                    <div class="h3 fw-bold mb-0"><?= $data['counters']['unread_contacts'] ?></div>
-                                </div>
-                                <i class="fas fa-comment-dots fa-2x opacity-50"></i>
-                            </div>
-                            <div class="mt-3 small">Xem phản hồi <i class="fas fa-chevron-right ms-1"></i></div>
-                        </div>
-                    </a>
-           </div>
-           <div class="col-xl-3 col-md-6">
-                <div class="card border-0 shadow-sm text-white p-3 h-100" style="background: linear-gradient(45deg, #e74a3b, #be2617);">
+        <div class="col-xl-3 col-md-6">
+            <a href="/ThucTapNganh/admin/contact" class="text-decoration-none">
+                <div class="card border-0 shadow-sm text-white p-3 h-100 bg-warning-gradient">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="small opacity-75 fw-bold text-uppercase">Đơn Đã Hủy</div>
-                            <div class="h3 fw-bold mb-0"><?= $data['cancelled_stats']['total_cancelled'] ?></div>
+                            <div class="small opacity-75 fw-bold text-uppercase">Liên Hệ Mới</div>
+                            <div class="h3 fw-bold mb-0"><?= $data['counters']['unread_contacts'] ?></div>
                         </div>
-                        <i class="fas fa-times-circle fa-2x opacity-50"></i>
+                        <i class="fas fa-comment-dots fa-2x opacity-50"></i>
                     </div>
-                    <div class="mt-2 small opacity-75">Thất thoát: <?= number_format($data['cancelled_stats']['total_lost_revenue']) ?>đ</div>
+                    <div class="mt-3 small">Xem phản hồi <i class="fas fa-chevron-right ms-1"></i></div>
                 </div>
+            </a>
+        </div>
+           
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm text-white p-3 h-100" style="background: linear-gradient(45deg, #e74a3b, #be2617);">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="small opacity-75 fw-bold text-uppercase">Đơn Đã Hủy</div>
+                        <div class="h3 fw-bold mb-0"><?= $data['cancelled_stats']['total_cancelled'] ?></div>
+                    </div>
+                    <i class="fas fa-times-circle fa-2x opacity-50"></i>
+                </div>
+                <div class="mt-2 small opacity-75">Thất thoát: <?= number_format($data['cancelled_stats']['total_lost_revenue']) ?>đ</div>
             </div>
-
+        </div>
     </div>
 
     <div class="row g-4 mb-4">
@@ -103,7 +103,6 @@
                                     <tr><td colspan="5" class="text-center py-3 text-muted">Chưa có đơn hàng nào.</td></tr>
                                 <?php else: ?>
                                     <?php 
-                                    // Mảng dịch trạng thái sang tiếng Việt
                                     $statusMap = [
                                         'pending_payment' => 'Chờ thanh toán',
                                         'pending'         => 'Chờ xử lý',
@@ -117,15 +116,12 @@
                                     <?php foreach($data['recent_orders'] as $order): ?>
                                     <tr>
                                         <td class="ps-3">
-                                            <a href="/ThucTapNganh/admin/order/detail/<?= $order['order_code'] ?>" 
-                                               class="fw-bold text-primary text-decoration-none">
+                                            <a href="/ThucTapNganh/admin/order/detail/<?= $order['order_code'] ?>" class="fw-bold text-primary text-decoration-none">
                                                 #<?= $order['order_code'] ?>
                                             </a>
                                         </td>
-                                        
                                         <td><?= htmlspecialchars($order['customer_name']) ?></td>
                                         <td class="fw-bold text-danger"><?= number_format($order['total_money']) ?>đ</td>
-                                        
                                         <td>
                                             <?php 
                                             $statusColor = 'secondary';
@@ -136,12 +132,10 @@
                                             elseif($order['status'] == 'cancelled') $statusColor = 'danger';
                                             elseif($order['status'] == 'pending_payment') $statusColor = 'secondary';
                                             
-                                            // Lấy tên tiếng Việt từ mảng map, nếu không có thì lấy tên gốc
                                             $statusText = $statusMap[$order['status']] ?? ucfirst($order['status']);
                                             ?>
                                             <span class="badge bg-<?= $statusColor ?>"><?= $statusText ?></span>
                                         </td>
-                                        
                                         <td class="small text-muted"><?= date('d/m H:i', strtotime($order['created_at'])) ?></td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -154,6 +148,21 @@
         </div>
 
         <div class="col-lg-4">
+            
+            <div class="card border-0 shadow-sm mb-4 text-white" 
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3"><i class="fas fa-filter me-2"></i>Bộ Lọc Thời Gian</h5>
+                    <form action="" method="GET">
+                        <div class="input-group">
+                            <span class="input-group-text border-0 bg-white text-primary"><i class="fas fa-calendar-alt"></i></span>
+                            <input type="date" name="date" class="form-control border-0 fw-bold" value="<?= date('Y-m-d') ?>">
+                            <button type="submit" class="btn btn-light text-primary fw-bold">Xem</button>
+                        </div>
+                    </form>
+                    <small class="d-block mt-2 opacity-75">* Chọn ngày để lọc dữ liệu báo cáo nhanh.</small>
+                </div>
+            </div>
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 fw-bold text-warning"><i class="fas fa-envelope me-2"></i>Phản Hồi Mới</h6>
@@ -187,44 +196,33 @@
         </div>
     </div>
 
-      <div class="row g-4 mb-4">
+    <div class="row g-4 mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                        <h6 class="m-0 fw-bold text-primary"><i class="fas fa-fire me-2 text-danger"></i>Top 5 Sản Phẩm Bán Chạy Nhất</h6>
+                        <h6 class="m-0 fw-bold text-danger"><i class="fas fa-ban me-2"></i>Đơn Hàng Bị Hủy Gần Đây</h6>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th class="ps-3" style="width: 50%">Sản phẩm</th>
-                                        <th class="text-center">Số lượng bán</th>
-                                        <th class="text-end pe-4">Tổng doanh thu</th>
+                                        <th class="ps-3">Mã Đơn</th>
+                                        <th>Khách Hàng</th>
+                                        <th>Giá Trị</th>
+                                        <th>Ngày Hủy</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if(empty($data['top_products'])): ?>
-                                        <tr><td colspan="3" class="text-center py-4 text-muted">Chưa có dữ liệu bán hàng.</td></tr>
+                                    <?php if(empty($data['recent_cancelled_orders'])): ?>
+                                        <tr><td colspan="4" class="text-center py-3 text-muted">Không có đơn hàng nào bị hủy gần đây.</td></tr>
                                     <?php else: ?>
-                                        <?php foreach($data['top_products'] as $p): ?>
+                                        <?php foreach($data['recent_cancelled_orders'] as $order): ?>
                                         <tr>
-                                            <td class="ps-3">
-                                                <div class="d-flex align-items-center">
-                                                    <img src="<?= BASE_URL ?>public/uploads/<?= $p['image'] ?>" 
-                                                        alt="" class="rounded shadow-sm me-3" 
-                                                        style="width: 45px; height: 45px; object-fit: cover;">
-                                                    <span class="fw-bold text-dark"><?= htmlspecialchars($p['name']) ?></span>
-                                                </div>
-                                            </td>
-                                            <td class="text-center">
-                                                <span class="badge bg-soft-primary text-primary rounded-pill px-3 py-2" style="background-color: #e7f1ff;">
-                                                    <?= number_format($p['total_sold']) ?> món
-                                                </span>
-                                            </td>
-                                            <td class="text-end pe-4">
-                                                <span class="fw-bold text-success"><?= number_format($p['total_revenue']) ?>đ</span>
-                                            </td>
+                                            <td class="ps-3 fw-bold text-danger">#<?= $order['order_code'] ?></td>
+                                            <td><?= htmlspecialchars($order['customer_name']) ?></td>
+                                            <td class="text-muted"><?= number_format($order['total_money']) ?>đ</td>
+                                            <td class="small text-muted"><?= date('d/m/Y H:i', strtotime($order['created_at'])) ?></td>
                                         </tr>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
@@ -234,47 +232,7 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="row g-4 mb-4">
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                                <h6 class="m-0 fw-bold text-danger"><i class="fas fa-ban me-2"></i>Đơn Hàng Bị Hủy Gần Đây</h6>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0">
-                                        <thead class="bg-light">
-                                            <tr>
-                                                <th class="ps-3">Mã Đơn</th>
-                                                <th>Khách Hàng</th>
-                                                <th>Giá Trị</th>
-                                                <th>Ngày Hủy</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php if(empty($data['recent_cancelled_orders'])): ?>
-                                                <tr><td colspan="4" class="text-center py-3 text-muted">Không có đơn hàng nào bị hủy gần đây.</td></tr>
-                                            <?php else: ?>
-                                                <?php foreach($data['recent_cancelled_orders'] as $order): ?>
-                                                <tr>
-                                                    <td class="ps-3 fw-bold text-danger">#<?= $order['order_code'] ?></td>
-                                                    <td><?= htmlspecialchars($order['customer_name']) ?></td>
-                                                    <td class="text-muted"><?= number_format($order['total_money']) ?>đ</td>
-                                                    <td class="small text-muted"><?= date('d/m/Y H:i', strtotime($order['created_at'])) ?></td>
-                                                </tr>
-                                                <?php endforeach; ?>
-                                            <?php endif; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-        </div>
-
-
+    </div>
 
     <div class="row g-4">
         <div class="col-lg-7">
