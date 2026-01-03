@@ -66,6 +66,24 @@ public function processLogin() {
             $pass = $_POST['password'];
             $confirm = $_POST['confirm_password'];
 
+
+            // 1. Ràng buộc Số điện thoại (Bắt đầu bằng số 0, tổng 10 số)
+            if (!preg_match('/^0[0-9]{9}$/', $phone)) {
+                $this->view('client/auth/register', ['error' => 'Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng 0).']);
+                return;
+            }
+
+            // 2. Kiểm tra Mật khẩu mạnh
+            // Quy tắc: Ít nhất 8 ký tự, có chữ hoa, chữ thường và số
+            if (strlen($pass) < 8) {
+                $this->view('client/auth/register', ['error' => 'Mật khẩu phải có ít nhất 8 ký tự.']);
+                return;
+            }
+            if (!preg_match('/[A-Z]/', $pass) || !preg_match('/[0-9]/', $pass)) {
+                $this->view('client/auth/register', ['error' => 'Mật khẩu phải chứa ít nhất 1 chữ in hoa và 1 số để bảo mật.']);
+                return;
+            }
+
             if ($pass != $confirm) {
                 $this->view('client/auth/register', ['error' => 'Mật khẩu nhập lại không khớp']);
                 return;
