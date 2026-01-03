@@ -46,7 +46,12 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label small text-muted">Số điện thoại</label>
-                                <input type="text" name="phone_number" class="form-control" value="<?= htmlspecialchars($data['user']['phone_number']) ?>" required>
+                                
+                                <input type="text" name="phone_number" id="phone_profile" class="form-control" 
+                                    value="<?= htmlspecialchars($data['user']['phone_number']) ?>" 
+                                    maxlength="10" required>
+                                    
+                                <small id="phone-error" class="text-danger fw-bold" style="display: none;"></small>
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
@@ -136,10 +141,13 @@
                         <label class="form-label small">Tên người nhận</label>
                         <input type="text" name="recipient_name" class="form-control" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small">Số điện thoại</label>
-                        <input type="text" name="phone" class="form-control" required>
-                    </div>
+                    <div class="col-md-6 mb-3">
+                    <label class="form-label small text-muted">Số điện thoại</label>
+                    <input type="text" name="phone_number" id="phone_profile" class="form-control" 
+                        value="<?= htmlspecialchars($data['user']['phone_number']) ?>" 
+                        maxlength="10" required>
+                    <small id="phone-error" class="text-danger fw-bold" style="display: none;"></small>
+                </div>
                     <div class="mb-3">
                         <label class="form-label small">Địa chỉ chi tiết (Số nhà, đường, phường/xã...)</label>
                         <textarea name="address" class="form-control" rows="2" required></textarea>
@@ -153,3 +161,47 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const phoneInput = document.getElementById('phone_profile');
+    const errorSpan = document.getElementById('phone-error');
+
+    if(phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            // 1. LƯU VỊ TRÍ CON TRỎ HIỆN TẠI
+            // Để sau khi xóa chữ, ta đặt con trỏ lại đúng chỗ đó chứ không bị nhảy về cuối
+            const start = this.selectionStart;
+            const originalVal = this.value;
+
+            // 2. CHẶN NHẬP CHỮ (Thay thế ký tự không phải số bằng rỗng)
+            const cleanVal = originalVal.replace(/[^0-9]/g, '');
+
+            // Nếu giá trị thay đổi (tức là người dùng vừa nhập chữ)
+            if (originalVal !== cleanVal) {
+                this.value = cleanVal;
+                
+                // Tính toán để trả con trỏ về vị trí cũ (trừ đi ký tự vừa bị xóa)
+                const diff = originalVal.length - cleanVal.length;
+                this.setSelectionRange(start - diff, start - diff);
+            }
+
+            // 3. KIỂM TRA FORMAT (Đoạn này giữ nguyên logic cũ)
+            const regexPhone = /^0[0-9]{9}$/;
+            
+            if (this.value.length > 0 && !regexPhone.test(this.value)) {
+                if (this.value.length !== 10) {
+                    errorSpan.innerText = "SĐT phải đủ 10 chữ số.";
+                } else if (!this.value.startsWith('0')) {
+                    errorSpan.innerText = "SĐT phải bắt đầu bằng số 0.";
+                }
+                errorSpan.style.display = 'block';
+                phoneInput.classList.add('is-invalid');
+            } else {
+                errorSpan.style.display = 'none';
+                phoneInput.classList.remove('is-invalid');
+            }
+        });
+    }
+});
+</script>

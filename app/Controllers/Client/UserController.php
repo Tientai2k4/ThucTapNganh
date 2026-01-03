@@ -48,6 +48,10 @@ class UserController extends Controller {
                 echo "<script>alert('Vui lòng điền đầy đủ thông tin!'); window.history.back();</script>";
                 return;
             }
+            if (!preg_match('/^0[0-9]{9}$/', $phone)) {
+                echo "<script>alert('Số điện thoại không hợp lệ (Phải đủ 10 số và bắt đầu bằng 0)!'); window.history.back();</script>";
+                return;
+            }
 
             $userModel = $this->model('UserModel');
             $result = $userModel->updateProfile($userId, $fullName, $phone);
