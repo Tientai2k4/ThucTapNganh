@@ -88,10 +88,12 @@ public function processLogin() {
                 $this->view('client/auth/register', ['error' => 'Mật khẩu nhập lại không khớp']);
                 return;
             }
-
-            $model = $this->model('UserModel');
-            $result = $model->register($name, $email, $pass, $phone);
-
+            // --- LOGIC MỚI: TẠO AVATAR MẶC ĐỊNH TỪ CHỮ CÁI ĐẦU ---
+        // Sử dụng API ui-avatars tương tự như bạn đã làm ở header
+        $nameParam = urlencode($name);
+        $defaultAvatar = "https://ui-avatars.com/api/?name={$nameParam}&background=random&color=fff&size=128&bold=true";
+        $model = $this->model('UserModel');
+        $result = $model->register($name, $email, $pass, $phone, $defaultAvatar);
             if ($result === true) {
                 $this->view('client/auth/login', ['success' => 'Đăng ký thành công! Mời đăng nhập.']);
             } else {

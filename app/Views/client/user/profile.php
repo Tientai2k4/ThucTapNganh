@@ -1,12 +1,25 @@
+<?php 
+    $userAvatar = $data['user']['avatar'] ?? '';
+    // Ưu tiên full_name, nếu không có thì dùng 'User'
+    $userName = !empty($data['user']['full_name']) ? $data['user']['full_name'] : 'User';
+    
+    if (!empty($userAvatar)) {
+        $avatarSrc = (strpos($userAvatar, 'http') === 0) ? $userAvatar : BASE_URL . "public/uploads/" . $userAvatar;
+    } else {
+        $nameParam = urlencode($userName);
+        $avatarSrc = "https://ui-avatars.com/api/?name={$nameParam}&background=random&color=fff&size=128&bold=true&length=1";
+    }
+?>
+
 <div class="container my-5">
     <div class="row">
         <div class="col-md-3 mb-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center p-4">
                     <div class="mb-3 position-relative d-inline-block">
-                        <img src="<?= !empty($data['user']['avatar']) ? $data['user']['avatar'] : BASE_URL.'public/assets/images/default-user.png' ?>" 
-                             class="rounded-circle img-thumbnail shadow-sm object-fit-cover" 
-                             style="width: 100px; height: 100px;">
+                        <img src="<?= $avatarSrc ?>" 
+                            class="rounded-circle img-thumbnail shadow-sm object-fit-cover" 
+                            style="width: 100px; height: 100px;">
                         
                         <form action="<?= BASE_URL ?>user/updateAvatar" method="POST" enctype="multipart/form-data" id="avatarForm">
                              <label for="avatarUpload" class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle p-1 shadow border border-white" style="cursor: pointer; width: 32px; height: 32px;">

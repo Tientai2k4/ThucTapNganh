@@ -1,4 +1,21 @@
 <?php
+$headerAvatar = '';
+if (isset($_SESSION['user_id'])) {
+    if (!empty($_SESSION['user_avatar'])) {
+        $headerAvatar = (strpos($_SESSION['user_avatar'], 'http') === 0) 
+                        ? $_SESSION['user_avatar'] 
+                        : BASE_URL . "public/uploads/" . $_SESSION['user_avatar'];
+    } else {
+        // Lấy tên, nếu rỗng thì dùng 'User' làm mặc định
+        $userName = !empty($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
+        $nameParam = urlencode($userName);
+        
+        // Thêm tham số &length=1 để lấy 1 chữ cái đầu cho giống Google
+        $headerAvatar = "https://ui-avatars.com/api/?name={$nameParam}&background=random&color=fff&size=128&bold=true&length=1";
+    }
+}
+?>
+<?php
 // =================================================================
 // XỬ LÝ LẤY DANH MỤC TỪ DATABASE VÀ PHÂN CẤP CHA - CON
 // =================================================================
@@ -157,13 +174,7 @@ foreach ($categories as $cat) {
                         <?php if (isset($_SESSION['user_id'])): ?>
                             <div class="dropdown">
                                 <button class="btn btn-light rounded-pill dropdown-toggle d-flex align-items-center px-3 py-1 border" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <?php if(!empty($_SESSION['user_avatar'])): ?>
-                                        <img src="<?= $_SESSION['user_avatar'] ?>" class="rounded-circle me-2 object-fit-cover" width="28" height="28">
-                                    <?php else: ?>
-                                        <div class="bg-secondary text-white rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
-                                            <i class="fas fa-user small"></i>
-                                        </div>
-                                    <?php endif; ?>
+                                    <img src="<?= $headerAvatar ?>" class="rounded-circle me-2 object-fit-cover" width="28" height="28">
                                     <span class="small fw-bold text-truncate" style="max-width: 100px;"><?= htmlspecialchars($_SESSION['user_name']) ?></span>
                                 </button>
                                 
@@ -172,13 +183,7 @@ foreach ($categories as $cat) {
         <a href="<?= BASE_URL ?>user/profile" class="dropdown-item px-3 py-2 border-bottom mb-2 bg-light rounded-top-3">
             <div class="d-flex align-items-center">
                 <div class="me-3">
-                    <?php if(!empty($_SESSION['user_avatar'])): ?>
-                        <img src="<?= $_SESSION['user_avatar'] ?>" class="rounded-circle object-fit-cover" width="40" height="40">
-                    <?php else: ?>
-                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                            <i class="fas fa-user small"></i>
-                        </div>
-                    <?php endif; ?>
+                    <img src="<?= $headerAvatar ?>" class="rounded-circle object-fit-cover" width="40" height="40">
                 </div>
                 <div>
                     <small class="text-muted d-block" style="font-size: 11px;">Xin chào,</small>

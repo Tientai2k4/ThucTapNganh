@@ -22,15 +22,15 @@ class UserModel extends Model {
     }
 
     // 2. Đăng ký thường
-    public function register($full_name, $email, $password, $phone) {
+    public function register($full_name, $email, $password, $phone,$avatar) {
         $check = $this->findByEmail($email);
         if ($check) return "Email này đã được sử dụng.";
 
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        $sql = "INSERT INTO {$this->table} (full_name, email, password, phone_number, role, status) VALUES (?, ?, ?, ?, 'member', 1)";
+        $sql = "INSERT INTO {$this->table} (full_name, email, password, phone_number, avatar, role, status) VALUES (?, ?, ?, ?, ?, 'member', 1)";
         $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("ssss", $full_name, $email, $hashed_password, $phone);
-        
+        $stmt->bind_param("sssss", $full_name, $email, $hashed_password, $phone, $avatar);
+
         return $stmt->execute();
     }
 
