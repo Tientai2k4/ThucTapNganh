@@ -55,16 +55,14 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label small text-muted">Họ và tên</label>
-                                <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars($data['user']['full_name']) ?>" required>
+                               <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars((string)($data['user']['full_name'] ?? '')) ?>" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label small text-muted">Số điện thoại</label>
-                                
-                                <input type="text" name="phone_number" id="phone_profile" class="form-control" 
-                                    value="<?= htmlspecialchars($data['user']['phone_number']) ?>" 
+                                <input type="text" name="phone_number" id="phone_profile_modal" class="form-control" 
+                                    value="<?= htmlspecialchars((string)($data['user']['phone_number'] ?? '')) ?>" 
                                     maxlength="10" required>
-                                    
-                                <small id="phone-error" class="text-danger fw-bold" style="display: none;"></small>
+                                <small id="phone-error-modal" class="text-danger fw-bold" style="display: none;"></small>
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
@@ -111,13 +109,13 @@
                         <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
                             <div>
                                 <div class="d-flex align-items-center mb-1">
-                                    <span class="fw-bold"><?= htmlspecialchars($addr['recipient_name']) ?></span>
-                                    <span class="text-muted border-start border-2 ms-2 ps-2 small"><?= htmlspecialchars($addr['phone']) ?></span>
+                                    <span class="fw-bold"><?= htmlspecialchars((string)($addr['recipient_name'] ?? '')) ?></span>
+                                   <span class="text-muted border-start border-2 ms-2 ps-2 small"><?= htmlspecialchars((string)($addr['phone'] ?? '')) ?></span>
                                     <?php if($addr['is_default']): ?>
                                         <span class="badge bg-success ms-2">Mặc định</span>
                                     <?php endif; ?>
                                 </div>
-                                <div class="text-secondary small"><?= htmlspecialchars($addr['address']) ?></div>
+                               <div class="text-secondary small"><?= htmlspecialchars((string)($addr['address'] ?? '')) ?></div>
                             </div>
                             <div class="dropdown">
                                 <button class="btn btn-light btn-sm" type="button" data-bs-toggle="dropdown">
@@ -157,7 +155,7 @@
                     <div class="col-md-6 mb-3">
                     <label class="form-label small text-muted">Số điện thoại</label>
                     <input type="text" name="phone_number" id="phone_profile" class="form-control" 
-                        value="<?= htmlspecialchars($data['user']['phone_number']) ?>" 
+                        value="<?= htmlspecialchars((string)$data['user']['phone_number']) ?>" 
                         maxlength="10" required>
                     <small id="phone-error" class="text-danger fw-bold" style="display: none;"></small>
                 </div>

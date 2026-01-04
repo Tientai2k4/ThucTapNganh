@@ -25,6 +25,7 @@ class AddressModel extends Model {
         
         $sql = "INSERT INTO {$this->table} (user_id, recipient_name, phone, address, is_default) VALUES (?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
+        $phone = $data['phone_number'] ?? '';
         $stmt->bind_param("isssi", $data['user_id'], $data['name'], $data['phone'], $data['address'], $isDefault);
         return $stmt->execute();
     }
