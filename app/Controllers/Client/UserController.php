@@ -86,9 +86,9 @@ class UserController extends Controller {
             $newFilename = "u" . $userId . "_" . time() . "." . $ext;
             
             if (move_uploaded_file($_FILES['avatar']['tmp_name'], $uploadDir . $newFilename)) {
-                $webUrl = BASE_URL . $dbPathFolder . $newFilename;
-                $this->model('UserModel')->updateAvatar($userId, $webUrl);
-                $_SESSION['user_avatar'] = $webUrl;
+                $saveToDb = $dbPathFolder . $newFilename;
+                $this->model('UserModel')->updateAvatar($userId, $saveToDb);
+               $_SESSION['user_avatar'] = $saveToDb;
                 echo "<script>alert('Đổi ảnh đại diện thành công!'); window.location.href='" . BASE_URL . "user/profile';</script>";
             } else {
                 echo "<script>alert('Lỗi upload file!'); window.history.back();</script>";
@@ -137,7 +137,7 @@ class UserController extends Controller {
             $data = [
                 'user_id' => $_SESSION['user_id'],
                 'name' => $_POST['recipient_name'],
-                'phone' => $_POST['phone'],
+                'phone' => $_POST['phone_number'],
                 'address' => $_POST['address']
             ];
             $this->model('AddressModel')->add($data);

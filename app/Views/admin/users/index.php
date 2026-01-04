@@ -71,22 +71,19 @@
                 <?php foreach($data['users'] as $u): ?>
                 <tr>
                     <td><strong>#<?= $u['id'] ?></strong></td>
+                    
                     <td>
-                        <div class="d-flex align-items-center">
-                            <?php $avatar = !empty($u['avatar']) ? BASE_URL . 'public/uploads/' . $u['avatar'] : 'https://ui-avatars.com/api/?name='.urlencode($u['full_name']).'&background=random'; ?>
-                            <img src="<?= htmlspecialchars($avatar) ?>" class="rounded-circle me-3 border" width="45" height="45" style="object-fit: cover;">
-                            <div>
-                                <div class="fw-bold text-dark"><?= htmlspecialchars($u['full_name'] ?? 'Chưa đặt tên') ?></div>
-                                <small class="text-muted"><i class="far fa-clock me-1"></i><?= date('d/m/Y', strtotime($u['created_at'])) ?></small>
-                            </div>
-                        </div>
+                        <div class="fw-bold text-dark"><?= htmlspecialchars($u['full_name'] ?? 'Chưa đặt tên') ?></div>
+                        <small class="text-muted"><i class="far fa-clock me-1"></i><?= date('d/m/Y', strtotime($u['created_at'])) ?></small>
                     </td>
+                    
                     <td>
                         <div class="small">
                             <i class="fas fa-envelope text-muted me-2" style="width:15px"></i> <?= htmlspecialchars($u['email']) ?><br>
                             <i class="fas fa-phone text-muted me-2" style="width:15px"></i> <?= htmlspecialchars($u['phone_number'] ?? '---') ?>
                         </div>
                     </td>
+                    
                     <td>
                         <?php 
                             $roleConfig = [
@@ -96,12 +93,13 @@
                                 'care_staff'    => ['color' => 'warning', 'name' => 'CSKH'],
                                 'member'        => ['color' => 'primary', 'name' => 'Khách hàng']
                             ];
-                            $currentRole = $u['role'];
-                            $color = $roleConfig[$currentRole]['color'] ?? 'secondary';
-                            $name  = $roleConfig[$currentRole]['name'] ?? ucfirst($currentRole);
+                            $role = $u['role'];
+                            $color = $roleConfig[$role]['color'] ?? 'secondary';
+                            $name  = $roleConfig[$role]['name'] ?? ucfirst($role);
                         ?>
                         <span class="badge bg-<?= $color ?> rounded-pill px-3"><?= $name ?></span>
                     </td>
+                    
                     <td>
                         <?php if($u['status'] == 1): ?>
                             <span class="badge bg-soft-success text-success border border-success">Hoạt động</span>
@@ -109,6 +107,7 @@
                             <span class="badge bg-soft-secondary text-secondary border">Đã khóa</span>
                         <?php endif; ?>
                     </td>
+                    
                     <td>
                         <div class="btn-group btn-group-sm">
                             <a href="<?= BASE_URL ?>admin/user/edit/<?= $u['id'] ?>" class="btn btn-outline-info" title="Sửa">
@@ -130,4 +129,6 @@
 <style>
     .bg-soft-success { background-color: #d1e7dd; }
     .bg-soft-secondary { background-color: #e2e3e5; }
+    /* Giúp bảng trông thoáng hơn khi không có avatar */
+    .table td { padding: 12px 8px; }
 </style>

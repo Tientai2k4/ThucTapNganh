@@ -1,3 +1,37 @@
+
+<style>
+    .footer-modern {
+        background-color: #4a4a4a; /* Màu xám đậm vừa phải, in ra sẽ rất đẹp */
+    }
+    .text-cyan {
+        color: #00e5ff !important; /* Giữ tiêu đề nổi bật trên nền xám */
+    }
+    .footer-link:hover {
+        color: #00e5ff !important;
+        opacity: 0.8;
+    }
+
+    @media print {
+    /* Chuyển nền footer về màu trắng hoặc xám rất nhạt để tiết kiệm mực và rõ chữ */
+    .footer-modern {
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+    }
+    
+    /* Chuyển toàn bộ chữ về màu đen để đạt độ tương phản cao nhất */
+    .footer-modern p, 
+    .footer-modern a, 
+    .footer-modern h5,
+    .footer-modern i {
+        color: #000 !important;
+    }
+
+    /* Ẩn các icon mạng xã hội vì chúng không có giá trị trên giấy in */
+    .social-icons {
+        display: none;
+    }
+}
+</style>
 </div> 
 </main>
 
