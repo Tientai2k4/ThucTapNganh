@@ -72,6 +72,18 @@ class CheckoutController extends Controller {
                 $provinceId = $_POST['province_id'] ?? null;
                 $districtId = $_POST['district_id'] ?? null;
                 $wardCode   = $_POST['ward_code'] ?? null;
+
+                if (!preg_match('/^0[0-9]{9}$/', $phone)) {
+            // Lấy lại dữ liệu cũ để hiển thị lại view mà không làm mất thông tin khách đã nhập
+            $addressModel = $this->model('AddressModel');
+            $data = [
+                'error' => 'Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).',
+                'provinces' => $addressModel->getAllProvinces(),
+                // Có thể bổ sung thêm các dữ liệu giỏ hàng tương tự hàm index() nếu cần thiết
+            ];
+            $this->view('client/checkout/index', $data);
+            return; // Dừng hàm tại đây
+        }
             // --- FIX LỖI 1: KIỂM TRA GIỎ HÀNG RỖNG ---
             if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
                 header('Location: ' . BASE_URL . 'cart'); 

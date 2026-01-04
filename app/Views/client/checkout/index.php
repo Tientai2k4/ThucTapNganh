@@ -65,7 +65,9 @@
             <div class="col-md-6 mb-3">
                 <label>Số điện thoại *</label>
                 <input type="text" name="phone" class="form-control" id="inputPhone" 
-                       value="<?= $defaultAddress['phone'] ?? '' ?>" required>
+                       value="<?= $defaultAddress['phone'] ?? '' ?>"
+                       maxlength="10"required>
+                       <small id="phone-error-checkout" class="text-danger fw-bold" style="display: none;"></small>
             </div>
             <div class="col-md-6 mb-3">
                 <label>Email</label>
@@ -269,6 +271,39 @@ function applyCoupon(totalDynamic = null) {
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const phoneInput = document.getElementById('inputPhone');
+    const errorSpan = document.getElementById('phone-error-checkout');
+
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            const start = this.selectionStart;
+            const originalVal = this.value;
+
+            // Chặn nhập chữ ngay lập tức
+            const cleanVal = originalVal.replace(/[^0-9]/g, '');
+
+            if (originalVal !== cleanVal) {
+                this.value = cleanVal;
+                const diff = originalVal.length - cleanVal.length;
+                this.setSelectionRange(start - diff, start - diff);
+            }
+
+            // Kiểm tra định dạng 10 số
+            const regexPhone = /^0[0-9]{9}$/;
+            if (this.value.length > 0 && !regexPhone.test(this.value)) {
+                if (this.value.length !== 10) {
+                    errorSpan.innerText = "SĐT phải đủ 10 chữ số.";
+                } else if (!this.value.startsWith('0')) {
+                    errorSpan.innerText = "SĐT phải bắt đầu bằng số 0.";
+                }
+                errorSpan.style.display = 'block';
+                this.classList.add('is-invalid');
+            } else {
+                errorSpan.style.display = 'none';
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
     const provinceSelect = document.getElementById('province');
     const districtSelect = document.getElementById('district');
     const wardSelect = document.getElementById('ward');
@@ -351,6 +386,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (defaultRadio && defaultRadio.value !== 'new') {
         defaultRadio.dispatchEvent(new Event('change'));
     }
+
+   
+
 });
 
 // --- PHẦN 4: Hàm điền thông tin vào Form ---
