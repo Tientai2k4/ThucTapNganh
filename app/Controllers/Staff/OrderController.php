@@ -1,53 +1,64 @@
 <?php
 namespace App\Controllers\Staff;
+
 use App\Core\Controller;
 use App\Core\AuthMiddleware;
 
 class OrderController extends Controller {
     
+    private $orderModel;
+
     public function __construct() {
-        // Chỉ cho phép Nhân viên Bán hàng và Admin truy cập
-        AuthMiddleware::isSales(); 
+        AuthMiddleware::isStaffArea(); 
+        $this->orderModel = $this->model('OrderModel');
     }
 
-    // 1. Danh sách đơn hàng (Giao diện tập trung bộ lọc)
+    // 1. Danh sách đơn hàng
     public function index() {
-        $model = $this->model('OrderModel');
-        
-        // Nhận bộ lọc từ URL
+        // Lấy tham số filter an toàn
         $filters = [
-            'keyword' => $_GET['keyword'] ?? '',
-            'status'  => $_GET['status'] ?? '',
-            'sort'    => $_GET['sort'] ?? 'newest'
+            'keyword' => isset($_GET['keyword']) ? trim($_GET['keyword']) : '',
+            'status'  => isset($_GET['status']) ? trim($_GET['status']) : '',
+            'sort'    => isset($_GET['sort']) ? trim($_GET['sort']) : 'newest'
         ];
 
-        // Sử dụng hàm lọc mạnh mẽ đã có trong Model
-        $orders = $model->getFilterOrders($filters);
+        try {
+            $orders = $this->orderModel->getFilterOrders($filters);
+            
+            // Tính toán thống kê
+            $stats = [
+                'pending'    => 0,
+                'processing' => 0,
+                'shipped'    => 0
+            ];
+            foreach ($orders as $o) {
+                if (isset($stats[$o['status']])) {
+                    $stats[$o['status']]++;
+                }
+            }
 
-        // Thống kê nhanh để hiển thị trên đầu trang
-        $stats = [
-            'pending' => count(array_filter($orders, fn($o) => $o['status'] === 'pending')),
-            'processing' => count(array_filter($orders, fn($o) => $o['status'] === 'processing')),
-        ];
-
-        $this->view('staff/orders/index', [
-            'orders'  => $orders,
-            'filters' => $filters,
-            'stats'   => $stats
-        ]);
+            $this->view('staff/orders/index', [
+                'orders'  => $orders,
+                'filters' => $filters,
+                'stats'   => $stats
+            ]);
+        } catch (\Exception $e) {
+            // Xử lý lỗi nếu DB sập hoặc lỗi query
+            echo "Lỗi hệ thống: " . $e->getMessage();
+        }
     }
 
-    // 2. Chi tiết đơn hàng (Giao diện Hóa đơn & Thao tác)
+    // 2. Chi tiết đơn hàng
     public function detail($code) {
-        $model = $this->model('OrderModel');
-        $order = $model->getOrderByCode($code);
+        $order = $this->orderModel->getOrderByCode($code);
         
         if (!$order) {
-            echo "<script>alert('Đơn hàng không tồn tại'); window.location.href='".BASE_URL."staff/order';</script>";
-            return;
+            $_SESSION['alert'] = ['type' => 'danger', 'message' => 'Không tìm thấy đơn hàng mã: ' . htmlspecialchars($code)];
+            header('Location: ' . BASE_URL . 'staff/order');
+            exit;
         }
 
-        $details = $model->getOrderDetails($order['id']);
+        $details = $this->orderModel->getOrderDetails($order['id']);
 
         $this->view('staff/orders/detail', [
             'order'   => $order,
@@ -55,41 +66,109 @@ class OrderController extends Controller {
         ]);
     }
 
-    // 3. Xử lý trạng thái (Logic chặt chẽ hơn Admin)
+    // 3. Xử lý cập nhật trạng thái (CORE LOGIC)
     public function updateStatus() {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $id = $_POST['order_id'];
-            $status = $_POST['status'];
-            $code = $_POST['order_code'];
-            $currentStatus = $_POST['current_status'];
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . 'staff/order');
+            exit;
+        }
 
-            $model = $this->model('OrderModel');
+        // Lấy dữ liệu đầu vào
+        $orderId = $_POST['order_id'] ?? null;
+        $orderCode = $_POST['order_code'] ?? '';
+        $newStatus = $_POST['status'] ?? '';
+        $trackingCode = isset($_POST['tracking_code']) ? trim($_POST['tracking_code']) : '';
 
-            // [BẢO VỆ] Nhân viên không được phép hoàn tác đơn đã Thành công hoặc Đã hủy
-            if ($currentStatus == 'completed' || $currentStatus == 'cancelled') {
-                echo "<script>alert('Không thể thay đổi trạng thái đơn hàng đã Hoàn thành hoặc Đã hủy!'); window.history.back();</script>";
-                return;
+        if (!$orderId || !$newStatus) {
+            $_SESSION['alert'] = ['type' => 'danger', 'message' => 'Dữ liệu không hợp lệ.'];
+            header('Location: ' . BASE_URL . 'staff/order');
+            exit;
+        }
+
+        // Lấy trạng thái thực tế từ DB (Không tin tưởng dữ liệu từ Form gửi lên để tránh hack)
+        $currentOrder = $this->orderModel->getOrderById($orderId);
+        if (!$currentOrder) {
+            $_SESSION['alert'] = ['type' => 'danger', 'message' => 'Đơn hàng không tồn tại.'];
+            header('Location: ' . BASE_URL . 'staff/order');
+            exit;
+        }
+
+        $currentStatus = $currentOrder['status'];
+
+        // [KIỂM TRA 1] Nếu đơn đã đóng, cấm sửa tuyệt đối
+        if ($currentStatus === 'completed' || $currentStatus === 'cancelled') {
+            $_SESSION['alert'] = ['type' => 'warning', 'message' => 'Đơn hàng đã kết thúc, không thể thay đổi trạng thái.'];
+            header('Location: ' . BASE_URL . 'staff/order/detail/' . $orderCode);
+            exit;
+        }
+
+        // [KIỂM TRA 2] Validate luồng trạng thái (Workflow)
+        if ($currentStatus !== $newStatus) {
+            $isValidTransition = $this->validateTransition($currentStatus, $newStatus);
+            if (!$isValidTransition) {
+                $_SESSION['alert'] = ['type' => 'danger', 'message' => "Không thể chuyển từ " . strtoupper($currentStatus) . " sang " . strtoupper($newStatus)];
+                header('Location: ' . BASE_URL . 'staff/order/detail/' . $orderCode);
+                exit;
             }
+        }
 
-            // [LOGIC KHO] Nếu Hủy đơn -> Phải hoàn kho
-            if ($status == 'cancelled') {
-                $result = $model->cancelOrderById($id); // Hàm này đã có trong Model bạn cung cấp
-                if ($result !== true) {
-                    echo "<script>alert('Lỗi hủy đơn: $result'); window.history.back();</script>";
-                    return;
+        // [THỰC HIỆN] 
+        // 1. Cập nhật mã vận đơn (Nếu có nhập)
+        if (!empty($trackingCode)) {
+            $this->orderModel->updateTrackingCode($orderId, $trackingCode);
+        }
+
+        // 2. Xử lý chuyển trạng thái
+        if ($newStatus !== $currentStatus) {
+            if ($newStatus === 'cancelled') {
+                // Trường hợp hủy: Phải hoàn kho
+                $result = $this->orderModel->cancelOrderById($orderId);
+                if ($result === true) {
+                    $_SESSION['alert'] = ['type' => 'success', 'message' => 'Đã hủy đơn và hoàn kho thành công.'];
+                } else {
+                    $_SESSION['alert'] = ['type' => 'danger', 'message' => 'Lỗi khi hủy đơn: ' . $result];
                 }
             } else {
-                // Các trạng thái: processing (Duyệt), shipped (Giao)
-                $model->updateStatus($id, $status);
-            }
+                // Cập nhật trạng thái thông thường
+                $this->orderModel->updateStatus($orderId, $newStatus);
 
-            // Nếu đơn hàng giao thành công, tự động cập nhật thanh toán
-            if ($status == 'completed') {
-                $model->updatePaymentStatusByCode($code, 1);
+                // Nếu hoàn thành: Cập nhật Payment = 1
+                if ($newStatus === 'completed') {
+                    $this->orderModel->updatePaymentStatusByCode($orderCode, 1);
+                    $_SESSION['alert'] = ['type' => 'success', 'message' => 'Giao hàng thành công! Đã xác nhận thanh toán.'];
+                } else {
+                    $_SESSION['alert'] = ['type' => 'success', 'message' => 'Đã cập nhật trạng thái đơn hàng.'];
+                }
             }
-
-            header('Location: ' . BASE_URL . 'staff/order/detail/' . $code . '?msg=updated');
+        } else {
+            $_SESSION['alert'] = ['type' => 'info', 'message' => 'Đã cập nhật thông tin vận đơn.'];
         }
+
+        header('Location: ' . BASE_URL . 'staff/order/detail/' . $orderCode);
+    }
+
+    /**
+     * Hàm kiểm tra luồng đi của đơn hàng
+     * pending -> processing -> shipped -> completed
+     * pending/processing/shipped -> cancelled
+     */
+private function validateTransition($current, $new) {
+        $allowed = [
+            // Chờ xử lý -> Chuẩn bị HOẶC Hủy
+            'pending'    => ['processing', 'cancelled'],     
+            
+            // Đang chuẩn bị -> Đang giao hàng (SỬA LẠI TỪ shipped -> shipping)
+            'processing' => ['shipping', 'cancelled'],       
+            
+            // Đang giao hàng -> Thành công HOẶC Hủy (SỬA LẠI TỪ shipped -> shipping)
+            'shipping'   => ['completed', 'cancelled'],      
+            
+            'completed'  => [],                              
+            'cancelled'  => []                               
+        ];
+
+        // Nếu trạng thái mới nằm trong danh sách cho phép thì OK
+        return in_array($new, $allowed[$current] ?? []);
     }
 }
 ?>
