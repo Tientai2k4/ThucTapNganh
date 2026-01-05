@@ -32,77 +32,81 @@
                 <div class="card-body">
                     <h5 class="card-title fw-bold mb-3">Xử lý đơn hàng</h5>
                     
-                    <form action="<?= BASE_URL . $prefix ?>/order/updateStatus" method="POST">
-                        <input type="hidden" name="order_id" value="<?= $data['order']['id'] ?>">
-                        <input type="hidden" name="order_code" value="<?= $data['order']['order_code'] ?>">
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Mã vận đơn:</label>
-                            <input type="text" name="tracking_code" 
-                                   class="form-control" 
-                                   placeholder="VD: LKV12345"
-                                   value="<?= $data['order']['tracking_code'] ?>">
-                           
-                        </div>
+              <form action="<?= BASE_URL . $prefix ?>/order/updateStatus" method="POST">
+    <input type="hidden" name="order_id" value="<?= $data['order']['id'] ?>">
+    <input type="hidden" name="order_code" value="<?= $data['order']['order_code'] ?>">
 
     <div class="mb-3">
-    <label class="form-label fw-bold">Trạng thái đơn hàng:</label>
-    
-    <?php 
-        $currentStatus = $data['order']['status'];
+        <label class="form-label fw-bold">Trạng thái hiện tại:</label>
+        <?php 
+            $currentStatus = $data['order']['status'];
+            $statusVN = '';
+            $alertClass = '';
+            $icon = '';
 
-        // LOGIC KHÓA: 
-        // Nếu đơn đã "Hoàn thành" hoặc "Đã hủy" -> Khóa luôn (Disabled), không cho sửa nữa.
-        // Chỉ cho sửa khi đơn đang chạy (Pending, Processing, Shipping).
-        $isTerminalState = ($currentStatus == 'completed' || $currentStatus == 'cancelled');
-    ?>
-
-    <?php if ($isTerminalState): ?>
-        <input type="hidden" name="status" value="<?= $currentStatus ?>">
-    <?php endif; ?>
-
-    <select name="status" class="form-select" <?= $isTerminalState ? 'disabled' : '' ?>>
-        
-        <option value="pending" <?= $currentStatus=='pending'?'selected':'' ?>
-            <?= ($currentStatus == 'shipping') ? 'disabled class="bg-light text-muted"' : '' ?>>
-            Chờ xử lý
-        </option>
-
-        <option value="processing" <?= $currentStatus=='processing'?'selected':'' ?>>
-            Đang chuẩn bị hàng
-        </option>
-
-        <option value="shipping" <?= $currentStatus=='shipping'?'selected':'' ?>>
-            Đang giao hàng
-        </option>
-        
-        <option value="completed" <?= $currentStatus=='completed'?'selected':'' ?>>
-            Hoàn thành
-        </option>
-            
-        <option value="cancelled" <?= $currentStatus=='cancelled'?'selected':'' ?>>
-            Hủy đơn
-        </option>
-
-    </select>
-    
-    <?php if ($currentStatus == 'completed'): ?>
-        <div class="alert alert-success mt-2 p-2 small">
-            <i class="fas fa-check-circle me-1"></i> Đơn hàng đã hoàn tất thành công. Không thể thay đổi trạng thái.
+            switch($currentStatus) {
+                case 'pending': $statusVN = 'Đang chờ xử lý'; $alertClass='warning text-dark'; $icon='clock'; break;
+                case 'processing': $statusVN = 'Đang chuẩn bị hàng'; $alertClass='info text-white'; $icon='box-open'; break;
+                case 'shipping': $statusVN = 'Đang giao hàng'; $alertClass='primary'; $icon='truck'; break; 
+                case 'completed': $statusVN = 'Giao thành công'; $alertClass='success'; $icon='check-circle'; break;
+                case 'cancelled': $statusVN = 'Đã hủy đơn'; $alertClass='danger'; $icon='times-circle'; break;
+                default: $statusVN = $currentStatus; $alertClass='secondary';
+            }
+        ?>
+        <div class="alert alert-<?= $alertClass ?> text-center fw-bold mb-3 shadow-sm">
+            <i class="fas fa-<?= $icon ?> me-2"></i><?= mb_strtoupper($statusVN, 'UTF-8') ?>
         </div>
-    <?php elseif ($currentStatus == 'cancelled'): ?>
-        <div class="alert alert-danger mt-2 p-2 small">
-            <i class="fas fa-lock me-1"></i> Đơn hàng đã bị hủy và hoàn kho. Không thể khôi phục.
+    </div>
+
+    <?php if ($currentStatus == 'completed' || $currentStatus == 'cancelled'): ?>
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Mã vận đơn</label>
+            <input type="text" class="form-control" value="<?= htmlspecialchars($data['order']['tracking_code'] ?? 'Không có') ?>" disabled>
+        </div>
+        <div class="d-grid">
+            <button type="button" class="btn btn-secondary disabled">
+                <i class="fas fa-lock me-2"></i>Đơn hàng đã kết thúc
+            </button>
+        </div>
+
+    <?php else: ?>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Cập nhật Mã vận đơn:</label>
+            <div class="input-group">
+                <span class="input-group-text bg-white"><i class="fas fa-barcode"></i></span>
+                <input type="text" name="tracking_code" class="form-control" 
+                       placeholder="VD: GHN12345" 
+                       value="<?= htmlspecialchars($data['order']['tracking_code'] ?? '') ?>">
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Chuyển trạng thái tiếp theo:</label>
+            <select name="status" class="form-select border-primary fw-bold shadow-sm" style="background-color: #f8f9fa;">
+                <option value="<?= $currentStatus ?>">-- Giữ nguyên trạng thái --</option>
+                
+                <?php if ($currentStatus == 'pending'): ?>
+                    <option value="processing">➡️ Chuyển sang: Đang chuẩn bị hàng</option>
+                    <option value="cancelled" class="text-danger">❌ Hủy đơn hàng</option>
+                
+                <?php elseif ($currentStatus == 'processing'): ?>
+                    <option value="shipping">➡️ Chuyển sang: Đang giao hàng</option> 
+                    <option value="cancelled" class="text-danger">❌ Hủy đơn (Hết hàng)</option>
+
+                <?php elseif ($currentStatus == 'shipping'): ?> 
+                    <option value="completed" class="fw-bold text-success">✅ KHÁCH ĐÃ NHẬN HÀNG (Hoàn thành)</option>
+                    <option value="cancelled" class="text-danger">❌ Khách bom hàng / Trả hàng</option>
+                <?php endif; ?>
+            </select>
+        </div>
+
+        <div class="d-grid">
+            <button type="submit" class="btn btn-success w-100 fw-bold py-2 shadow-sm">
+                <i class="fas fa-save me-2"></i>Lưu cập nhật
+            </button>
         </div>
     <?php endif; ?>
-</div>
-
-<?php if (!$isTerminalState): ?>
-    <button type="submit" class="btn btn-success w-100 fw-bold">
-        <i class="fas fa-save me-2"></i>Cập nhật trạng thái đơn hàng
-    </button>
-<?php endif; ?>
-    </form>
+</form>
 
                     <?php if (!empty($data['order']['tracking_code'])): ?>
                         <hr>
