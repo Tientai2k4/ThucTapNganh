@@ -45,13 +45,17 @@
             $icon = '';
 
             switch($currentStatus) {
-                case 'pending': $statusVN = 'Đang chờ xử lý'; $alertClass='warning text-dark'; $icon='clock'; break;
-                case 'processing': $statusVN = 'Đang chuẩn bị hàng'; $alertClass='info text-white'; $icon='box-open'; break;
-                case 'shipping': $statusVN = 'Đang giao hàng'; $alertClass='primary'; $icon='truck'; break; 
-                case 'completed': $statusVN = 'Giao thành công'; $alertClass='success'; $icon='check-circle'; break;
-                case 'cancelled': $statusVN = 'Đã hủy đơn'; $alertClass='danger'; $icon='times-circle'; break;
-                default: $statusVN = $currentStatus; $alertClass='secondary';
-            }
+                case 'pending_payment': 
+                $statusVN = 'Chờ thanh toán (Online)'; 
+                $alertClass = 'warning text-dark'; 
+                $icon = 'credit-card'; 
+                break;
+            case 'pending': 
+                $statusVN = 'Đang chờ xử lý (COD)'; 
+                $alertClass = 'secondary text-white'; 
+                $icon = 'clock'; 
+                break;
+                    }
         ?>
         <div class="alert alert-<?= $alertClass ?> text-center fw-bold mb-3 shadow-sm">
             <i class="fas fa-<?= $icon ?> me-2"></i><?= mb_strtoupper($statusVN, 'UTF-8') ?>
@@ -81,24 +85,31 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label fw-bold">Chuyển trạng thái tiếp theo:</label>
-            <select name="status" class="form-select border-primary fw-bold shadow-sm" style="background-color: #f8f9fa;">
-                <option value="<?= $currentStatus ?>"> Giữ nguyên trạng thái </option>
-                
-                <?php if ($currentStatus == 'pending'): ?>
-                    <option value="processing">➡️ Chuyển sang: Đang chuẩn bị hàng</option>
-                    <option value="cancelled" class="text-danger"> Hủy đơn hàng</option>
-                
-                <?php elseif ($currentStatus == 'processing'): ?>
-                    <option value="shipping">➡️ Chuyển sang: Đang giao hàng</option> 
-                    <option value="cancelled" class="text-danger"> Hủy đơn (Hết hàng)</option>
+    <label class="form-label fw-bold">Chuyển trạng thái tiếp theo:</label>
+    <select name="status" class="form-select border-primary fw-bold shadow-sm" style="background-color: #f8f9fa;">
+        <option value="<?= $currentStatus ?>"> -- Giữ nguyên trạng thái -- </option>
+        
+        <?php if ($currentStatus == 'pending_payment'): ?>
+            <option value="pending">➡️ Đã nhận tiền (Xác nhận thủ công)</option>
+        <?php endif; ?>
 
-                <?php elseif ($currentStatus == 'shipping'): ?> 
-                    <option value="completed" class="fw-bold text-success"> KHÁCH ĐÃ NHẬN HÀNG (Hoàn thành)</option>
-                    <option value="cancelled" class="text-danger"> Khách bom hàng / Trả hàng</option>
-                <?php endif; ?>
-            </select>
-        </div>
+        <?php if ($currentStatus == 'pending'): ?>
+            <option value="processing">➡️ Chuyển sang: Đang chuẩn bị hàng</option>
+        <?php endif; ?>
+
+        <?php if ($currentStatus == 'processing'): ?>
+            <option value="shipping">➡️ Chuyển sang: Đang giao hàng</option> 
+        <?php endif; ?>
+
+        <?php if ($currentStatus == 'shipping'): ?> 
+            <option value="completed" class="fw-bold text-success">✅ Khách đã nhận hàng (Hoàn thành)</option>
+        <?php endif; ?>
+
+        <?php if ($currentStatus != 'completed' && $currentStatus != 'cancelled'): ?>
+            <option value="cancelled" class="text-danger">❌ HỦY ĐƠN HÀNG (Hoàn lại kho)</option>
+        <?php endif; ?>
+    </select>
+</div>
 
         <div class="d-grid">
             <button type="submit" class="btn btn-success w-100 fw-bold py-2 shadow-sm">
