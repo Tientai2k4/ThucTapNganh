@@ -108,7 +108,7 @@ public function getOrderById($id) {
 
     // --- PHẦN 2: HỦY ĐƠN (QUAN TRỌNG CHO NGÀY 12) ---
 
-    // [CHUẨN HÓA] Hàm Hủy đơn theo ID (Dùng chung cho cả Admin, Khách và Auto Cancel)
+    //  Hàm Hủy đơn theo ID (Dùng chung cho cả Admin, Khách và Auto Cancel)
     public function cancelOrderById($orderId) {
         $this->conn->begin_transaction();
         try {
@@ -144,14 +144,16 @@ public function getOrderById($id) {
             $stmtRestock = $this->conn->prepare($sqlRestock);
 
             foreach ($details as $item) {
-                // Kiểm tra dữ liệu đầu vào có hợp lệ không
-                if ($item['quantity'] > 0 && $item['product_variant_id'] > 0) {
-                    $stmtRestock->bind_param("ii", $item['quantity'], $item['product_variant_id']);
-                    if (!$stmtRestock->execute()) {
-                        throw new \Exception("Lỗi SQL khi cộng kho: " . $stmtRestock->error);
+                    if ($item['quantity'] > 0 && $item['product_variant_id'] > 0) {
+                        $stmtRestock->bind_param("ii", $item['quantity'], $item['product_variant_id']);
+                        $stmtRestock->execute();
+                        // KIỂM TRA XEM CÓ DÒNG NÀO ĐƯỢC CẬP NHẬT KHÔNG
+                        if ($stmtRestock->affected_rows === 0) {
+                            // Có thể ID biến thể không tồn tại hoặc sai
+                            throw new \Exception("Không tìm thấy biến thể ID: " . $item['product_variant_id'] . " để cộng kho.");
+                        }
                     }
                 }
-            }
 
             // 4. Cập nhật trạng thái đơn thành 'cancelled'
             $sqlUpdate = "UPDATE orders SET status = 'cancelled' WHERE id = ?";
@@ -167,6 +169,7 @@ public function getOrderById($id) {
 
         } catch (\Exception $e) {
             $this->conn->rollback();
+            die($e->getMessage());
             // Bạn có thể ghi log lỗi tại đây để debug: error_log($e->getMessage());
             return $e->getMessage(); 
         }
@@ -350,9 +353,7 @@ public function getOrderById($id) {
         }
         return $count; // Trả về số đơn đã hủy
     }
-
-
-    // [MỚI] Hàm kiểm tra User đã dùng mã Coupon này chưa
+        // [MỚI] Hàm kiểm tra User đã dùng mã Coupon này chưa
     public function checkUserUsedCoupon($userId, $couponCode) {
         // Kiểm tra xem user này đã có đơn hàng nào dùng mã này mà chưa bị hủy không
         $sql = "SELECT id FROM orders WHERE user_id = ? AND coupon_code = ? AND status != 'cancelled' LIMIT 1";
@@ -364,7 +365,6 @@ public function getOrderById($id) {
         // Nếu tìm thấy dòng nào -> Đã dùng -> return true
         return $result->num_rows > 0;
     }
-
     // Hủy các đơn hàng đang chờ thanh toán của riêng một user (để giải phóng kho khi họ quay lại trang checkout)
 public function cancelMyExpiredOrders($userId) {
     // Tìm các đơn pending_payment của user này
