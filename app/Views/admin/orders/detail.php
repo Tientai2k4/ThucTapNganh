@@ -83,19 +83,19 @@
         <div class="mb-3">
             <label class="form-label fw-bold">Chuyển trạng thái tiếp theo:</label>
             <select name="status" class="form-select border-primary fw-bold shadow-sm" style="background-color: #f8f9fa;">
-                <option value="<?= $currentStatus ?>">-- Giữ nguyên trạng thái --</option>
+                <option value="<?= $currentStatus ?>"> Giữ nguyên trạng thái </option>
                 
                 <?php if ($currentStatus == 'pending'): ?>
                     <option value="processing">➡️ Chuyển sang: Đang chuẩn bị hàng</option>
-                    <option value="cancelled" class="text-danger">❌ Hủy đơn hàng</option>
+                    <option value="cancelled" class="text-danger"> Hủy đơn hàng</option>
                 
                 <?php elseif ($currentStatus == 'processing'): ?>
                     <option value="shipping">➡️ Chuyển sang: Đang giao hàng</option> 
-                    <option value="cancelled" class="text-danger">❌ Hủy đơn (Hết hàng)</option>
+                    <option value="cancelled" class="text-danger"> Hủy đơn (Hết hàng)</option>
 
                 <?php elseif ($currentStatus == 'shipping'): ?> 
-                    <option value="completed" class="fw-bold text-success">✅ KHÁCH ĐÃ NHẬN HÀNG (Hoàn thành)</option>
-                    <option value="cancelled" class="text-danger">❌ Khách bom hàng / Trả hàng</option>
+                    <option value="completed" class="fw-bold text-success"> KHÁCH ĐÃ NHẬN HÀNG (Hoàn thành)</option>
+                    <option value="cancelled" class="text-danger"> Khách bom hàng / Trả hàng</option>
                 <?php endif; ?>
             </select>
         </div>

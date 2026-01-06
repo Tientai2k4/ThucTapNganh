@@ -371,6 +371,13 @@
     .product-card:hover img {
         transform: scale(1.05);
     }
+   
+.size-btn.disabled, .color-btn.disabled {
+    opacity: 0.3;
+    text-decoration: line-through;
+    background-color: #f8f9fa !important;
+    cursor: not-allowed !important;
+}
 </style>
 
 <script>
@@ -425,77 +432,84 @@
         checkSelection();
     }
 
+    
     // --- 4. CẬP NHẬT TRẠNG THÁI MÀU ---
-    function updateColorButtonsState() {
-        document.querySelectorAll('.color-btn').forEach(btn => {
-            const color = btn.getAttribute('data-color');
-            if (currentSize) {
-                const exists = allVariants.some(v => v.size == currentSize && v.color == color && v.stock_quantity > 0);
-                if (exists) {
-                    btn.disabled = false;
-                    btn.classList.remove('disabled');
-                } else {
-                    btn.disabled = true;
-                    btn.classList.add('disabled');
-                    if (currentColor == color) {
-                        currentColor = null;
-                        btn.classList.remove('active', 'btn-primary');
-                        btn.classList.add('btn-outline-secondary');
-                    }
-                }
-            } else {
+function updateColorButtonsState() {
+    document.querySelectorAll('.color-btn').forEach(btn => {
+        const color = btn.getAttribute('data-color');
+        if (currentSize) {
+            // Kiểm tra xem biến thể này CÓ TỒN TẠI không (không quan tâm kho ở bước này)
+            const exists = allVariants.some(v => v.size == currentSize && v.color == color);
+            
+            if (exists) {
                 btn.disabled = false;
                 btn.classList.remove('disabled');
-            }
-        });
-    }
-
-    // --- 5. CẬP NHẬT TRẠNG THÁI SIZE ---
-    function updateSizeButtonsState() {
-        document.querySelectorAll('.size-btn').forEach(btn => {
-            const size = btn.getAttribute('data-size');
-            if (currentColor) {
-                const exists = allVariants.some(v => v.color == currentColor && v.size == size && v.stock_quantity > 0);
-                if (exists) {
-                    btn.disabled = false;
-                    btn.classList.remove('disabled');
-                } else {
-                    btn.disabled = true;
-                    btn.classList.add('disabled');
-                    if (currentSize == size) {
-                        currentSize = null;
-                        btn.classList.remove('active', 'btn-primary');
-                        btn.classList.add('btn-outline-secondary');
-                    }
-                }
             } else {
-                btn.disabled = false;
-                btn.classList.remove('disabled');
-            }
-        });
-    }
-
-    // --- 6. KIỂM TRA KHO ---
-    function checkSelection() {
-        const statusDiv = document.getElementById('stockStatus');
-        const btnBuy = document.getElementById('btnBuy');
-        const hiddenId = document.getElementById('selectedVariantId');
-
-        if (currentSize && currentColor) {
-            const variant = allVariants.find(v => v.size == currentSize && v.color == currentColor);
-            if (variant) {
-                hiddenId.value = variant.id;
-                statusDiv.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-check"></i> Kho còn: ${variant.stock_quantity} sản phẩm</span>`;
-                btnBuy.disabled = false;
-            } else {
-                statusDiv.innerHTML = '<span class="text-danger fw-bold">Hết hàng</span>';
-                btnBuy.disabled = true;
+                btn.disabled = true;
+                btn.classList.add('disabled');
+                if (currentColor == color) currentColor = null;
             }
         } else {
-            statusDiv.innerHTML = '<span class="text-muted small">Vui lòng chọn đủ Size và Màu sắc</span>';
-            btnBuy.disabled = true;
+            btn.disabled = false;
+            btn.classList.remove('disabled');
         }
+    });
+}
+
+// --- 5. CẬP NHẬT TRẠNG THÁI SIZE ---
+function updateSizeButtonsState() {
+    document.querySelectorAll('.size-btn').forEach(btn => {
+        const size = btn.getAttribute('data-size');
+        if (currentColor) {
+            // Tương tự, kiểm tra sự tồn tại của cặp Size-Màu
+            const exists = allVariants.some(v => v.color == currentColor && v.size == size);
+            
+            if (exists) {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('disabled');
+                if (currentSize == size) currentSize = null;
+            }
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+        }
+    });
+}
+
+// --- 6. KIỂM TRA VÀ CẬP NHẬT TRẠNG THÁI KHO ---
+    function checkSelection() {
+    const statusDiv = document.getElementById('stockStatus');
+    const btnBuy = document.getElementById('btnBuy');
+    const hiddenId = document.getElementById('selectedVariantId');
+
+    if (currentSize && currentColor) {
+        const variant = allVariants.find(v => v.size == currentSize && v.color == currentColor);
+        if (variant) {
+            hiddenId.value = variant.id;
+            
+            if (variant.stock_quantity > 0) {
+                statusDiv.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-check"></i> Kho còn: ${variant.stock_quantity} sản phẩm</span>`;
+                btnBuy.disabled = false;
+                btnBuy.classList.remove('btn-secondary');
+                btnBuy.classList.add('btn-primary');
+                btnBuy.innerHTML = '<i class="fas fa-cart-plus me-2"></i> Thêm vào giỏ hàng';
+            } else {
+                // ĐÂY LÀ TRƯỜNG HỢP ONLINE ĐANG GIỮ HÀNG HOẶC HẾT THẬT
+                statusDiv.innerHTML = '<span class="text-danger fw-bold"><i class="fas fa-exclamation-triangle"></i> Sản phẩm này hiện đang hết hàng</span>';
+                btnBuy.disabled = true;
+                btnBuy.innerHTML = 'Tạm hết hàng';
+                btnBuy.classList.remove('btn-primary');
+                btnBuy.classList.add('btn-secondary');
+            }
+        }
+    } else {
+        statusDiv.innerHTML = '<span class="text-muted small">Vui lòng chọn đủ Size và Màu sắc</span>';
+        btnBuy.disabled = true;
     }
+}
 
     // --- 7. TĂNG GIẢM SỐ LƯỢNG ---
     function changeQty(delta) {
