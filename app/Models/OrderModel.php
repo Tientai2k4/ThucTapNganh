@@ -386,7 +386,6 @@ public function cancelMyExpiredOrders($userId) {
     }
     return $count;
 }
->>>>>>> 1481ff9af51c366b4ca385b39d4a137e7d51bb9f
 
 }
 ?>

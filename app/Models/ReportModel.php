@@ -5,51 +5,58 @@ use App\Core\Model;
 class ReportModel extends Model {
     
     // --- 1. THỐNG KÊ TỔNG QUAN (COUNTERS) ---
-    public function getCounters() {
+    public function getCounters($date = null) {
         $data = [];
-        // Tổng doanh thu (Chỉ tính đơn hoàn thành)
-        $data['total_revenue'] = $this->conn->query("SELECT SUM(total_money) FROM orders WHERE status = 'completed'")->fetch_row()[0] ?? 0;
-        // Tổng đơn hàng (Trừ đơn hủy)
-        $data['total_orders'] = $this->conn->query("SELECT COUNT(id) FROM orders WHERE status != 'cancelled'")->fetch_row()[0] ?? 0;
-        // Tổng thành viên
+        $dateSql = "";
+        if ($date) {
+            $date = $this->conn->real_escape_string($date);
+            $dateSql = " AND DATE(created_at) = '$date'";
+        }
+
+        $data['total_revenue'] = $this->conn->query("SELECT SUM(total_money) FROM orders WHERE status = 'completed' $dateSql")->fetch_row()[0] ?? 0;
+        $data['total_orders'] = $this->conn->query("SELECT COUNT(id) FROM orders WHERE status != 'cancelled' $dateSql")->fetch_row()[0] ?? 0;
         $data['total_users'] = $this->conn->query("SELECT COUNT(id) FROM users WHERE role = 'member'")->fetch_row()[0] ?? 0;
-        // Tổng sản phẩm đang bán
         $data['total_products'] = $this->conn->query("SELECT COUNT(id) FROM products WHERE is_active = 1")->fetch_row()[0] ?? 0;
-        // [MỚI] Đếm liên hệ chưa đọc
-        $data['unread_contacts'] = $this->conn->query("SELECT COUNT(id) FROM contacts WHERE status = 0")->fetch_row()[0] ?? 0;
+        $data['unread_contacts'] = $this->conn->query("SELECT COUNT(id) FROM contacts WHERE status = 0 $dateSql")->fetch_row()[0] ?? 0;
         
         return $data;
     }
 
     // --- 2. CÁC HÀM LẤY DỮ LIỆU DASHBOARD (LIMIT) ---
 
-    // [MỚI] 5 Đơn hàng mới nhất
     public function getRecentOrders() {
+        // Lấy 10 đơn mới nhất (bất kể trạng thái)
         $sql = "SELECT id, order_code, customer_name, total_money, status, created_at 
                 FROM orders 
-                ORDER BY created_at DESC LIMIT 5";
+                ORDER BY created_at DESC LIMIT 10";
         return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
     }
 
-    // [MỚI] 5 Liên hệ mới nhất
     public function getRecentContacts() {
         $sql = "SELECT id, full_name, email, message, created_at, status 
                 FROM contacts 
                 ORDER BY created_at DESC LIMIT 5";
         return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
     }
+    
+    // [MỚI - QUAN TRỌNG] Hàm lấy danh sách đơn bị hủy để hiển thị bảng
+    public function getRecentCancelledOrders() {
+        $sql = "SELECT id, order_code, customer_name, total_money, created_at 
+                FROM orders 
+                WHERE status = 'cancelled' 
+                ORDER BY created_at DESC LIMIT 5";
+        return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+    }
 
-    // 10 Sản phẩm sắp hết hàng
     public function getLowStockLimit() {
         return $this->getLowStockQuery(10);
     }
 
-    // 5 Khách hàng VIP
     public function getTopCustomersLimit() {
         return $this->getTopCustomersQuery(5);
     }
 
-    // --- 3. CÁC HÀM CHI TIẾT (FULL) ---
+    // --- 3. CÁC HÀM CHI TIẾT ---
 
     public function getAllLowStock() {
         return $this->getLowStockQuery(null);
@@ -84,29 +91,34 @@ class ReportModel extends Model {
                 ORDER BY pv.stock_quantity ASC $limitSql";
         return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
     }
-    // Lấy Top 5 sản phẩm bán chạy nhất
-        public function getTopSellingProducts($limit = 5) {
-                // Sử dụng bảng order_details và các cột chính xác từ ảnh của bạn
-                $sql = "SELECT p.id, p.name, p.image, 
-                            SUM(od.quantity) as total_sold, 
-                            SUM(od.total_price) as total_revenue
-                        FROM order_details od
-                        JOIN product_variants pv ON od.product_variant_id = pv.id
-                        JOIN products p ON pv.product_id = p.id
-                        JOIN orders o ON od.order_id = o.id
-                        WHERE o.status = 'completed'
-                        GROUP BY p.id
-                        ORDER BY total_sold DESC
-                        LIMIT $limit";
-                return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+
+    public function getTopSellingProducts($limit = 5) {
+        $sql = "SELECT p.id, p.name, p.image, 
+                    SUM(od.quantity) as total_sold, 
+                    SUM(od.total_price) as total_revenue
+                FROM order_details od
+                JOIN product_variants pv ON od.product_variant_id = pv.id
+                JOIN products p ON pv.product_id = p.id
+                JOIN orders o ON od.order_id = o.id
+                WHERE o.status = 'completed'
+                GROUP BY p.id
+                ORDER BY total_sold DESC
+                LIMIT $limit";
+        return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+    }
+
+    // Thống kê số liệu đơn hủy (để hiện ở ô màu đỏ)
+    public function getCancelledOrderStats($date = null) {
+        $dateSql = "";
+        if ($date) {
+            $date = $this->conn->real_escape_string($date);
+            $dateSql = " AND DATE(created_at) = '$date'";
         }
 
-        // Thống kê đơn hàng bị hủy
-        public function getCancelledOrderStats() {
-            $sql = "SELECT COUNT(id) as total_cancelled, 
-                        IFNULL(SUM(total_money), 0) as total_lost_revenue 
-                    FROM orders 
-                    WHERE status = 'cancelled'";
-            return $this->conn->query($sql)->fetch_assoc();
-        }
+        $sql = "SELECT COUNT(id) as total_cancelled, 
+                    IFNULL(SUM(total_money), 0) as total_lost_revenue 
+                FROM orders 
+                WHERE status = 'cancelled' $dateSql";
+        return $this->conn->query($sql)->fetch_assoc();
+    }
 }

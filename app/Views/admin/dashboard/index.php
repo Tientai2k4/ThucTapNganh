@@ -4,7 +4,7 @@
             <h2 class="text-primary fw-bold text-uppercase mb-0">
                 <i class="fas fa-chart-line me-2"></i>Bảng Điều Khiển
             </h2>
-            <p class="text-muted mb-0">Tổng quan tình hình kinh doanh hôm nay</p>
+            <p class="text-muted mb-0">Tổng quan tình hình kinh doanh</p>
         </div>
         
         <div class="card border-0 shadow-sm text-white" 
@@ -14,7 +14,7 @@
                     <span class="small fw-bold text-nowrap"><i class="fas fa-filter me-1"></i> Lọc ngày:</span>
                     <div class="input-group input-group-sm">
                         <span class="input-group-text border-0 bg-white text-primary"><i class="fas fa-calendar-alt"></i></span>
-                        <input type="date" name="date" class="form-control border-0 fw-bold" value="<?= date('Y-m-d') ?>">
+                        <input type="date" name="date" class="form-control border-0 fw-bold" value="<?= htmlspecialchars($data['filter_date']) ?>">
                         <button type="submit" class="btn btn-light text-primary fw-bold">Xem</button>
                     </div>
                 </form>
@@ -82,7 +82,7 @@
                 </div>
             </a>
         </div>
-           
+            
         <div class="col-xl-3 col-md-6">
             <div class="card border-0 shadow-sm text-white p-3 h-100" style="background: linear-gradient(45deg, #e74a3b, #be2617);">
                 <div class="d-flex justify-content-between">

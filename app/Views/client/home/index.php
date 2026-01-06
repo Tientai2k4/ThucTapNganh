@@ -170,12 +170,8 @@ $coupons = $data['coupons'] ?? [];
                                 <?php endif; ?>
                             </div>
 
-                            <div class="d-grid gap-2">
-                                <a href="<?= BASE_URL ?>product/detail/<?= $prod['id'] ?>" class="btn btn-outline-primary btn-sm rounded-pill">
-                                    <i class="fas fa-info-circle me-1"></i> Chi tiết
-                                </a>
+                          
                             </div>
-                        </div>
                     </div>
                 </div>
                 <?php endforeach; ?>
