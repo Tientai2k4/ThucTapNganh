@@ -108,86 +108,83 @@ public function getOrderById($id) {
 
     // --- PHẦN 2: HỦY ĐƠN (QUAN TRỌNG CHO NGÀY 12) ---
 
-    // [MỚI] Hàm Hủy đơn theo ID (Dùng cho Admin)
+    // [CHUẨN HÓA] Hàm Hủy đơn theo ID (Dùng chung cho cả Admin, Khách và Auto Cancel)
     public function cancelOrderById($orderId) {
         $this->conn->begin_transaction();
         try {
-            // 1. Lấy trạng thái hiện tại
-            $stmt = $this->conn->prepare("SELECT status FROM orders WHERE id = ? FOR UPDATE");
+            // 1. Lấy trạng thái hiện tại & Khóa dòng (FOR UPDATE) để tránh xung đột
+            $stmt = $this->conn->prepare("SELECT id, status FROM orders WHERE id = ? FOR UPDATE");
             $stmt->bind_param("i", $orderId);
             $stmt->execute();
             $order = $stmt->get_result()->fetch_assoc();
 
-            if (!$order) throw new \Exception("Đơn hàng không tồn tại");
-            if ($order['status'] == 'cancelled') throw new \Exception("Đơn hàng đã hủy trước đó");
-            if ($order['status'] == 'completed') throw new \Exception("Không thể hủy đơn đã hoàn thành");
+            if (!$order) {
+                throw new \Exception("Đơn hàng không tồn tại");
+            }
+            
+            // Nếu đơn đã hủy hoặc hoàn thành rồi thì dừng lại, không làm gì cả
+            if ($order['status'] == 'cancelled' || $order['status'] == 'completed') {
+                $this->conn->rollback();
+                return false; 
+            }
 
-            // 2. Lấy chi tiết đơn hàng để biết cần cộng lại bao nhiêu hàng
+            // 2. Lấy danh sách sản phẩm trong đơn để hoàn kho
+            // Quan trọng: Phải lấy đúng product_variant_id và quantity
             $stmtDetail = $this->conn->prepare("SELECT product_variant_id, quantity FROM order_details WHERE order_id = ?");
             $stmtDetail->bind_param("i", $orderId);
             $stmtDetail->execute();
             $details = $stmtDetail->get_result()->fetch_all(MYSQLI_ASSOC);
 
-            // 3. Cộng lại kho (Rollback Inventory)
+            if (empty($details)) {
+                // Trường hợp lạ: Đơn hàng không có sản phẩm? -> Vẫn cho hủy nhưng log lại nếu cần
+            }
+
+            // 3. THỰC HIỆN CỘNG KHO (RESTOCK)
             $sqlRestock = "UPDATE product_variants SET stock_quantity = stock_quantity + ? WHERE id = ?";
             $stmtRestock = $this->conn->prepare($sqlRestock);
 
             foreach ($details as $item) {
-                $stmtRestock->bind_param("ii", $item['quantity'], $item['product_variant_id']);
-                $stmtRestock->execute();
+                // Kiểm tra dữ liệu đầu vào có hợp lệ không
+                if ($item['quantity'] > 0 && $item['product_variant_id'] > 0) {
+                    $stmtRestock->bind_param("ii", $item['quantity'], $item['product_variant_id']);
+                    if (!$stmtRestock->execute()) {
+                        throw new \Exception("Lỗi SQL khi cộng kho: " . $stmtRestock->error);
+                    }
+                }
             }
 
             // 4. Cập nhật trạng thái đơn thành 'cancelled'
             $sqlUpdate = "UPDATE orders SET status = 'cancelled' WHERE id = ?";
             $stmtUpdate = $this->conn->prepare($sqlUpdate);
             $stmtUpdate->bind_param("i", $orderId);
-            $stmtUpdate->execute();
+            
+            if (!$stmtUpdate->execute()) {
+                throw new \Exception("Lỗi SQL khi cập nhật trạng thái đơn.");
+            }
 
             $this->conn->commit();
             return true;
+
         } catch (\Exception $e) {
             $this->conn->rollback();
-            return $e->getMessage(); // Trả về lỗi để controller hiển thị
+            // Bạn có thể ghi log lỗi tại đây để debug: error_log($e->getMessage());
+            return $e->getMessage(); 
         }
     }
 
-    // Hàm Hủy đơn theo Mã (Dùng cho Khách) - Giữ nguyên logic cũ
+    // [CHUẨN HÓA] Hàm Hủy đơn theo Mã (Dùng cho Khách Hàng / PayOS)
     public function cancelOrder($orderCode) {
-        $this->conn->begin_transaction();
-        try {
-            $sql = "SELECT id, status FROM orders WHERE order_code = ? FOR UPDATE";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("s", $orderCode);
-            $stmt->execute();
-            $order = $stmt->get_result()->fetch_assoc();
-            
-            if (!$order) throw new \Exception("Đơn hàng không tồn tại");
-            if ($order['status'] == 'cancelled') throw new \Exception("Đơn hàng đã hủy trước đó");
+        // Chỉ cần tìm ID từ Mã đơn, sau đó gọi lại hàm cancelOrderById ở trên
+        // Cách này đảm bảo logic hoàn kho chỉ nằm ở 1 chỗ duy nhất -> Dễ quản lý, ít lỗi
+        $stmt = $this->conn->prepare("SELECT id FROM orders WHERE order_code = ?");
+        $stmt->bind_param("s", $orderCode);
+        $stmt->execute();
+        $order = $stmt->get_result()->fetch_assoc();
 
-            $orderId = $order['id'];
-
-            $sqlDetails = "SELECT product_variant_id, quantity FROM order_details WHERE order_id = ?";
-            $stmtDetails = $this->conn->prepare($sqlDetails);
-            $stmtDetails->bind_param("i", $orderId);
-            $stmtDetails->execute();
-            $details = $stmtDetails->get_result()->fetch_all(MYSQLI_ASSOC);
-
-            $updateStock = $this->conn->prepare("UPDATE product_variants SET stock_quantity = stock_quantity + ? WHERE id = ?");
-            foreach ($details as $item) {
-                $updateStock->bind_param("ii", $item['quantity'], $item['product_variant_id']);
-                $updateStock->execute();
-            }
-
-            $updateOrder = $this->conn->prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?");
-            $updateOrder->bind_param("i", $orderId);
-            $updateOrder->execute();
-
-            $this->conn->commit();
-            return true;
-        } catch (\Exception $e) {
-            $this->conn->rollback();
-            return false;
+        if ($order) {
+            return $this->cancelOrderById($order['id']);
         }
+        return false;
     }
 
     // Các hàm phụ trợ khác (Giữ nguyên)
@@ -353,7 +350,27 @@ public function getOrderById($id) {
         }
         return $count; // Trả về số đơn đã hủy
     }
-
+    // Hủy các đơn hàng đang chờ thanh toán của riêng một user (để giải phóng kho khi họ quay lại trang checkout)
+public function cancelMyExpiredOrders($userId) {
+    // Tìm các đơn pending_payment của user này
+    $sql = "SELECT id FROM orders 
+            WHERE user_id = ? 
+            AND status = 'pending_payment'";
+    
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $count = 0;
+    while ($order = $result->fetch_assoc()) {
+        // Sử dụng lại hàm cancelOrderById đã có logic hoàn kho
+        if ($this->cancelOrderById($order['id'])) {
+            $count++;
+        }
+    }
+    return $count;
+}
 
 }
 ?>
