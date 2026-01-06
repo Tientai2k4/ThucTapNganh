@@ -354,6 +354,18 @@ public function getOrderById($id) {
         return $count; // Trả về số đơn đã hủy
     }
 
+    // [MỚI] Hàm kiểm tra User đã dùng mã Coupon này chưa
+    public function checkUserUsedCoupon($userId, $couponCode) {
+        // Kiểm tra xem user này đã có đơn hàng nào dùng mã này mà chưa bị hủy không
+        $sql = "SELECT id FROM orders WHERE user_id = ? AND coupon_code = ? AND status != 'cancelled' LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("is", $userId, $couponCode);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        // Nếu tìm thấy dòng nào -> Đã dùng -> return true
+        return $result->num_rows > 0;
+    }
 
 }
 ?>
