@@ -89,10 +89,11 @@ class CategoryModel extends Model {
     }
 
     public function delete($id) {
-        $sql = "DELETE FROM {$this->table} WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("i", $id);
-        return $stmt->execute();
-    }
+    // Thay vì DELETE, chúng ta UPDATE status về 0
+    $sql = "UPDATE {$this->table} SET status = 0 WHERE id = ?";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bind_param("i", $id);
+    return $stmt->execute();
+}
 }
 ?>

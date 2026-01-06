@@ -109,7 +109,7 @@ public function getOrderById($id) {
     // --- PHẦN 2: HỦY ĐƠN (QUAN TRỌNG CHO NGÀY 12) ---
 
     //  Hàm Hủy đơn theo ID (Dùng chung cho cả Admin, Khách và Auto Cancel)
-    public function cancelOrderById($orderId) {
+    public function cancelOrderById($orderId, $reason = '') {
         $this->conn->begin_transaction();
         try {
             // 1. Lấy trạng thái hiện tại & Khóa dòng (FOR UPDATE) để tránh xung đột
@@ -156,9 +156,9 @@ public function getOrderById($id) {
                 }
 
             // 4. Cập nhật trạng thái đơn thành 'cancelled'
-            $sqlUpdate = "UPDATE orders SET status = 'cancelled' WHERE id = ?";
+            $sqlUpdate = "UPDATE orders SET status = 'cancelled', cancel_reason = ? WHERE id = ?";
             $stmtUpdate = $this->conn->prepare($sqlUpdate);
-            $stmtUpdate->bind_param("i", $orderId);
+            $stmtUpdate->bind_param("si", $reason, $orderId);
             
             if (!$stmtUpdate->execute()) {
                 throw new \Exception("Lỗi SQL khi cập nhật trạng thái đơn.");

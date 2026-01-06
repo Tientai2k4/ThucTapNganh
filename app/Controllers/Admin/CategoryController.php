@@ -83,10 +83,12 @@ class CategoryController extends Controller {
     }
 
     public function delete($id) {
-        $model = $this->model('CategoryModel');
-        $model->delete($id);
-        header('Location: ' . BASE_URL . 'admin/category');
-        exit;
+       if ($this->model('CategoryModel')->delete($id)) {
+        $_SESSION['success'] = "Đã xóa danh mục thành công!";
+    } else {
+        $_SESSION['error'] = "Lỗi hệ thống không thể xóa.";
+    }
+    header('Location: ' . BASE_URL . 'admin/category');
     }
 }
 ?>

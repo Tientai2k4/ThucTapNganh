@@ -110,6 +110,10 @@
         <?php endif; ?>
     </select>
 </div>
+            <div id="adminCancelReason" class="mb-3" style="display: none;">
+    <label class="form-label fw-bold text-danger">Lý do hủy đơn:</label>
+    <textarea name="cancel_reason" class="form-control border-danger" rows="2" placeholder="Nhập lý do admin hủy đơn..."></textarea>
+</div>
 
         <div class="d-grid">
             <button type="submit" class="btn btn-success w-100 fw-bold py-2 shadow-sm">
@@ -230,6 +234,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     resultsDiv.innerHTML = '<div class="alert alert-danger">Lỗi kết nối Server! Hãy kiểm tra Console (F12).</div>';
                 });
         });
+    }
+});
+
+document.querySelector('select[name="status"]').addEventListener('change', function() {
+    const reasonDiv = document.getElementById('adminCancelReason');
+    if (this.value === 'cancelled') {
+        reasonDiv.style.display = 'block';
+    } else {
+        reasonDiv.style.display = 'none';
     }
 });
 </script>

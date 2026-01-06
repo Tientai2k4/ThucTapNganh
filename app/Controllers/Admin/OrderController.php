@@ -52,7 +52,7 @@ class OrderController extends Controller {
             $id = $_POST['order_id'];
             $status = $_POST['status']; 
             $code = $_POST['order_code'];
-            
+            $reason = $_POST['cancel_reason'] ?? '';
             // Lấy mã vận đơn admin nhập tay (nếu có)
             $manualTrackingCode = isset($_POST['tracking_code']) ? trim($_POST['tracking_code']) : '';
 
@@ -60,9 +60,9 @@ class OrderController extends Controller {
 
             // 1. Cập nhật trạng thái
             if ($status == 'cancelled') {
-                $result = $model->cancelOrderById($id);
+                $result = $model->cancelOrderById($id, $reason);
                 if ($result !== true) {
-                    echo "Lỗi hủy đơn: " . $result; return;
+                    echo "Lỗi khi hủy và hoàn kho: " . $result; return;
                 }
             } else {
                 // Cập nhật trạng thái đơn hàng (ví dụ: đang giao hàng, hoàn thành...)
