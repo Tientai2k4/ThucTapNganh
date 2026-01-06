@@ -353,27 +353,39 @@ public function getOrderById($id) {
         }
         return $count; // Trả về số đơn đã hủy
     }
-            // Hủy các đơn hàng đang chờ thanh toán của riêng một user (để giải phóng kho khi họ quay lại trang checkout)
-        public function cancelMyExpiredOrders($userId) {
-            // Tìm các đơn pending_payment của user này
-            $sql = "SELECT id FROM orders 
-                    WHERE user_id = ? 
-                    AND status = 'pending_payment'";
-            
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("i", $userId);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            $count = 0;
-            while ($order = $result->fetch_assoc()) {
-                // Sử dụng lại hàm cancelOrderById đã có logic hoàn kho
-                if ($this->cancelOrderById($order['id'])) {
-                    $count++;
-                }
-            }
-            return $count;
+        // [MỚI] Hàm kiểm tra User đã dùng mã Coupon này chưa
+    public function checkUserUsedCoupon($userId, $couponCode) {
+        // Kiểm tra xem user này đã có đơn hàng nào dùng mã này mà chưa bị hủy không
+        $sql = "SELECT id FROM orders WHERE user_id = ? AND coupon_code = ? AND status != 'cancelled' LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("is", $userId, $couponCode);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        // Nếu tìm thấy dòng nào -> Đã dùng -> return true
+        return $result->num_rows > 0;
+    }
+    // Hủy các đơn hàng đang chờ thanh toán của riêng một user (để giải phóng kho khi họ quay lại trang checkout)
+public function cancelMyExpiredOrders($userId) {
+    // Tìm các đơn pending_payment của user này
+    $sql = "SELECT id FROM orders 
+            WHERE user_id = ? 
+            AND status = 'pending_payment'";
+    
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $count = 0;
+    while ($order = $result->fetch_assoc()) {
+        // Sử dụng lại hàm cancelOrderById đã có logic hoàn kho
+        if ($this->cancelOrderById($order['id'])) {
+            $count++;
         }
+    }
+    return $count;
+}
 
 }
 ?>

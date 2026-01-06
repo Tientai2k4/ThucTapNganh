@@ -136,6 +136,39 @@ class CheckoutController extends Controller {
             // 2. XỬ LÝ COUPON
             $discountAmount = $_POST['discount_amount'] ?? 0;
             $couponCode = $_POST['coupon_code'] ?? null;
+            $userId = $_SESSION['user_id'] ?? null;
+
+            // --- [THÊM MỚI] KIỂM TRA XEM USER ĐÃ DÙNG MÃ NÀY CHƯA ---
+            // Nếu có mã coupon và user đã đăng nhập
+            if (!empty($couponCode) && $userId) {
+                $orderModel = $this->model('OrderModel');
+                $isUsed = $orderModel->checkUserUsedCoupon($userId, $couponCode);
+                
+                if ($isUsed) {
+                     // Nếu đã dùng -> Báo lỗi và trả về View Checkout
+                     $addressModel = $this->model('AddressModel');
+                     
+                     // Tái tạo lại danh sách hiển thị để view không lỗi
+                     $displayItems = [];
+                     foreach ($products as $p) {
+                        $qty = $_SESSION['cart'][$p['variant_id']];
+                        $price = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price'];
+                        $p['qty'] = $qty;
+                        $p['line_total'] = $price * $qty;
+                        $displayItems[] = $p;
+                    }
+
+                     $data = [
+                        'error' => "Bạn đã sử dụng mã giảm giá '$couponCode' này rồi, vui lòng dùng mã khác hoặc bỏ trống.", 
+                        'totalMoney' => $tempTotal,
+                        'provinces' => $addressModel->getAllProvinces(),
+                        'cart_items' => $displayItems 
+                    ];
+                    $this->view('client/checkout/index', $data);
+                    return; // Dừng việc tạo đơn
+                }
+            }
+            // --- HẾT PHẦN KIỂM TRA USER DÙNG MÃ ---
             
             $finalTotal = $tempTotal - $discountAmount;
             if ($finalTotal < 0) $finalTotal = 0; 
@@ -147,7 +180,7 @@ class CheckoutController extends Controller {
                 'address' => $_POST['address_detail']
             ];
             $paymentMethod = $_POST['payment_method']; 
-            $userId = $_SESSION['user_id'] ?? null;
+            
 
             // 3. TẠO ĐƠN VÀ TRỪ KHO
             $orderModel = $this->model('OrderModel');
@@ -171,11 +204,22 @@ class CheckoutController extends Controller {
                 
                 // Cần load lại data để hiển thị lỗi
                 $addressModel = $this->model('AddressModel');
+                
+                // Tái tạo lại danh sách hiển thị
+                $displayItems = [];
+                foreach ($products as $p) {
+                   $qty = $_SESSION['cart'][$p['variant_id']];
+                   $price = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price'];
+                   $p['qty'] = $qty;
+                   $p['line_total'] = $price * $qty;
+                   $displayItems[] = $p;
+               }
+
                 $data = [
                     'error' => $error_message, 
                     'totalMoney' => $tempTotal,
                     'provinces' => $addressModel->getAllProvinces(),
-                    'cart_items' => $cartItems // Tái sử dụng biến $cartItems đã tạo ở trên cho view đỡ lỗi
+                    'cart_items' => $displayItems // Tái sử dụng biến displayItems cho view đỡ lỗi
                 ];
                 $this->view('client/checkout/index', $data);
             }
