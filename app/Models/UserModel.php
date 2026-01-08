@@ -14,6 +14,9 @@ class UserModel extends Model {
 
         if ($result->num_rows > 0) {
             $user = $result->fetch_assoc();
+            if ($user['status'] == 0) {
+                return "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin.";
+            }
             if (password_verify($password, $user['password'])) {
                 return $user;
             }

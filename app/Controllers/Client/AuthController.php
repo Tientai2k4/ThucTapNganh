@@ -27,31 +27,40 @@ public function index() {
         $this->view('client/auth/login');
     }
 
-public function processLogin() {
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $email = $_POST['email'];
-        $password = $_POST['password'];
-        $remember = isset($_POST['remember']); // Kiểm tra xem người dùng có tích nút Lưu không
+    public function processLogin() {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $email = $_POST['email'];
+            $password = $_POST['password'];
+            $remember = isset($_POST['remember']); // Kiểm tra checkbox Ghi nhớ
 
-        $model = $this->model('UserModel');
-        $user = $model->login($email, $password);
+            $model = $this->model('UserModel');
+            
+            // Gọi hàm login từ Model (Hàm này trả về Mảng User, Chuỗi lỗi, hoặc False)
+            $result = $model->login($email, $password);
 
-        if ($user) {
-            $this->setUserSession($user);
+            // --- XỬ LÝ KẾT QUẢ ĐĂNG NHẬP ---
+            
+            // Trường hợp 1: Đăng nhập thành công (Kết quả là mảng thông tin User)
+            if (is_array($result)) {
+                $this->setUserSession($result);
 
-            // === XỬ LÝ LƯU THÔNG TIN (COOKIE) ===
-            if ($remember) {
-                // Tạo một token ngẫu nhiên hoặc lưu ID người dùng (an toàn hơn là tạo token trong DB)
-                // Ở đây tôi ví dụ lưu ID đơn giản, thực tế nên dùng Token
-                setcookie('remember_user', $user['id'], time() + (86400 * 30), "/"); // Lưu trong 30 ngày
+                // Xử lý Ghi nhớ đăng nhập (Cookie)
+                if ($remember) {
+                    setcookie('remember_user', $result['id'], time() + (86400 * 30), "/"); // 30 ngày
+                }
+
+                $this->redirectUser($result['role']);
+            } 
+            // Trường hợp 2: Tài khoản bị khóa (Kết quả là chuỗi thông báo lỗi từ Model)
+            elseif (is_string($result)) {
+                $this->view('client/auth/login', ['error' => $result]);
             }
-
-            $this->redirectUser($user['role']);
-        } else {
-            $this->view('client/auth/login', ['error' => 'Sai email hoặc mật khẩu']);
+            // Trường hợp 3: Sai email hoặc mật khẩu (Kết quả là false)
+            else {
+                $this->view('client/auth/login', ['error' => 'Sai email hoặc mật khẩu']);
+            }
         }
     }
-}
 
     // === REGISTER ===
     public function register() {
