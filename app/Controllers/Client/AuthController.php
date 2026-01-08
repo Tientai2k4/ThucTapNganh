@@ -95,7 +95,8 @@ public function processLogin() {
         $model = $this->model('UserModel');
         $result = $model->register($name, $email, $pass, $phone, $defaultAvatar);
             if ($result === true) {
-                $this->view('client/auth/login', ['success' => 'Đăng ký thành công! Mời đăng nhập.']);
+               header('Location: ' . BASE_URL . 'client/auth/login?success=register_ok');
+        exit;
             } else {
                 $this->view('client/auth/register', ['error' => $result]);
             }

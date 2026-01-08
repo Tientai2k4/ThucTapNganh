@@ -32,6 +32,11 @@
         <?php if(isset($data['error'])): ?>
             <div class="alert alert-danger small p-2 text-center"><?= $data['error'] ?></div>
         <?php endif; ?>
+        <?php if(isset($_GET['success']) && $_GET['success'] == 'register_ok'): ?>
+            <div class="alert alert-success small p-2 text-center">
+                <i class="fas fa-check-circle me-1"></i> Đăng ký thành công! Mời bạn đăng nhập.
+            </div>
+        <?php endif; ?>
         <?php if(isset($_GET['success']) && $_GET['success'] == 'reset_ok'): ?>
             <div class="alert alert-success small p-2 text-center">Đổi mật khẩu thành công!</div>
         <?php endif; ?>

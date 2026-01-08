@@ -36,31 +36,71 @@
     <input type="hidden" name="order_id" value="<?= $data['order']['id'] ?>">
     <input type="hidden" name="order_code" value="<?= $data['order']['order_code'] ?>">
 
-    <div class="mb-3">
-        <label class="form-label fw-bold">Trạng thái hiện tại:</label>
-        <?php 
-            $currentStatus = $data['order']['status'];
-            $statusVN = '';
-            $alertClass = '';
-            $icon = '';
+   <div class="mb-3">
+    <label class="form-label fw-bold">Trạng thái hiện tại:</label>
+    
+    <?php 
+        $currentStatus = $data['order']['status'];
+        
+        // 1. Logic hiển thị màu sắc và Icon (Giống bên Staff)
+        $statusVN = '';
+        $alertClass = '';
+        $icon = '';
 
-            switch($currentStatus) {
-                case 'pending_payment': 
+        switch($currentStatus) {
+            case 'pending_payment': 
                 $statusVN = 'Chờ thanh toán (Online)'; 
                 $alertClass = 'warning text-dark'; 
                 $icon = 'credit-card'; 
                 break;
             case 'pending': 
-                $statusVN = 'Đang chờ xử lý (COD)'; 
-                $alertClass = 'secondary text-white'; 
+                $statusVN = 'Chờ xử lý (COD)'; 
+                $alertClass = 'warning text-dark'; 
                 $icon = 'clock'; 
                 break;
-                    }
-        ?>
-        <div class="alert alert-<?= $alertClass ?> text-center fw-bold mb-3 shadow-sm">
-            <i class="fas fa-<?= $icon ?> me-2"></i><?= mb_strtoupper($statusVN, 'UTF-8') ?>
-        </div>
+            case 'processing': 
+                $statusVN = 'Đang chuẩn bị hàng'; 
+                $alertClass = 'info text-dark'; 
+                $icon = 'box-open'; 
+                break;
+            case 'shipping': 
+                $statusVN = 'Đang giao hàng'; 
+                $alertClass = 'primary'; 
+                $icon = 'truck'; 
+                break;
+            case 'completed': 
+                $statusVN = 'Giao thành công'; 
+                $alertClass = 'success'; 
+                $icon = 'check-circle'; 
+                break;
+            case 'cancelled': 
+                $statusVN = 'Đã hủy đơn'; 
+                $alertClass = 'danger'; 
+                $icon = 'times-circle'; 
+                break;
+            default: 
+                $statusVN = $currentStatus; 
+                $alertClass = 'secondary';
+                $icon = 'question-circle';
+        }
+    ?>
+
+    <div class="alert alert-<?= $alertClass ?> text-center fw-bold mb-3 shadow-sm">
+        <i class="fas fa-<?= $icon ?> me-2"></i><?= mb_strtoupper($statusVN, 'UTF-8') ?>
     </div>
+
+    <?php 
+        // Nếu đã hoàn thành hoặc hủy -> Khóa
+        $isLocked = ($currentStatus == 'completed' || $currentStatus == 'cancelled');
+    ?>
+
+    
+    
+    <?php if ($isLocked): ?>
+        <input type="hidden" name="status" value="<?= $currentStatus ?>">
+    <?php endif; ?>
+
+</div>
 
     <?php if ($currentStatus == 'completed' || $currentStatus == 'cancelled'): ?>
         <div class="mb-3">
@@ -87,7 +127,7 @@
         <div class="mb-3">
     <label class="form-label fw-bold">Chuyển trạng thái tiếp theo:</label>
     <select name="status" class="form-select border-primary fw-bold shadow-sm" style="background-color: #f8f9fa;">
-        <option value="<?= $currentStatus ?>"> -- Giữ nguyên trạng thái -- </option>
+        <option value="<?= $currentStatus ?>">  Giữ nguyên trạng thái  </option>
         
         <?php if ($currentStatus == 'pending_payment'): ?>
             <option value="pending">➡️ Đã nhận tiền (Xác nhận thủ công)</option>
@@ -102,11 +142,11 @@
         <?php endif; ?>
 
         <?php if ($currentStatus == 'shipping'): ?> 
-            <option value="completed" class="fw-bold text-success">✅ Khách đã nhận hàng (Hoàn thành)</option>
+            <option value="completed" class="fw-bold text-success"> Khách đã nhận hàng (Hoàn thành)</option>
         <?php endif; ?>
 
         <?php if ($currentStatus != 'completed' && $currentStatus != 'cancelled'): ?>
-            <option value="cancelled" class="text-danger">❌ HỦY ĐƠN HÀNG (Hoàn lại kho)</option>
+            <option value="cancelled" class="text-danger"> HỦY ĐƠN HÀNG (Hoàn lại kho)</option>
         <?php endif; ?>
     </select>
 </div>
