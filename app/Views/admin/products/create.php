@@ -63,30 +63,51 @@
 
             <hr>
             <h5 class="text-primary">Quản lý Biến thể (Size & Màu)</h5>
-            <table class="table table-bordered" id="variantTable">
-                <thead>
-                    <tr>
-                        <th>Size</th>
-                        <th>Màu sắc</th>
-                        <th>Tồn kho</th>
-                        <th><button type="button" class="btn btn-sm btn-success" onclick="addVariant()">+</button></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            <select name="variants[0][size]" class="form-control">
-                                <option value="S">S</option> <option value="M">M</option>
-                                <option value="L">L</option> <option value="XL">XL</option>
-                                <option value="FreeSize">FreeSize</option>
-                            </select>
-                        </td>
-                        <td><input type="text" name="variants[0][color]" class="form-control" placeholder="Xanh..."></td>
-                        <td><input type="number" name="variants[0][stock]" class="form-control" value="10"></td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle" id="variantTable">
+                    <thead class="bg-light text-center">
+                        <tr>
+                            <th style="width: 15%">Size</th>
+                            <th style="width: 20%">Màu sắc</th>
+                            <th style="width: 15%">Tồn kho</th>
+                            <th style="width: 40%">Giá riêng (VNĐ)</th>
+                            <th style="width: 10%">
+                                <button type="button" class="btn btn-sm btn-success" onclick="addVariant()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <select name="variants[0][size]" class="form-control">
+                                    <option value="S">S</option> <option value="M">M</option>
+                                    <option value="L">L</option> <option value="XL">XL</option>
+                                    <option value="XXL">XXL</option> <option value="FreeSize">FreeSize</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="text" name="variants[0][color]" class="form-control" placeholder="Xanh...">
+                            </td>
+                            <td>
+                                <input type="number" name="variants[0][stock]" class="form-control text-center" value="10">
+                            </td>
+                            <td>
+                                <div class="input-group input-group-sm mb-1">
+                                    <span class="input-group-text">Gốc</span>
+                                    <input type="number" name="variants[0][price]" class="form-control" placeholder="0 = Giá chung">
+                                </div>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text text-danger">Sale</span>
+                                    <input type="number" name="variants[0][sale_price]" class="form-control" placeholder="Giá KM">
+                                </div>
+                            </td>
+                            <td class="text-center align-middle"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
             <button type="submit" class="btn btn-primary mt-3 w-100">Lưu Sản Phẩm</button>
         </form>
@@ -101,13 +122,32 @@ function addVariant() {
             <td>
                 <select name="variants[${vIdx}][size]" class="form-control">
                     <option value="S">S</option><option value="M">M</option><option value="L">L</option>
-                    <option value="XL">XL</option><option value="FreeSize">FreeSize</option>
+                    <option value="XL">XL</option><option value="XXL">XXL</option><option value="FreeSize">FreeSize</option>
                 </select>
             </td>
-            <td><input type="text" name="variants[${vIdx}][color]" class="form-control" placeholder="Màu..."></td>
-            <td><input type="number" name="variants[${vIdx}][stock]" class="form-control" value="10"></td>
-            <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">Xóa</button></td>
+            <td>
+                <input type="text" name="variants[${vIdx}][color]" class="form-control" placeholder="Màu...">
+            </td>
+            <td>
+                <input type="number" name="variants[${vIdx}][stock]" class="form-control text-center" value="10">
+            </td>
+            <td>
+                <div class="input-group input-group-sm mb-1">
+                    <span class="input-group-text">Gốc</span>
+                    <input type="number" name="variants[${vIdx}][price]" class="form-control" placeholder="0 = Giá chung">
+                </div>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text text-danger">Sale</span>
+                    <input type="number" name="variants[${vIdx}][sale_price]" class="form-control" placeholder="Giá KM">
+                </div>
+            </td>
+            <td class="text-center align-middle">
+                <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
         </tr>`;
+    
     document.querySelector('#variantTable tbody').insertAdjacentHTML('beforeend', html);
     vIdx++;
 }

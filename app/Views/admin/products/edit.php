@@ -1,7 +1,4 @@
 <?php
-/**
- * GÁN BIẾN VÀ KIỂM TRA DỮ LIỆU
- */
 $product = $data['product'] ?? null;
 $categories = $data['categories'] ?? [];
 $brands = $data['brands'] ?? [];
@@ -36,7 +33,7 @@ if (!function_exists('is_selected')) {
             <i class="fas fa-info-circle me-2"></i> <?= $_SESSION['alert']['message'] ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-        <?php unset($_SESSION['alert']); // Xóa session sau khi hiện ?>
+        <?php unset($_SESSION['alert']); ?>
     <?php endif; ?>
 
     <form action="<?= BASE_URL ?>admin/product/update/<?= $product['id'] ?>" method="POST" enctype="multipart/form-data">
@@ -65,60 +62,82 @@ if (!function_exists('is_selected')) {
                 </div>
 
                 <div class="card shadow mb-4">
-                    <div class="card-header py-3 bg-white border-bottom">
+                    <div class="card-header py-3 bg-white border-bottom d-flex justify-content-between align-items-center">
                          <h6 class="m-0 fw-bold text-primary">Quản lý Biến thể (Size & Màu)</h6>
+                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addVariantModal">
+                            <i class="fas fa-plus"></i> Thêm nhanh biến thể
+                         </button>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-hover align-middle" id="variantTable">
-                            <thead class="table-light">
+                            <table class="table table-bordered table-hover align-middle">
+                            <thead class="table-light text-center">
                                 <tr>
-                                    <th>Size</th>
-                                    <th>Màu sắc</th>
-                                    <th>Tồn kho</th>
-                                    <th style="width: 180px;">Giá Riêng (VNĐ)</th>
-                                    <th class="text-center" width="50">Hành động</th>
+                                    <th width="15%">Size</th>
+                                    <th width="20%">Màu sắc</th>
+                                    <th width="15%">Tồn kho</th>
+                                    <th width="35%">Giá Riêng (VNĐ)</th>
+                                    <th width="15%">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php $vIdx = 0; ?>
                                 <?php foreach ($variants as $variant): ?>
                                 <tr>
-                                    <td class="bg-light">
-                                        <strong><?= htmlspecialchars($variant['size']) ?></strong>
-                                        <input type="hidden" name="old_variants[<?= $vIdx ?>][id]" value="<?= $variant['id'] ?>">
-                                    </td>
-                                    <td class="bg-light"><?= htmlspecialchars($variant['color']) ?></td>
                                     <td>
-                                        <span class="badge bg-secondary"><?= $variant['stock_quantity'] ?></span>
+                                        <select name="old_variants[<?= $variant['id'] ?>][size]" class="form-select form-select-sm">
+                                            <option value="S" <?= is_selected($variant['size'], 'S') ?>>S</option>
+                                            <option value="M" <?= is_selected($variant['size'], 'M') ?>>M</option>
+                                            <option value="L" <?= is_selected($variant['size'], 'L') ?>>L</option>
+                                            <option value="XL" <?= is_selected($variant['size'], 'XL') ?>>XL</option>
+                                            <option value="XXL" <?= is_selected($variant['size'], 'XXL') ?>>XXL</option>
+                                            <option value="FreeSize" <?= is_selected($variant['size'], 'FreeSize') ?>>FreeSize</option>
+                                        </select>
                                     </td>
                                     
                                     <td>
-                                        <?php if(!empty($variant['price']) && $variant['price'] > 0): ?>
-                                            <div class="fw-bold text-success"><?= number_format($variant['price']) ?></div>
-                                            <?php if(!empty($variant['sale_price']) && $variant['sale_price'] > 0): ?>
-                                                <small class="text-danger">Sale: <?= number_format($variant['sale_price']) ?></small>
-                                            <?php endif; ?>
-                                        <?php else: ?>
-                                            <small class="text-muted fst-italic">Theo giá gốc</small>
-                                        <?php endif; ?>
+                                        <input type="text" name="old_variants[<?= $variant['id'] ?>][color]" 
+                                               class="form-control form-control-sm" 
+                                               value="<?= htmlspecialchars($variant['color']) ?>">
+                                    </td>
+                                    
+                                    <td>
+                                        <input type="number" name="old_variants[<?= $variant['id'] ?>][stock]" 
+                                               class="form-control form-control-sm text-center" 
+                                               value="<?= $variant['stock_quantity'] ?>">
+                                    </td>
+                                    
+                                    <td>
+                                        <div class="input-group input-group-sm mb-1">
+                                            <span class="input-group-text bg-light text-muted">Gốc</span>
+                                            <input type="number" name="old_variants[<?= $variant['id'] ?>][price]" 
+                                                   class="form-control" 
+                                                   value="<?= (float)$variant['price'] ?>" placeholder="0">
+                                        </div>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light text-danger">Sale</span>
+                                            <input type="number" name="old_variants[<?= $variant['id'] ?>][sale_price]" 
+                                                   class="form-control" 
+                                                   value="<?= (float)$variant['sale_price'] ?>" placeholder="0">
+                                        </div>
                                     </td>
 
                                     <td class="text-center">
                                         <a href="<?= BASE_URL ?>admin/product/deleteVariant/<?= $variant['id'] ?>" 
-                                        class="btn btn-sm btn-outline-danger border-0" 
-                                        onclick="return confirm('Xóa biến thể này?')" title="Xóa biến thể cũ">
-                                            <i class="fas fa-trash"></i>
+                                           class="btn btn-sm btn-outline-danger border-0" 
+                                           onclick="return confirm('Bạn có chắc muốn xóa biến thể này?')" 
+                                           title="Xóa biến thể">
+                                            <i class="fas fa-trash-alt"></i>
                                         </a>
                                     </td>
                                 </tr>
-                                <?php $vIdx++; endforeach; ?>
+                                <?php endforeach; ?>
+                                
+                                <?php if(empty($variants)): ?>
+                                    <tr><td colspan="5" class="text-center text-muted py-3">Chưa có biến thể nào.</td></tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                         </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm dashed-border w-100 mt-2" onclick="addVariant()">
-                            <i class="fas fa-plus-circle"></i> Thêm dòng biến thể mới
-                        </button>
                     </div>
                 </div>
             </div>
@@ -126,7 +145,7 @@ if (!function_exists('is_selected')) {
             <div class="col-lg-4">
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 bg-white border-bottom">
-                        <h6 class="m-0 fw-bold text-primary">Phân loại & Giá</h6>
+                        <h6 class="m-0 fw-bold text-primary">Phân loại & Giá Chung</h6>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
@@ -152,7 +171,7 @@ if (!function_exists('is_selected')) {
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Giá bán (VNĐ)</label>
+                            <label class="form-label fw-bold">Giá bán gốc (VNĐ)</label>
                             <div class="input-group">
                                 <input type="number" class="form-control" name="price" value="<?= $product['price'] ?>" required>
                                 <span class="input-group-text">đ</span>
@@ -187,7 +206,7 @@ if (!function_exists('is_selected')) {
                 </div>
 
                 <div class="card shadow mb-4">
-                    <div class="card-header py-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <div class="card-header py-3 bg-white border-bottom">
                         <h6 class="m-0 fw-bold text-primary">Album ảnh phụ</h6>
                     </div>
                     <div class="card-body">
@@ -216,7 +235,7 @@ if (!function_exists('is_selected')) {
                 <div>
                     <a href="<?= BASE_URL ?>admin/product" class="btn btn-outline-secondary me-2">Hủy bỏ</a>
                     <button type="submit" class="btn btn-success px-4 fw-bold">
-                        <i class="fas fa-save me-1"></i> LƯU THAY ĐỔI & THOÁT
+                        <i class="fas fa-save me-1"></i> LƯU THAY ĐỔI
                     </button>
                 </div>
             </div>
@@ -224,38 +243,51 @@ if (!function_exists('is_selected')) {
     </form>
 </div>
 
-<script>
-let newVariantIndex = 0; 
-
-function addVariant() {
-    const html = `
-        <tr class="table-warning">
-            <td>
-                <select name="variants[${newVariantIndex}][size]" class="form-select form-select-sm">
+<div class="modal fade" id="addVariantModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Thêm Biến Thể Mới</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="<?= BASE_URL ?>admin/product/addVariant" method="POST">
+          <div class="modal-body">
+            <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
+            
+            <div class="mb-3">
+                <label class="form-label">Size</label>
+                <select name="size" class="form-select">
                     <option value="S">S</option><option value="M">M</option><option value="L">L</option>
                     <option value="XL">XL</option><option value="XXL">XXL</option><option value="FreeSize">FreeSize</option>
                 </select>
-            </td>
-            <td>
-                <input type="text" name="variants[${newVariantIndex}][color]" class="form-control form-control-sm" placeholder="Màu (VD: Đỏ)">
-            </td>
-            <td>
-                <input type="number" name="variants[${newVariantIndex}][stock]" class="form-control form-control-sm" value="10">
-            </td>
+            </div>
             
-            <td>
-                <input type="number" name="variants[${newVariantIndex}][price]" class="form-control form-control-sm mb-1" placeholder="Giá gốc (0 = theo SP)">
-                <input type="number" name="variants[${newVariantIndex}][sale_price]" class="form-control form-control-sm" placeholder="Giá sale">
-            </td>
+            <div class="mb-3">
+                <label class="form-label">Màu sắc</label>
+                <input type="text" name="color" class="form-control" placeholder="VD: Xanh, Đỏ..." required>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Số lượng tồn kho</label>
+                <input type="number" name="stock" class="form-control" value="10" required>
+            </div>
 
-            <td class="text-center">
-                <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="this.closest('tr').remove()">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>`;
-    
-    document.querySelector('#variantTable tbody').insertAdjacentHTML('beforeend', html);
-    newVariantIndex++;
-}
-</script>
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <label class="form-label">Giá Riêng (Gốc)</label>
+                    <input type="number" name="price" class="form-control" placeholder="Để 0 lấy giá SP">
+                </div>
+                <div class="col-6 mb-3">
+                    <label class="form-label">Giá Sale (Nếu có)</label>
+                    <input type="number" name="sale_price" class="form-control" placeholder="Giá khuyến mãi">
+                </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            <button type="submit" class="btn btn-primary">Lưu Biến Thể</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
