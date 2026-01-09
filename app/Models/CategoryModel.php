@@ -10,7 +10,7 @@ class CategoryModel extends Model {
         $sql = "SELECT c.*, p.name as parent_name 
                 FROM {$this->table} c 
                 LEFT JOIN {$this->table} p ON c.parent_id = p.id 
-                WHERE 1=1";
+                WHERE c.status = 1";
 
         $params = [];
         $types = "";
@@ -50,7 +50,8 @@ class CategoryModel extends Model {
 
     // MỚI: Chỉ lấy các danh mục gốc để đổ vào Dropdown bộ lọc
     public function getRootCategories() {
-        $sql = "SELECT * FROM {$this->table} WHERE parent_id IS NULL ORDER BY id DESC";
+        $sql = "SELECT * FROM {$this->table} WHERE parent_id IS NULL AND status = 1
+         ORDER BY id DESC";
         $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
     }

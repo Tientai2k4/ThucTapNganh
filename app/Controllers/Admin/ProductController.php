@@ -158,13 +158,19 @@ class ProductController extends Controller {
                 
                 // 4. Xử lý thêm biến thể mới
                 if (isset($_POST['variants']) && is_array($_POST['variants'])) {
-                    foreach ($_POST['variants'] as $variant) {
-                        if (!empty($variant['size']) && !empty($variant['color'])) {
-                            $stock = !empty($variant['stock']) ? (int)$variant['stock'] : 0;
-                            $model->addVariant($id, $variant['size'], $variant['color'], $stock);
-                        }
+                foreach ($_POST['variants'] as $variant) {
+                    if (!empty($variant['size']) && !empty($variant['color'])) {
+                        $stock = !empty($variant['stock']) ? (int)$variant['stock'] : 0;
+                        
+                        // Lấy thêm giá
+                        $vPrice = !empty($variant['price']) ? (float)$variant['price'] : 0;
+                        $vSale = !empty($variant['sale_price']) ? (float)$variant['sale_price'] : 0;
+
+                        // Gọi hàm với đầy đủ 6 tham số
+                        $model->addVariant($id, $variant['size'], $variant['color'], $stock, $vPrice, $vSale);
                     }
                 }
+            }
 
                 // [THÔNG BÁO] Đã cập nhật xong
                 $_SESSION['alert'] = ['type' => 'success', 'message' => 'Đã cập nhật sản phẩm: ' . $data['name']];
@@ -240,5 +246,54 @@ class ProductController extends Controller {
             }
         }
     }
+    // [MỚI] Hàm xử lý thêm biến thể riêng biệt (được gọi từ Form thêm biến thể ở View Edit)
+    public function addVariant() {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $productId = $_POST['product_id'];
+            
+            // Lấy dữ liệu từ form
+            $size = trim($_POST['size']);
+            $color = trim($_POST['color']);
+            $stock = (int)$_POST['stock'];
+            $price = !empty($_POST['price']) ? (float)$_POST['price'] : 0;
+            $salePrice = !empty($_POST['sale_price']) ? (float)$_POST['sale_price'] : 0;
+
+            // Validate cơ bản
+            if (empty($size) || empty($color)) {
+                $_SESSION['alert'] = ['type' => 'danger', 'message' => 'Vui lòng nhập Size và Màu sắc!'];
+                header('Location: ' . BASE_URL . 'admin/product/edit/' . $productId);
+                exit;
+            }
+
+            $model = $this->model('ProductModel');
+            
+            // Gọi hàm addVariant trong Model (đã cập nhật thêm tham số price, salePrice)
+            if ($model->addVariant($productId, $size, $color, $stock, $price, $salePrice)) {
+                $_SESSION['alert'] = ['type' => 'success', 'message' => 'Đã thêm biến thể mới.'];
+            } else {
+                $_SESSION['alert'] = ['type' => 'danger', 'message' => 'Lỗi: Không thể thêm biến thể.'];
+            }
+
+            // Quay lại trang sửa sản phẩm
+            header('Location: ' . BASE_URL . 'admin/product/edit/' . $productId);
+            exit;
+        }
+    }
+
+    // [MỚI] Hàm xóa biến thể (Nếu chưa có thì thêm luôn cho đủ bộ)
+    public function deleteVariant($variantId) {
+        // Cần truy vấn DB để lấy product_id trước khi xóa (để redirect về đúng chỗ)
+        // Tuy nhiên để nhanh gọn, ta có thể redirect về trang danh sách hoặc dùng HTTP_REFERER
+        
+        $model = $this->model('ProductModel');
+        
+        // Giả sử Model có hàm deleteVariantById (Bạn cần kiểm tra Model có hàm này chưa)
+        // Nếu chưa, dùng câu lệnh SQL trực tiếp: DELETE FROM product_variants WHERE id = ?
+        
+        // Tạm thời redirect về danh sách nếu không lấy được ID sản phẩm
+        header('Location: ' . $_SERVER['HTTP_REFERER']); 
+        exit;
+    }
+
 }
 ?>

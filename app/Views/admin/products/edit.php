@@ -71,33 +71,50 @@ if (!function_exists('is_selected')) {
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover align-middle" id="variantTable">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Size</th>
-                                        <th>Màu sắc</th>
-                                        <th>Tồn kho</th>
-                                        <th class="text-center" width="50">Hành động</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php $vIdx = 0; ?>
-                                    <?php foreach ($variants as $variant): ?>
-                                    <tr>
-                                        <td class="bg-light">
-                                            <strong><?= htmlspecialchars($variant['size']) ?></strong>
-                                            <input type="hidden" name="old_variants[<?= $vIdx ?>][id]" value="<?= $variant['id'] ?>">
-                                        </td>
-                                        <td class="bg-light"><?= htmlspecialchars($variant['color']) ?></td>
-                                        <td>
-                                            <span class="badge bg-secondary"><?= $variant['stock_quantity'] ?></span>
-                                        </td>
-                                        <td class="text-center">
-                                            <button type="button" class="btn btn-sm btn-secondary" disabled title="Chỉ thêm mới ở đây"><i class="fas fa-lock"></i></button>
-                                        </td>
-                                    </tr>
-                                    <?php $vIdx++; endforeach; ?>
-                                </tbody>
-                            </table>
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Size</th>
+                                    <th>Màu sắc</th>
+                                    <th>Tồn kho</th>
+                                    <th style="width: 180px;">Giá Riêng (VNĐ)</th>
+                                    <th class="text-center" width="50">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $vIdx = 0; ?>
+                                <?php foreach ($variants as $variant): ?>
+                                <tr>
+                                    <td class="bg-light">
+                                        <strong><?= htmlspecialchars($variant['size']) ?></strong>
+                                        <input type="hidden" name="old_variants[<?= $vIdx ?>][id]" value="<?= $variant['id'] ?>">
+                                    </td>
+                                    <td class="bg-light"><?= htmlspecialchars($variant['color']) ?></td>
+                                    <td>
+                                        <span class="badge bg-secondary"><?= $variant['stock_quantity'] ?></span>
+                                    </td>
+                                    
+                                    <td>
+                                        <?php if(!empty($variant['price']) && $variant['price'] > 0): ?>
+                                            <div class="fw-bold text-success"><?= number_format($variant['price']) ?></div>
+                                            <?php if(!empty($variant['sale_price']) && $variant['sale_price'] > 0): ?>
+                                                <small class="text-danger">Sale: <?= number_format($variant['sale_price']) ?></small>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <small class="text-muted fst-italic">Theo giá gốc</small>
+                                        <?php endif; ?>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <a href="<?= BASE_URL ?>admin/product/deleteVariant/<?= $variant['id'] ?>" 
+                                        class="btn btn-sm btn-outline-danger border-0" 
+                                        onclick="return confirm('Xóa biến thể này?')" title="Xóa biến thể cũ">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <?php $vIdx++; endforeach; ?>
+                            </tbody>
+                        </table>
                         </div>
                         <button type="button" class="btn btn-outline-primary btn-sm dashed-border w-100 mt-2" onclick="addVariant()">
                             <i class="fas fa-plus-circle"></i> Thêm dòng biến thể mới
@@ -225,6 +242,12 @@ function addVariant() {
             <td>
                 <input type="number" name="variants[${newVariantIndex}][stock]" class="form-control form-control-sm" value="10">
             </td>
+            
+            <td>
+                <input type="number" name="variants[${newVariantIndex}][price]" class="form-control form-control-sm mb-1" placeholder="Giá gốc (0 = theo SP)">
+                <input type="number" name="variants[${newVariantIndex}][sale_price]" class="form-control form-control-sm" placeholder="Giá sale">
+            </td>
+
             <td class="text-center">
                 <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="this.closest('tr').remove()">
                     <i class="fas fa-trash"></i>
@@ -232,7 +255,6 @@ function addVariant() {
             </td>
         </tr>`;
     
-    // Thêm vào cuối tbody
     document.querySelector('#variantTable tbody').insertAdjacentHTML('beforeend', html);
     newVariantIndex++;
 }

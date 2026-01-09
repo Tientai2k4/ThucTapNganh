@@ -38,12 +38,15 @@
             </div>
 
             <h3 class="text-danger fw-bold my-3">
-                <?= number_format($data['product']['sale_price'] > 0 ? $data['product']['sale_price'] : $data['product']['price']) ?>đ
-                <?php if ($data['product']['sale_price'] > 0): ?>
-                    <small class="text-muted text-decoration-line-through fs-6 ms-2">
+                <span id="display-price">
+                    <?= number_format($data['product']['sale_price'] > 0 ? $data['product']['sale_price'] : $data['product']['price']) ?>
+                </span>đ
+                
+                <small class="text-muted text-decoration-line-through fs-6 ms-2" id="display-original-price">
+                    <?php if ($data['product']['sale_price'] > 0): ?>
                         <?= number_format($data['product']['price']) ?>đ
-                    </small>
-                <?php endif; ?>
+                    <?php endif; ?>
+                </small>
             </h3>
             
             <hr>
@@ -479,37 +482,64 @@ function updateSizeButtonsState() {
     });
 }
 
-// --- 6. KIỂM TRA VÀ CẬP NHẬT TRẠNG THÁI KHO ---
+    // --- 6. KIỂM TRA VÀ CẬP NHẬT TRẠNG THÁI KHO & GIÁ ---
     function checkSelection() {
-    const statusDiv = document.getElementById('stockStatus');
-    const btnBuy = document.getElementById('btnBuy');
-    const hiddenId = document.getElementById('selectedVariantId');
+        const statusDiv = document.getElementById('stockStatus');
+        const btnBuy = document.getElementById('btnBuy');
+        const hiddenId = document.getElementById('selectedVariantId');
+        
+        // Element hiển thị giá
+        const priceEl = document.getElementById('display-price');
+        const oldPriceEl = document.getElementById('display-original-price');
 
-    if (currentSize && currentColor) {
-        const variant = allVariants.find(v => v.size == currentSize && v.color == currentColor);
-        if (variant) {
-            hiddenId.value = variant.id;
+        // Giá gốc của sản phẩm cha (để fallback)
+        const defaultPrice = <?= $data['product']['price'] ?>;
+        const defaultSalePrice = <?= $data['product']['sale_price'] ?>;
+
+        if (currentSize && currentColor) {
+            const variant = allVariants.find(v => v.size == currentSize && v.color == currentColor);
             
-            if (variant.stock_quantity > 0) {
-                statusDiv.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-check"></i> Kho còn: ${variant.stock_quantity} sản phẩm</span>`;
-                btnBuy.disabled = false;
-                btnBuy.classList.remove('btn-secondary');
-                btnBuy.classList.add('btn-primary');
-                btnBuy.innerHTML = '<i class="fas fa-cart-plus me-2"></i> Thêm vào giỏ hàng';
-            } else {
-                // ĐÂY LÀ TRƯỜNG HỢP ONLINE ĐANG GIỮ HÀNG HOẶC HẾT THẬT
-                statusDiv.innerHTML = '<span class="text-danger fw-bold"><i class="fas fa-exclamation-triangle"></i> Sản phẩm này hiện đang hết hàng</span>';
-                btnBuy.disabled = true;
-                btnBuy.innerHTML = 'Tạm hết hàng';
-                btnBuy.classList.remove('btn-primary');
-                btnBuy.classList.add('btn-secondary');
+            if (variant) {
+                hiddenId.value = variant.id;
+                
+                // --- LOGIC CẬP NHẬT GIÁ MỚI ---
+                // Ưu tiên giá variant, nếu = 0 thì lấy giá mặc định
+                let finalPrice = parseFloat(variant.price) > 0 ? parseFloat(variant.price) : defaultPrice;
+                let finalSalePrice = parseFloat(variant.sale_price) > 0 ? parseFloat(variant.sale_price) : defaultSalePrice;
+
+                // Format tiền tệ
+                const formatMoney = (amount) => new Intl.NumberFormat('vi-VN').format(amount);
+
+                if (finalSalePrice > 0 && finalSalePrice < finalPrice) {
+                    // Có khuyến mãi
+                    priceEl.innerText = formatMoney(finalSalePrice);
+                    oldPriceEl.innerHTML = formatMoney(finalPrice) + 'đ';
+                } else {
+                    // Không khuyến mãi
+                    priceEl.innerText = formatMoney(finalPrice);
+                    oldPriceEl.innerHTML = ''; // Ẩn giá gạch ngang
+                }
+                // --------------------------------
+
+                if (variant.stock_quantity > 0) {
+                    statusDiv.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-check"></i> Kho còn: ${variant.stock_quantity} sản phẩm</span>`;
+                    btnBuy.disabled = false;
+                    btnBuy.classList.remove('btn-secondary');
+                    btnBuy.classList.add('btn-primary');
+                    btnBuy.innerHTML = '<i class="fas fa-cart-plus me-2"></i> Thêm vào giỏ hàng';
+                } else {
+                    statusDiv.innerHTML = '<span class="text-danger fw-bold"><i class="fas fa-exclamation-triangle"></i> Sản phẩm này hiện đang hết hàng</span>';
+                    btnBuy.disabled = true;
+                    btnBuy.innerHTML = 'Tạm hết hàng';
+                    btnBuy.classList.remove('btn-primary');
+                    btnBuy.classList.add('btn-secondary');
+                }
             }
+        } else {
+            statusDiv.innerHTML = '<span class="text-muted small">Vui lòng chọn đủ Size và Màu sắc</span>';
+            btnBuy.disabled = true;
         }
-    } else {
-        statusDiv.innerHTML = '<span class="text-muted small">Vui lòng chọn đủ Size và Màu sắc</span>';
-        btnBuy.disabled = true;
     }
-}
 
     // --- 7. TĂNG GIẢM SỐ LƯỢNG ---
     function changeQty(delta) {
