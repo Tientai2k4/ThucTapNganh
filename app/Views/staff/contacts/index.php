@@ -1,101 +1,290 @@
-<div class="container-fluid p-4 bg-light" style="min-height: 100vh;">
+<?php 
+// Lấy prefix là 'staff' từ controller truyền sang
+$prefix = $data['role_prefix'] ?? 'staff'; 
+?>
+
+<style>
+    .text-limit-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-word;
+        max-width: 100%;
+        line-height: 1.5;
+        color: #555;
+    }
+    .table-hover tbody tr:hover td {
+        background-color: #f1f3f5;
+        transition: 0.2s;
+    }
+    .cursor-pointer { cursor: pointer; }
+</style>
+
+<div class="container-fluid py-4">
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-bold text-danger m-0"><i class="fas fa-envelope-open-text me-2"></i>Hòm thư Khách hàng</h4>
-            <small class="text-muted">Bạn có <strong class="text-danger"><?= $data['unread'] ?></strong> tin nhắn chưa đọc.</small>
+            <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-headset me-2"></i>Hỗ trợ Khách hàng (Staff)</h1>
+            <p class="text-muted small mb-0">
+                Bạn có <strong class="text-danger"><?= $data['unread'] ?? 0 ?></strong> tin nhắn mới chưa đọc.
+            </p>
         </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-md-3 col-xl-2">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-2">
-                    <div class="d-grid gap-1">
-                        <a href="<?= BASE_URL ?>staff/contact" class="btn btn-light text-start fw-bold <?= ($data['filters']['status'] === '') ? 'bg-danger text-white' : 'text-secondary' ?>">
-                            <i class="fas fa-inbox me-2"></i>Tất cả
-                        </a>
-                        <a href="<?= BASE_URL ?>staff/contact?status=0" class="btn btn-light text-start fw-bold d-flex justify-content-between align-items-center <?= ($data['filters']['status'] === '0') ? 'bg-danger text-white' : 'text-secondary' ?>">
-                            <span><i class="fas fa-envelope me-2"></i>Chưa đọc</span>
-                            <?php if($data['unread'] > 0): ?>
-                                <span class="badge bg-white text-danger rounded-pill shadow-sm" style="font-size: 0.7rem;"><?= $data['unread'] ?></span>
-                            <?php endif; ?>
-                        </a>
-                        <a href="<?= BASE_URL ?>staff/contact?status=1" class="btn btn-light text-start fw-bold <?= ($data['filters']['status'] === '1') ? 'bg-danger text-white' : 'text-secondary' ?>">
-                            <i class="fas fa-check-double me-2"></i>Đã xử lý
-                        </a>
+    <?php if (isset($_SESSION['alert'])): ?>
+        <div class="alert alert-<?= $_SESSION['alert']['type'] ?> alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fas fa-info-circle me-2"></i><?= $_SESSION['alert']['message'] ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <?php unset($_SESSION['alert']); ?>
+    <?php endif; ?>
+
+    <div class="card shadow mb-4 border-0">
+        <div class="card-body py-3 bg-light rounded">
+            <form action="" method="GET" class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" name="keyword" class="form-control border-start-0 ps-0" 
+                               placeholder="Tìm tên, email hoặc SĐT..." 
+                               value="<?= htmlspecialchars($data['filters']['keyword'] ?? '') ?>">
                     </div>
                 </div>
-            </div>
+                
+                <div class="col-md-3">
+                    <select name="status" class="form-select cursor-pointer">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="0" <?= (isset($data['filters']['status']) && $data['filters']['status'] === '0') ? 'selected' : '' ?>>🔴 Chưa xem</option>
+                        <option value="1" <?= (isset($data['filters']['status']) && $data['filters']['status'] === '1') ? 'selected' : '' ?>>🟡 Đã xem</option>
+                        <option value="2" <?= (isset($data['filters']['status']) && $data['filters']['status'] === '2') ? 'selected' : '' ?>>🟢 Đã trả lời</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="fas fa-filter"></i> Lọc</button>
+                </div>
+                
+                <div class="col-md-2">
+                    <a href="<?= BASE_URL ?>staff/contact" class="btn btn-outline-secondary w-100"><i class="fas fa-undo"></i> Làm mới</a>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <div class="col-md-9 col-xl-10">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light text-secondary">
-                                <tr>
-                                    <th class="ps-4 py-3">Người gửi</th>
-                                    <th class="py-3">Nội dung tin nhắn</th>
-                                    <th class="py-3" style="width: 150px;">Thời gian</th>
-                                    <th class="text-end pe-4 py-3">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if(empty($data['contacts'])): ?>
-                                    <tr>
-                                        <td colspan="4" class="text-center py-5">
-                                            <div class="text-muted mb-2"><i class="far fa-envelope-open fa-3x text-light"></i></div>
-                                            <span class="text-muted">Hòm thư trống.</span>
-                                        </td>
-                                    </tr>
-                                <?php endif; ?>
+    <div class="card shadow border-0">
+        <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Hòm thư đến</h6>
+            <span class="badge bg-secondary">Tổng: <?= count($data['contacts']) ?></span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-uppercase text-muted small">
+                        <tr>
+                            <th class="ps-4 py-3" width="25%">Khách hàng</th>
+                            <th width="35%">Nội dung</th>
+                            <th width="15%">Thời gian</th>
+                            <th width="10%" class="text-center">Trạng thái</th>
+                            <th width="15%" class="text-center pe-4">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!empty($data['contacts'])): ?>
+                            <?php foreach($data['contacts'] as $c): ?>
+                            <tr class="<?= $c['status'] == 0 ? 'fw-bold bg-white' : '' ?>">
+                                <td class="ps-4">
+                                    <div class="text-dark mb-1"><?= htmlspecialchars($c['full_name']) ?></div>
+                                    <div class="small text-muted d-flex align-items-center mb-1">
+                                        <i class="far fa-envelope me-2 text-primary"></i><?= htmlspecialchars($c['email']) ?>
+                                    </div>
+                                    <div class="small text-muted d-flex align-items-center">
+                                        <i class="fas fa-phone-alt me-2 text-success"></i><?= htmlspecialchars($c['phone']) ?>
+                                    </div>
+                                </td>
+                                
+                                <td>
+                                    <div class="text-limit-2 mb-1" id="short_msg_<?= $c['id'] ?>">
+                                        <?= nl2br(htmlspecialchars($c['message'])) ?>
+                                    </div>
+                                    <a href="javascript:void(0)" 
+                                       class="small text-primary text-decoration-none fw-bold fst-italic" 
+                                       onclick="viewDetail('<?= $c['id'] ?>', '<?= htmlspecialchars($c['full_name']) ?>', '<?= htmlspecialchars($c['email']) ?>')">
+                                       <i class="fas fa-eye me-1"></i>Xem chi tiết
+                                    </a>
+                                    <textarea id="full_msg_<?= $c['id'] ?>" class="d-none"><?= htmlspecialchars($c['message']) ?></textarea>
+                                </td>
 
-                                <?php foreach($data['contacts'] as $c): ?>
-                                <tr class="<?= $c['status'] == 0 ? 'bg-white fw-bold border-start border-4 border-danger' : 'bg-light text-muted' ?>">
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
-                                                <span class="small fw-bold"><?= substr($c['full_name'], 0, 1) ?></span>
-                                            </div>
-                                            <div>
-                                                <div class="text-dark"><?= htmlspecialchars($c['full_name']) ?></div>
-                                                <small class="d-block <?= $c['status'] == 0 ? 'text-primary' : 'text-muted' ?>" style="font-size: 0.75rem;">
-                                                    <?= $c['email'] ?>
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="text-truncate" style="max-width: 400px;">
-                                            <?= htmlspecialchars($c['message']) ?>
-                                        </div>
-                                    </td>
-                                    <td class="small text-muted">
-                                        <?= date('d/m H:i', strtotime($c['created_at'])) ?>
-                                    </td>
-                                    <td class="text-end pe-4">
+                                <td class="small text-muted">
+                                    <div><i class="far fa-calendar-alt me-1"></i><?= date('d/m/Y', strtotime($c['created_at'])) ?></div>
+                                    <div class="mt-1"><i class="far fa-clock me-1"></i><?= date('H:i', strtotime($c['created_at'])) ?></div>
+                                </td>
+
+                                <td class="text-center">
+                                    <?php if($c['status'] == 0): ?>
+                                        <span class="badge bg-danger rounded-pill shadow-sm">Mới</span>
+                                    <?php elseif($c['status'] == 1): ?>
+                                        <span class="badge bg-warning text-dark rounded-pill shadow-sm">Đã xem</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-success rounded-pill shadow-sm">Đã trả lời</span>
+                                    <?php endif; ?>
+                                </td>
+
+                                <td class="text-center pe-4">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="tooltip" title="Trả lời ngay"
+                                                onclick="setReplyData('<?= $c['id'] ?>', '<?= htmlspecialchars($c['full_name']) ?>', '<?= htmlspecialchars($c['email']) ?>')">
+                                            <i class="fas fa-reply"></i>
+                                        </button>
+
                                         <?php if($c['status'] == 0): ?>
-                                            <a href="<?= BASE_URL ?>staff/contact/mark/<?= $c['id'] ?>" class="btn btn-outline-success btn-sm rounded-circle me-1" style="width: 32px; height: 32px; padding: 0; line-height: 30px;" title="Đánh dấu đã xem">
+                                            <a href="<?= BASE_URL . $prefix ?>/contact/mark/<?= $c['id'] ?>" 
+                                               class="btn btn-sm btn-outline-success" 
+                                               data-bs-toggle="tooltip" title="Đánh dấu đã xem">
                                                 <i class="fas fa-check"></i>
                                             </a>
                                         <?php endif; ?>
-                                        
-                                        <a href="mailto:<?= $c['email'] ?>" class="btn btn-outline-primary btn-sm rounded-circle me-1" style="width: 32px; height: 32px; padding: 0; line-height: 30px;" title="Trả lời Email">
-                                            <i class="fas fa-reply"></i>
+
+                                        <a href="<?= BASE_URL . $prefix ?>/contact/delete/<?= $c['id'] ?>" 
+                                           class="btn btn-sm btn-outline-danger" 
+                                           onclick="return confirm('Bạn có chắc chắn muốn xóa?')" 
+                                           data-bs-toggle="tooltip" title="Xóa">
+                                            <i class="fas fa-trash-alt"></i>
                                         </a>
-                                        
-                                        <a href="<?= BASE_URL ?>staff/contact/delete/<?= $c['id'] ?>" class="btn btn-outline-secondary btn-sm rounded-circle" style="width: 32px; height: 32px; padding: 0; line-height: 30px;" onclick="return confirm('Xóa vĩnh viễn tin nhắn này?')" title="Xóa">
-                                            <i class="fas fa-times"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fas fa-inbox fa-3x mb-3 text-gray-300"></i><br>
+                                        <span class="h6">Không tìm thấy tin nhắn nào!</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="viewDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-primary"><i class="fas fa-comment-dots me-2"></i>Chi tiết tin nhắn</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="small text-muted fw-bold mb-1">Người gửi:</label>
+                    <div id="viewSenderName" class="fw-bold text-dark"></div>
+                    <div id="viewSenderEmail" class="small text-primary"></div>
+                </div>
+                <hr class="my-2">
+                <div class="mb-2">
+                    <label class="small text-muted fw-bold mb-1">Nội dung:</label>
+                    <div class="p-3 bg-light rounded border border-light text-dark" 
+                         style="white-space: pre-line; line-height: 1.6;" 
+                         id="viewMsgContent">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="switchToReply()">
+                    <i class="fas fa-reply me-1"></i> Trả lời ngay
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="replyModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-paper-plane me-2"></i>Phản hồi khách hàng (Email)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="<?= BASE_URL . $prefix ?>/contact/reply" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="replyId">
+                    <input type="hidden" name="email" id="replyEmailHidden">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Người nhận:</label>
+                            <input type="text" class="form-control bg-light" id="replyInfo" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Email nhận:</label>
+                            <input type="text" class="form-control bg-light fw-bold text-dark" id="replyEmailDisplay" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tiêu đề Email <span class="text-danger">*</span></label>
+                        <input type="text" name="subject" class="form-control" value="Phản hồi từ SwimmingStore về liên hệ của bạn" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nội dung phản hồi (HTML) <span class="text-danger">*</span></label>
+                        <textarea name="content" class="form-control" rows="8" placeholder="Nhập nội dung..." required>Chào quý khách,
+
+Cảm ơn quý khách đã liên hệ. Về vấn đề quý khách thắc mắc, chúng tôi xin phản hồi như sau:
+
+...
+
+Trân trọng,
+Đội ngũ hỗ trợ khách hàng SwimmingStore.</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">
+                        <i class="fas fa-paper-plane me-2"></i> GỬI PHẢN HỒI
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentContact = { id: '', name: '', email: '' };
+
+    function viewDetail(id, name, email) {
+        currentContact = { id: id, name: name, email: email };
+        var fullContent = document.getElementById('full_msg_' + id).value;
+        document.getElementById('viewMsgContent').innerText = fullContent;
+        document.getElementById('viewSenderName').innerText = name;
+        document.getElementById('viewSenderEmail').innerText = email;
+        var viewModal = new bootstrap.Modal(document.getElementById('viewDetailModal'));
+        viewModal.show();
+    }
+
+    function setReplyData(id, name, email) {
+        document.getElementById('replyId').value = id;
+        document.getElementById('replyEmailHidden').value = email;
+        document.getElementById('replyInfo').value = name;
+        document.getElementById('replyEmailDisplay').value = email;
+        var replyModal = new bootstrap.Modal(document.getElementById('replyModal'));
+        replyModal.show();
+    }
+
+    function switchToReply() {
+        var viewModalEl = document.getElementById('viewDetailModal');
+        var viewModal = bootstrap.Modal.getInstance(viewModalEl);
+        viewModal.hide();
+        setTimeout(function() {
+            setReplyData(currentContact.id, currentContact.name, currentContact.email);
+        }, 300);
+    }
+</script>

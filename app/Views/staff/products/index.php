@@ -14,16 +14,18 @@
         <div class="card-body bg-light rounded">
             <form action="" method="GET" class="row g-3">
                 <div class="col-md-5">
-                    <input type="text" name="keyword" class="form-control" placeholder="Tên sản phẩm hoặc mã SKU..." value="<?= htmlspecialchars($data['filters']['keyword']) ?>">
+                    <input type="text" name="keyword" class="form-control" placeholder="Tên sản phẩm hoặc mã SKU..." value="<?= htmlspecialchars($data['filters']['keyword'] ?? '') ?>">
                 </div>
                 <div class="col-md-3">
                     <select name="category_id" class="form-select">
                         <option value="">-- Danh mục --</option>
-                        <?php foreach($data['categories'] as $cat): ?>
-                            <option value="<?= $cat['id'] ?>" <?= $data['filters']['category_id'] == $cat['id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($cat['name']) ?>
-                            </option>
-                        <?php endforeach; ?>
+                        <?php if (!empty($data['categories'])): ?>
+                            <?php foreach($data['categories'] as $cat): ?>
+                                <option value="<?= $cat['id'] ?>" <?= (isset($data['filters']['category_id']) && $data['filters']['category_id'] == $cat['id']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($cat['name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -50,17 +52,30 @@
                     <tbody>
                         <?php if (!empty($data['products'])): ?>
                             <?php foreach ($data['products'] as $p): ?>
+                            <?php 
+                                // --- LOGIC SỬA LỖI UNDEFINED KEY ---
+                                // Ưu tiên 'total_stock' (nếu query có join bảng variant)
+                                // Nếu không có, lấy 'product_qty' (tồn kho đơn giản trong bảng products)
+                                // Nếu không có cả 2, gán bằng 0
+                                $stock = isset($p['total_stock']) ? (int)$p['total_stock'] : (isset($p['product_qty']) ? (int)$p['product_qty'] : 0);
+                            ?>
                             <tr>
                                 <td class="ps-4">
-                                    <img src="<?= BASE_URL ?>public/uploads/<?= $p['image'] ?>" class="rounded border" width="50" height="50" style="object-fit: cover;">
+                                    <?php if (!empty($p['image'])): ?>
+                                        <img src="<?= BASE_URL ?>public/uploads/<?= $p['image'] ?>" class="rounded border" width="50" height="50" style="object-fit: cover;">
+                                    <?php else: ?>
+                                        <div class="rounded border d-flex align-items-center justify-content-center bg-light" style="width: 50px; height: 50px;">
+                                            <i class="fas fa-image text-muted"></i>
+                                        </div>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <div class="fw-bold"><?= htmlspecialchars($p['name']) ?></div>
-                                    <small class="text-muted"><?= $p['cat_name'] ?></small>
+                                    <small class="text-muted"><?= htmlspecialchars($p['cat_name'] ?? 'Chưa phân loại') ?></small>
                                 </td>
-                                <td><span class="badge bg-light text-dark border"><?= $p['sku_code'] ?></span></td>
+                                <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($p['sku_code'] ?? 'N/A') ?></span></td>
                                 <td>
-                                    <?php if($p['sale_price'] > 0): ?>
+                                    <?php if($p['sale_price'] > 0 && $p['sale_price'] < $p['price']): ?>
                                         <div class="text-danger fw-bold"><?= number_format($p['sale_price']) ?>đ</div>
                                         <small class="text-decoration-line-through text-muted"><?= number_format($p['price']) ?>đ</small>
                                     <?php else: ?>
@@ -68,12 +83,12 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
-                                    <?php if($p['total_stock'] == 0): ?>
+                                    <?php if($stock == 0): ?>
                                         <span class="badge bg-danger">Hết hàng</span>
-                                    <?php elseif($p['total_stock'] < 10): ?>
-                                        <span class="badge bg-warning text-dark">Sắp hết: <?= $p['total_stock'] ?></span>
+                                    <?php elseif($stock < 10): ?>
+                                        <span class="badge bg-warning text-dark">Sắp hết: <?= $stock ?></span>
                                     <?php else: ?>
-                                        <span class="badge bg-success"><?= $p['total_stock'] ?></span>
+                                        <span class="badge bg-success"><?= $stock ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-end pe-4">
@@ -84,7 +99,7 @@
                             </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <tr><td colspan="6" class="text-center py-5">Không tìm thấy sản phẩm.</td></tr>
+                            <tr><td colspan="6" class="text-center py-5 text-muted">Không tìm thấy sản phẩm nào khớp với tìm kiếm.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>

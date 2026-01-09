@@ -201,20 +201,30 @@
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
-                        <tfoot class="border-top">
-                            <tr>
-                                <td colspan="4" class="text-end">Phí vận chuyển:</td>
-                                <td class="text-end"><?= number_format($data['order']['shipping_fee']) ?>đ</td>
-                            </tr>
-                            <tr>
-                                <td colspan="4" class="text-end">Giảm giá:</td>
-                                <td class="text-end">-<?= number_format($data['order']['discount_amount']) ?>đ</td>
-                            </tr>
-                            <tr class="bg-light">
-                                <td colspan="4" class="text-end fw-bold text-danger fs-5">TỔNG THANH TOÁN:</td>
-                                <td class="text-end fw-bold text-danger fs-5"><?= number_format($data['order']['total_money']) ?>đ</td>
-                            </tr>
-                        </tfoot>
+                       <tfoot class="border-top">
+    <tr>
+        <td colspan="4" class="text-end">Phí vận chuyển:</td>
+        <td class="text-end"><?= number_format($data['order']['shipping_fee']) ?>đ</td>
+    </tr>
+
+    <?php if ($data['order']['discount_amount'] > 0): ?>
+        <tr>
+            <td colspan="4" class="text-end text-success">
+                <i class="fas fa-tag me-1"></i> 
+                Mã giảm giá 
+                <?php if(!empty($data['order']['coupon_code'])): ?>
+                    <span class="badge bg-success ms-1"><?= htmlspecialchars($data['order']['coupon_code']) ?></span>
+                <?php endif; ?>
+                :
+            </td>
+            <td class="text-end text-success">-<?= number_format($data['order']['discount_amount']) ?>đ</td>
+        </tr>
+    <?php endif; ?>
+    <tr class="bg-light">
+        <td colspan="4" class="text-end fw-bold text-danger fs-5">TỔNG THANH TOÁN:</td>
+        <td class="text-end fw-bold text-danger fs-5"><?= number_format($data['order']['total_money']) ?>đ</td>
+    </tr>
+</tfoot>
                     </table>
                 </div>
             </div>

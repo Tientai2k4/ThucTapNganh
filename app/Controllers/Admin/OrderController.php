@@ -30,6 +30,7 @@ class OrderController extends Controller {
     }
 
     // Xem chi tiết đơn hàng
+  // Xem chi tiết đơn hàng
     public function detail($code) {
         $model = $this->model('OrderModel');
         $order = $model->getOrderByCode($code);
@@ -39,6 +40,12 @@ class OrderController extends Controller {
         }
 
         $details = $model->getOrderDetails($order['id']);
+        
+        // [FIX] Lấy địa chỉ đầy đủ (Tỉnh/Huyện/Xã) thay vì chỉ lấy số nhà
+        $fullAddress = $model->getOrderFullAddress($order['id']);
+        if (!empty($fullAddress)) {
+            $order['shipping_address'] = $fullAddress;
+        }
 
         $this->view('admin/orders/detail', [
             'order' => $order,

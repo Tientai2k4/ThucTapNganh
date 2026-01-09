@@ -1,11 +1,6 @@
 <?php
 namespace App\Models;
-/**
- * Lấy báo cáo doanh thu linh hoạt theo Ngày/Tháng/Năm
- * @param string $type: 'date', 'month', 'year'
- * @param string $from: định dạng Y-m-d
- * @param string $to: định dạng Y-m-d
- */
+
 use App\Core\Model;
 use App\Services\ShippingService;
 
@@ -40,16 +35,15 @@ class OrderModel extends Model {
         $stmt->bind_param("si", $status, $id);
         return $stmt->execute();
     }
-   
+    
 
-
-// Hàm bổ trợ lấy thông tin đơn hàng theo ID
-public function getOrderById($id) {
-    $stmt = $this->conn->prepare("SELECT * FROM orders WHERE id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    return $stmt->get_result()->fetch_assoc();
-}
+    // Hàm bổ trợ lấy thông tin đơn hàng theo ID
+    public function getOrderById($id) {
+        $stmt = $this->conn->prepare("SELECT * FROM orders WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
 
     public function updatePaymentStatusByCode($code, $status) {
         $stmt = $this->conn->prepare("UPDATE orders SET payment_status = ? WHERE order_code = ?");
@@ -366,26 +360,57 @@ public function getOrderById($id) {
         return $result->num_rows > 0;
     }
     // Hủy các đơn hàng đang chờ thanh toán của riêng một user (để giải phóng kho khi họ quay lại trang checkout)
-public function cancelMyExpiredOrders($userId) {
-    // Tìm các đơn pending_payment của user này
-    $sql = "SELECT id FROM orders 
-            WHERE user_id = ? 
-            AND status = 'pending_payment'";
-    
-    $stmt = $this->conn->prepare($sql);
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $count = 0;
-    while ($order = $result->fetch_assoc()) {
-        // Sử dụng lại hàm cancelOrderById đã có logic hoàn kho
-        if ($this->cancelOrderById($order['id'])) {
-            $count++;
+    public function cancelMyExpiredOrders($userId) {
+        // Tìm các đơn pending_payment của user này
+        $sql = "SELECT id FROM orders 
+                WHERE user_id = ? 
+                AND status = 'pending_payment'";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $count = 0;
+        while ($order = $result->fetch_assoc()) {
+            // Sử dụng lại hàm cancelOrderById đã có logic hoàn kho
+            if ($this->cancelOrderById($order['id'])) {
+                $count++;
+            }
         }
+        return $count;
     }
-    return $count;
-}
 
+    // [FIX LỖI ILLEGAL COLLATION]
+    // Sử dụng COLLATE utf8mb4_general_ci khi so sánh với bảng ward
+    public function getOrderFullAddress($orderId) {
+        $sql = "SELECT 
+                    o.shipping_address,
+                    p.province_name,
+                    d.district_name,
+                    w.ward_name
+                FROM orders o
+                LEFT JOIN ghn_provinces p ON o.shipping_province_id = p.province_id
+                LEFT JOIN ghn_districts d ON o.shipping_district_id = d.district_id
+                -- [QUAN TRỌNG] Ép kiểu bảng mã ở đây để tránh lỗi Illegal mix of collations
+                LEFT JOIN ghn_wards w ON o.shipping_ward_code COLLATE utf8mb4_general_ci = w.ward_code
+                WHERE o.id = ?";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $orderId);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        if ($result) {
+            // Nối chuỗi địa chỉ: Số nhà, Xã, Huyện, Tỉnh
+            $fullAddress = $result['shipping_address'];
+            if (!empty($result['ward_name'])) $fullAddress .= ", " . $result['ward_name'];
+            if (!empty($result['district_name'])) $fullAddress .= ", " . $result['district_name'];
+            if (!empty($result['province_name'])) $fullAddress .= ", " . $result['province_name'];
+            return $fullAddress;
+        }
+        
+        return ""; // Trả về rỗng nếu không tìm thấy
+    }
 }
 ?>
